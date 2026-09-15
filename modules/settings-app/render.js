@@ -63,6 +63,7 @@ import {
     getPhoneThemeModeValue,
     applyPhoneThemeMode,
     setupPhoneThemeModeSettings,
+    savePhoneLanguage,
     getLayoutValue,
 } from './services/appearance-settings.js';
 import { createSettingsPageRenderers } from './page-renderers.js';
@@ -295,6 +296,7 @@ export function renderSettings(container) {
             getPhoneThemeModeValue,
             applyPhoneThemeMode,
             setupPhoneThemeModeSettings,
+            savePhoneLanguage,
         },
         qqV2Presets: qqV2PresetSettingsService,
         buttonStyle: {

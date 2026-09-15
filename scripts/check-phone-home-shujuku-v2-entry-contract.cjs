@@ -90,7 +90,7 @@ function main() {
     check(results, 'dataApi', 'data-api 不再导出 triggerManualUpdate', !has(contents.dataApi, 'triggerManualUpdate'));
 
     check(results, 'homeRender', '主页 render 注入 openDatabaseUiWithStatus', has(contents.homeRender, 'openDatabaseUiWithStatus'));
-    check(results, 'homeData', '数据库 Dock 文案指向数据库界面', has(contents.homeData, "pendingMessage: '正在打开数据库界面...'"));
+    check(results, 'homeData', '数据库 Dock 文案指向数据库界面', has(contents.homeData, "pendingMessage: t(\"正在打开数据库界面...\")"));
     check(results, 'homeData', '数据库 Dock 不再提示设置面板', !has(contents.homeData, '正在打开数据库设置面板'));
 
     for (const key of ['homeRender', 'homeInteractions', 'homeActions', 'homeData']) {

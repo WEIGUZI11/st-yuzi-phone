@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { PHONE_ICONS } from '../phone-home/icons.js';
 import { dispatchTableUpdated, refreshTableProjection } from '../phone-core/table-support.js';
@@ -84,13 +85,13 @@ function buildAddRowFieldControlHtml(field) {
     if (fieldMetadata?.type === 'enum' && Array.isArray(fieldMetadata.options) && fieldMetadata.options.length > 0) {
         return `
             <select class="phone-modal-field-input" data-field-idx="${escapeHtmlAttr(String(field.rawIdx))}" data-field-control="select">
-                <option value="">请选择${escapeHtml(field.header)}</option>
+                <option value="">${t`请选择${escapeHtml(field.header)}`}</option>
                 ${fieldMetadata.options.map((option) => `<option value="${escapeHtmlAttr(option)}">${escapeHtml(option)}</option>`).join('')}
             </select>
         `;
     }
 
-    return `<textarea class="phone-modal-field-input" data-field-idx="${escapeHtmlAttr(String(field.rawIdx))}" data-field-control="textarea" placeholder="请输入${escapeHtml(field.header)}" rows="1"></textarea>`;
+    return `<textarea class="phone-modal-field-input" data-field-idx="${escapeHtmlAttr(String(field.rawIdx))}" data-field-control="textarea" placeholder="${t`请输入${escapeHtml(field.header)}`}" rows="1"></textarea>`;
 }
 
 function hasMappedDdlFields(ddlFieldMetadata) {
@@ -318,7 +319,7 @@ export function showGenericAddRowModal(options = {}) {
     modal.innerHTML = `
         <div class="phone-modal-content">
             <div class="phone-modal-header">
-                <span class="phone-modal-title">新增条目</span>
+                <span class="phone-modal-title">${t`新增条目`}</span>
                 <button type="button" class="phone-modal-close" id="phone-modal-close-btn">${PHONE_ICONS.close || '×'}</button>
             </div>
             <div class="phone-modal-body">
@@ -330,8 +331,8 @@ export function showGenericAddRowModal(options = {}) {
                 `).join('')}
             </div>
             <div class="phone-modal-footer">
-                <button type="button" class="phone-modal-btn phone-modal-btn-cancel" id="phone-modal-cancel-btn">取消</button>
-                <button type="button" class="phone-modal-btn phone-modal-btn-confirm" id="phone-modal-confirm-btn">确定</button>
+                <button type="button" class="phone-modal-btn phone-modal-btn-cancel" id="phone-modal-cancel-btn">${t`取消`}</button>
+                <button type="button" class="phone-modal-btn phone-modal-btn-confirm" id="phone-modal-confirm-btn">${t`确定`}</button>
             </div>
         </div>
     `;
@@ -408,7 +409,7 @@ export function showGenericAddRowModal(options = {}) {
         const confirmBtn = /** @type {HTMLButtonElement | null} */ (modal.querySelector('#phone-modal-confirm-btn'));
         if (confirmBtn) {
             confirmBtn.disabled = true;
-            confirmBtn.textContent = '添加中...';
+            confirmBtn.textContent = t("添加中...");
         }
 
         try {
@@ -445,10 +446,10 @@ export function showGenericAddRowModal(options = {}) {
                     message: '通用表新增前置校验失败',
                     context: validationDiagnostics,
                 });
-                showInlineToast(container, enumValidationError.message || '新增失败：字段值不在允许范围内');
+                showInlineToast(container, enumValidationError.message || t("新增失败：字段值不在允许范围内"));
                 if (confirmBtn) {
                     confirmBtn.disabled = false;
-                    confirmBtn.textContent = '确定';
+                    confirmBtn.textContent = t("确定");
                 }
                 return;
             }
@@ -487,8 +488,8 @@ export function showGenericAddRowModal(options = {}) {
                 state.syncLockState(getTableLockState(sheetKey));
                 refreshAfterDataMutation();
                 const successMessage = result.persisted === false
-                    ? '新增成功，但持久化或刷新未确认，稍后会自动对账'
-                    : '新增成功';
+                    ? t("新增成功，但持久化或刷新未确认，稍后会自动对账")
+                    : t("新增成功");
                 showInlineToast(container, successMessage, result.persisted === false || result.refreshed === false);
 
                 Promise.resolve(reconcileInsertedRow({
@@ -531,15 +532,15 @@ export function showGenericAddRowModal(options = {}) {
                 });
                 const failureParts = [];
                 if (result?.message) failureParts.push(result.message);
-                if (result?.code && result.code !== 'failed') failureParts.push(`错误码：${result.code}`);
-                if (Number.isInteger(result?.rawRowIndex)) failureParts.push(`insertRow返回：${result.rawRowIndex}`);
-                if (result?.persisted === false) failureParts.push('写入未确认');
-                if (result?.refreshed === false) failureParts.push('刷新未确认');
-                const failureMessage = failureParts.length > 0 ? failureParts.join('；') : '未知错误';
-                showInlineToast(container, `新增失败: ${failureMessage}`);
+                if (result?.code && result.code !== 'failed') failureParts.push(t`错误码：${result.code}`);
+                if (Number.isInteger(result?.rawRowIndex)) failureParts.push(t`insertRow返回：${result.rawRowIndex}`);
+                if (result?.persisted === false) failureParts.push(t("写入未确认"));
+                if (result?.refreshed === false) failureParts.push(t("刷新未确认"));
+                const failureMessage = failureParts.length > 0 ? failureParts.join('；') : t("未知错误");
+                showInlineToast(container, t`新增失败: ${failureMessage}`);
                 if (confirmBtn) {
                     confirmBtn.disabled = false;
-                    confirmBtn.textContent = '确定';
+                    confirmBtn.textContent = t("确定");
                 }
             }
         } catch (err) {
@@ -553,10 +554,10 @@ export function showGenericAddRowModal(options = {}) {
                 error: err,
             });
             if (!isViewerActive()) return;
-            showInlineToast(container, `新增异常: ${err?.message || '未知错误'}`);
+            showInlineToast(container, t`新增异常: ${err?.message || t("未知错误")}`);
             if (confirmBtn) {
                 confirmBtn.disabled = false;
-                confirmBtn.textContent = '确定';
+                confirmBtn.textContent = t("确定");
             }
         }
     });

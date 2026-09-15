@@ -1,0 +1,565 @@
+.yuzi-theater-forum-top {
+  padding-top: 0;
+}
+.yuzi-theater-forum-feed {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.yuzi-theater-forum-main {
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  padding: 0 10px 18px !important;
+}
+.yuzi-theater-forum-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-flow: row !important;
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  align-items: start !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+.yuzi-theater-forum-card {
+  position: static !important;
+  display: block !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.yuzi-theater-forum-cover {
+  position: relative !important;
+  display: grid !important;
+  flex: 0 0 auto !important;
+  aspect-ratio: 4/3 !important;
+  min-height: 150px !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  align-content: center !important;
+}
+.yuzi-theater-forum-hero {
+  position: relative !important;
+  display: grid !important;
+  flex: 0 0 auto !important;
+  min-height: 220px !important;
+  aspect-ratio: 16/10 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  align-content: center !important;
+}
+.yuzi-theater-forum-detail {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+}
+.yuzi-theater-forum-detail-author {
+  min-width: 0 !important;
+  flex: 0 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+}
+.yuzi-theater-forum-follow {
+  margin-left: auto !important;
+  flex: 0 0 auto !important;
+}
+.yuzi-theater-forum-bottom {
+  flex: none !important;
+}
+.yuzi-theater-forum {
+  --yuzi-phone-theater-bg:#f6f7f8;
+  --yuzi-phone-theater-surface:#fff;
+  --yuzi-phone-theater-soft:#f0f1f2;
+  --yuzi-phone-theater-ink:#17181a;
+  --yuzi-phone-theater-body:#34363a;
+  --yuzi-phone-theater-muted:#85888d;
+  --yuzi-phone-theater-line:#e5e6e8;
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: inherit;
+  overflow: hidden;
+  background: var(--yuzi-phone-theater-bg);
+  color: var(--yuzi-phone-theater-ink);
+  font-family: var(--yuzi-phone-font-family,sans-serif);
+  container: yuzi-theater-forum/inline-size;
+}
+.yuzi-theater-forum[data-theme=dark] {
+  --yuzi-phone-theater-bg:#111214;
+  --yuzi-phone-theater-surface:#191a1d;
+  --yuzi-phone-theater-soft:#27292d;
+  --yuzi-phone-theater-ink:#f4f5f6;
+  --yuzi-phone-theater-body:#d5d7da;
+  --yuzi-phone-theater-muted:#96999f;
+  --yuzi-phone-theater-line:#303238;
+}
+.yuzi-theater-forum,
+.yuzi-theater-forum * {
+  box-sizing: border-box;
+}
+.yuzi-theater-forum [hidden] {
+  display: none !important;
+}
+.yuzi-theater-forum button {
+  font: inherit;
+}
+.yuzi-theater-forum svg {
+  display: block;
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.yuzi-theater-forum-feed {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.yuzi-theater-forum-top {
+  z-index: 5;
+  flex: none;
+  padding-top: 0;
+  border-bottom: 1px solid var(--yuzi-phone-theater-line);
+  background: var(--yuzi-phone-theater-surface);
+}
+.yuzi-theater-forum-feed-nav {
+  --yuzi-phone-nav-side-slot-width: 72px;
+  --yuzi-phone-nav-padding-inline-end: 8px;
+}
+.yuzi-theater-forum-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 5px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--yuzi-phone-theater-ink);
+  cursor: pointer;
+}
+.yuzi-theater-forum-icon:active,
+.yuzi-theater-forum-icon.is-active {
+  background: var(--yuzi-phone-theater-soft);
+}
+.yuzi-theater-forum-icon:disabled {
+  opacity: .3;
+}
+.yuzi-theater-forum-actions,
+.yuzi-theater-forum-tabs {
+  display: flex;
+  align-items: center;
+}
+.yuzi-theater-forum-actions {
+  justify-content: flex-end;
+}
+.yuzi-theater-forum-tabs {
+  justify-content: center;
+  gap: 5px;
+}
+.yuzi-theater-forum-tab {
+  position: relative;
+  padding: 12px 3px;
+  border: 0;
+  background: transparent;
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(13px * var(--yuzi-phone-readable-text-scale,1));
+  cursor: pointer;
+}
+.yuzi-theater-forum-tab.is-active {
+  color: var(--yuzi-phone-theater-ink);
+  font-weight: 700;
+}
+.yuzi-theater-forum-tab.is-active:after {
+  position: absolute;
+  right: 3px;
+  bottom: 5px;
+  left: 3px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  content: "";
+}
+.yuzi-theater-forum-table-button {
+  width: 27px;
+  height: 27px;
+}
+.yuzi-theater-forum-categories {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding: 0 14px 6px;
+  scrollbar-width: none;
+}
+.yuzi-theater-forum-category {
+  flex: none;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(11px * var(--yuzi-phone-readable-text-scale,1));
+  white-space: nowrap;
+  cursor: pointer;
+}
+.yuzi-theater-forum-category.is-active {
+  color: var(--yuzi-phone-theater-ink);
+  font-weight: 700;
+}
+.yuzi-theater-forum-main {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 10px 56px;
+}
+.yuzi-theater-forum-grid {
+  columns: 2;
+  column-gap: 10px;
+}
+.yuzi-theater-forum-card {
+  display: block;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 0;
+  break-inside: avoid;
+  overflow: hidden;
+  border: 1px solid var(--yuzi-phone-theater-line);
+  border-radius: 8px;
+  background: var(--yuzi-phone-theater-surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.yuzi-theater-forum-cover {
+  display: grid;
+  min-height: 112px;
+  place-items: center;
+  background: var(--yuzi-phone-theater-soft);
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(11px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-card-title {
+  margin: 11px 12px;
+  font-size: calc(14px * var(--yuzi-phone-readable-text-scale,1));
+  line-height: 1.45;
+}
+.yuzi-theater-forum-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px 11px;
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(10px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-avatar {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--yuzi-phone-theater-soft);
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(10px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-author {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.yuzi-theater-forum-like {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+.yuzi-theater-forum-like svg {
+  width: 14px;
+  height: 14px;
+}
+.yuzi-theater-forum-bottom {
+  position: absolute;
+  z-index: 6;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  height: 48px;
+  border-top: 1px solid var(--yuzi-phone-theater-line);
+  background: var(--yuzi-phone-theater-surface);
+}
+.yuzi-theater-forum-bottom-item {
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  height: 100%;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(9px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-bottom-item.is-active {
+  color: var(--yuzi-phone-theater-ink);
+}
+.yuzi-theater-forum-bottom-item svg {
+  width: 18px;
+  height: 18px;
+}
+.yuzi-theater-forum-add {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.yuzi-theater-forum-detail {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  background: var(--yuzi-phone-theater-bg);
+  padding-top: 44px;
+}
+.yuzi-theater-forum-detail-author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.yuzi-theater-forum-detail-name {
+  display: grid;
+  gap: 1px;
+  font-size: calc(12px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-detail-name span {
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(9px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-follow {
+  padding: 5px 12px;
+  border: 1px solid var(--yuzi-phone-theater-line);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: calc(10px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-follow.is-active {
+  border-color: #ef445d;
+  background: #ef445d;
+  color: #fff;
+}
+.yuzi-theater-forum-hero {
+  display: grid;
+  min-height: 148px;
+  flex: none;
+  place-items: center;
+  background: var(--yuzi-phone-theater-soft);
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(11px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-article,
+.yuzi-theater-forum-comments {
+  padding: 17px 16px;
+}
+.yuzi-theater-forum-detail-title {
+  margin: 0 0 10px;
+  font-size: calc(19px * var(--yuzi-phone-readable-text-scale,1));
+  line-height: 1.4;
+}
+.yuzi-theater-forum-detail-body {
+  margin: 0;
+  color: var(--yuzi-phone-theater-body);
+  font-size: calc(13px * var(--yuzi-phone-readable-text-scale,1));
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+.yuzi-theater-forum-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 13px;
+}
+.yuzi-theater-forum-topic {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--yuzi-phone-theater-soft);
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(10px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-detail-stats {
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(10px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-comments {
+  border-top: 1px solid var(--yuzi-phone-theater-line);
+  padding-bottom: 18px;
+}
+.yuzi-theater-forum-comments h3 {
+  margin: 0 0 12px;
+  font-size: calc(13px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-comment-list {
+  display: grid;
+  gap: 14px;
+}
+.yuzi-theater-forum-comment {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+}
+.yuzi-theater-forum-comment strong {
+  font-size: calc(11px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-forum-comment p {
+  margin: 4px 0 0;
+  color: var(--yuzi-phone-theater-body);
+  font-size: calc(12px * var(--yuzi-phone-readable-text-scale,1));
+  line-height: 1.55;
+}
+.yuzi-theater-forum-detail-bottom {
+  position: sticky;
+  z-index: 8;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  height: 58px;
+  min-height: 58px;
+  padding: 7px 8px;
+  border-top: 1px solid var(--yuzi-phone-theater-line);
+  background: color-mix(in srgb, var(--yuzi-phone-theater-surface) 94%, transparent);
+  box-shadow: 0 -5px 14px rgba(0, 0, 0, .09);
+  backdrop-filter: blur(12px);
+}
+.yuzi-theater-forum-comment-input {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--yuzi-phone-theater-soft);
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(11px * var(--yuzi-phone-readable-text-scale,1));
+  text-align: left;
+}
+.yuzi-theater-forum-comment-input svg {
+  width: 16px;
+  height: 16px;
+}
+.yuzi-theater-forum-detail-social {
+  display: flex;
+  align-items: center;
+}
+.yuzi-theater-forum-social-button {
+  display: flex;
+  min-width: 37px;
+  height: 42px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 1px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--yuzi-phone-theater-ink);
+  font-size: calc(9px * var(--yuzi-phone-readable-text-scale,1));
+  cursor: pointer;
+}
+.yuzi-theater-forum-social-button svg {
+  width: 19px;
+  height: 19px;
+}
+.yuzi-theater-forum-social-button.is-active[data-detail-action=like] {
+  color: #e94b66;
+}
+.yuzi-theater-forum-social-button.is-active[data-detail-action=like] svg {
+  fill: currentColor;
+}
+.yuzi-theater-forum-social-button.is-active[data-detail-action=collect] {
+  color: #e0a21b;
+}
+.yuzi-theater-forum-social-button.is-active[data-detail-action=collect] svg {
+  fill: currentColor;
+}
+.yuzi-theater-forum-empty {
+  padding: 44px 16px;
+  color: var(--yuzi-phone-theater-muted);
+  text-align: center;
+}
+@container yuzi-theater-forum (max-width:315px) {
+  .yuzi-theater-forum-detail-bottom {
+    grid-template-columns: minmax(82px, 1fr) auto;
+    padding-right: 4px;
+    padding-left: 6px;
+  }
+  .yuzi-theater-forum-comment-input {
+    padding: 0 8px;
+  }
+  .yuzi-theater-forum-social-button {
+    min-width: 33px;
+  }
+}
+.yuzi-theater-forum-cover,
+.yuzi-theater-forum-hero {
+  aspect-ratio: 16/10 !important;
+  min-height: 0 !important;
+  padding: 0;
+  border: 0;
+}
+.yuzi-theater-forum-top {
+  padding-top: 0;
+}
+.yuzi-theater-forum-detail {
+  padding-top: 0 !important;
+}
+.yuzi-theater-forum-bottom {
+  height: calc(48px + var(--yuzi-theater-home-clearance)) !important;
+  padding-bottom: var(--yuzi-theater-home-clearance);
+  position: relative !important;
+}
+.yuzi-theater-forum-detail-bottom {
+  margin-top: auto;
+  height: auto !important;
+  min-height: calc(54px + var(--yuzi-theater-home-clearance)) !important;
+  padding-bottom: var(--yuzi-theater-home-clearance) !important;
+  flex-shrink: 0;
+}
+.yuzi-theater-forum-card {
+  cursor: pointer;
+  overflow: hidden;
+}
+.yuzi-theater-forum-comments {
+  padding-bottom: 16px;
+}
+
+.yuzi-theater-forum-detail > .yuzi-phone-theater-nav {
+  position: sticky;
+  top: 0;
+}
+
+.yuzi-theater-forum-detail-nav {
+  grid-template-columns: calc(var(--yuzi-phone-nav-padding-inline-start) + var(--yuzi-phone-nav-control-size) + 8px) minmax(0, 1fr) auto;
+}
+.yuzi-theater-forum-detail-nav > .phone-nav-center {
+  justify-content: flex-start;
+}

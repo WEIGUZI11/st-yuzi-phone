@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { buildFullscreenOverlayPageHtml } from '../layout/page-builders/fullscreen-overlay-builders.js';
 import {
     createFullscreenOverlayColorControl,
@@ -69,13 +70,13 @@ function getPopupModel(config, modelId = TABLE_POPUP_MODEL_ID) {
 
 function getActionMessage(code, fallback) {
     const messages = {
-        no_enabled_sources: '请先勾选至少一个可用表格来源。',
-        disabled: '请先开启总开关再测试。',
-        'no-ai-message': '暂无可插入的 AI 正文。',
-        runtime_unavailable: '全屏浮层运行时尚未就绪，请稍后重试。',
-        settings_save_failed: '弹幕设置保存失败，请稍后重试。',
-        test_failed: '弹幕测试失败，请稍后重试。',
-        clear_failed: '清空浮层失败，请稍后重试。',
+        no_enabled_sources: t("请先勾选至少一个可用表格来源。"),
+        disabled: t("请先开启总开关再测试。"),
+        'no-ai-message': t("暂无可插入的 AI 正文。"),
+        runtime_unavailable: t("全屏浮层运行时尚未就绪，请稍后重试。"),
+        settings_save_failed: t("弹幕设置保存失败，请稍后重试。"),
+        test_failed: t("弹幕测试失败，请稍后重试。"),
+        clear_failed: t("清空浮层失败，请稍后重试。"),
     };
     return messages[asId(code)] || fallback;
 }
@@ -141,7 +142,7 @@ export function createFullscreenOverlayPage(ctx) {
         const result = await service.saveConfig(nextConfig);
         if (!isCurrent(token)) return false;
         if (result?.ok !== true) {
-            notify(getActionMessage(result?.code, '弹幕设置保存失败，请稍后重试。'), true);
+            notify(getActionMessage(result?.code, t("弹幕设置保存失败，请稍后重试。")), true);
             return false;
         }
         state.config = clone(result.config);
@@ -358,8 +359,8 @@ export function createFullscreenOverlayPage(ctx) {
             const token = generation;
             const result = await service.testSelectedSources(state.config);
             if (!isCurrent(token)) return;
-            if (result?.ok === true) notify('已按当前设置发送测试内容。');
-            else notify(getActionMessage(result?.code, '弹幕测试失败，请稍后重试。'), true);
+            if (result?.ok === true) notify(t("已按当前设置发送测试内容。"));
+            else notify(getActionMessage(result?.code, t("弹幕测试失败，请稍后重试。")), true);
         });
 
         const clearButton = ctx.container?.querySelector?.('#phone-fullscreen-overlay-clear');
@@ -368,8 +369,8 @@ export function createFullscreenOverlayPage(ctx) {
             const token = generation;
             const result = await service.clearOverlay();
             if (!isCurrent(token)) return;
-            if (result?.ok === true) notify('已清空当前内容。');
-            else notify(getActionMessage(result?.code, '清空浮层失败，请稍后重试。'), true);
+            if (result?.ok === true) notify(t("已清空当前内容。"));
+            else notify(getActionMessage(result?.code, t("清空浮层失败，请稍后重试。")), true);
         });
     };
 
@@ -382,7 +383,7 @@ export function createFullscreenOverlayPage(ctx) {
     const load = async () => {
         if (typeof service?.loadViewModel !== 'function') {
             state.status = 'error';
-            state.error = { code: 'service_unavailable', message: '弹幕设置服务不可用。' };
+            state.error = { code: 'service_unavailable', message: t("弹幕设置服务不可用。") };
             requestRerender();
             return;
         }

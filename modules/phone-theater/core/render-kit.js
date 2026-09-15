@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { splitSemicolonText, normalizeText } from './table-index.js';
 
@@ -46,7 +47,7 @@ export function renderTag(text, className = '') {
 }
 
 export function renderEmpty(message) {
-    return `<div class="phone-empty-msg phone-theater-empty">${escapeHtml(message || '暂无内容')}</div>`;
+    return `<div class="phone-empty-msg phone-theater-empty">${escapeHtml(message || t("暂无内容"))}</div>`;
 }
 
 export function renderDeleteSelectButton(deleteKey, uiState = {}) {

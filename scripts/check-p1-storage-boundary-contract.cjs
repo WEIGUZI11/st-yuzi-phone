@@ -140,7 +140,7 @@ function main() {
     check(results, REQUIRED_SETTING_FILES.settingsPersistence, 'settings persistence 保存单项只写入归一化值', has(savePhoneSettingBody, 'settings[key] = result.value;'));
     check(results, REQUIRED_SETTING_FILES.settingsPersistence, 'settings persistence 保存 patch 逐项走 validateSetting()', has(savePhoneSettingsPatchBody, 'const result = validateSetting(key, value);'));
     check(results, REQUIRED_SETTING_FILES.settingsPersistence, 'settings persistence 保存 patch 只写入归一化值', has(savePhoneSettingsPatchBody, 'settings[key] = result.value;'));
-    check(results, REQUIRED_SETTING_FILES.settingsPersistence, 'settings persistence 保存 patch 保留 invalid 通知', has(savePhoneSettingsPatchBody, "showNotification?.('部分设置已按默认规则修正', 'warning');"));
+    check(results, REQUIRED_SETTING_FILES.settingsPersistence, 'settings persistence 保存 patch 保留 invalid 通知', has(savePhoneSettingsPatchBody, "showNotification?.(t(\"部分设置已按默认规则修正\"), 'warning');"));
     check(results, REQUIRED_SETTING_FILES.templateStore, 'beautify template store 通过 settings 保存模板仓库', has(templateStore, 'savePhoneSetting(PHONE_BEAUTIFY_STORE_KEY, normalized);'));
     check(results, REQUIRED_SETTING_FILES.templateRepository, 'beautify template repository 保存后失效缓存', has(templateRepository, 'invalidatePhoneBeautifyTemplateCache();'));
     check(results, 'modules/settings-app/services/worldbook-selection.js', '旧世界书选择服务已删除，QQ 不再通过手机设置保存世界书筛选', !fs.existsSync(path.join(ROOT, 'modules/settings-app/services/worldbook-selection.js')));

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import {
     DEFAULT_API_TIMEOUT,
     callApiWithTimeout,
@@ -43,7 +44,7 @@ function getApiForOperation(operation, methodName) {
             ok: false,
             operation,
             code: 'api_unavailable',
-            message: '数据库 API 不可用，请确认数据库插件已加载',
+            message: t("数据库 API 不可用，请确认数据库插件已加载"),
             error,
         });
     }
@@ -53,7 +54,7 @@ function getApiForOperation(operation, methodName) {
             ok: false,
             operation,
             code: 'api_unavailable',
-            message: '数据库 API 不可用，请确认数据库插件已加载',
+            message: t("数据库 API 不可用，请确认数据库插件已加载"),
         });
     }
 
@@ -62,7 +63,7 @@ function getApiForOperation(operation, methodName) {
             ok: false,
             operation,
             code: 'method_unavailable',
-            message: `数据库 API 缺少方法：${methodName}`,
+            message: t`数据库 API 缺少方法：${methodName}`,
         });
     }
 
@@ -93,7 +94,7 @@ function normalizeTemplateImportApiResult(result, importOptions) {
             ok: false,
             operation,
             code: 'mutation_result_null',
-            message: '导入模板失败：importTemplateFromData 返回 null',
+            message: t("导入模板失败：importTemplateFromData 返回 null"),
             scope: fallbackScope,
         });
     }
@@ -103,7 +104,7 @@ function normalizeTemplateImportApiResult(result, importOptions) {
             ok: false,
             operation,
             code: 'import_rejected',
-            message: '导入模板失败：importTemplateFromData 未确认成功',
+            message: t("导入模板失败：importTemplateFromData 未确认成功"),
             data: { result },
             scope: fallbackScope,
         });
@@ -125,7 +126,7 @@ function normalizeTemplateImportApiResult(result, importOptions) {
             ok: false,
             operation,
             code: 'mutation_result_invalid',
-            message: '导入模板失败：importTemplateFromData 返回值无效',
+            message: t("导入模板失败：importTemplateFromData 返回值无效"),
             data: {
                 result,
                 responseType: Array.isArray(result) ? 'array' : typeof result,
@@ -143,7 +144,7 @@ function normalizeTemplateImportApiResult(result, importOptions) {
             operation,
             code: 'import_rejected',
             message: getNonEmptyMessage(result.message)
-                || '导入模板失败：importTemplateFromData 未确认成功',
+                || t("导入模板失败：importTemplateFromData 未确认成功"),
             data: { result },
             scope,
         });
@@ -154,7 +155,7 @@ function normalizeTemplateImportApiResult(result, importOptions) {
             ok: false,
             operation,
             code: 'mutation_result_invalid',
-            message: '导入模板失败：importTemplateFromData 返回对象未提供 success=true',
+            message: t("导入模板失败：importTemplateFromData 返回对象未提供 success=true"),
             data: { result },
             scope,
         });
@@ -197,7 +198,7 @@ async function callMutationRepositoryApi(operation, methodName, invoke) {
             ok: false,
             operation,
             code: 'mutation_rejected',
-            message: `数据库写入调用失败：${methodName}`,
+            message: t`数据库写入调用失败：${methodName}`,
             error,
         });
     }
@@ -225,7 +226,7 @@ export async function exportDatabaseSnapshotViaApi(options = {}) {
             ok: false,
             operation,
             code: 'api_call_failed',
-            message: '导出当前数据库快照失败：API 调用可能超时、异常或返回 null',
+            message: t("导出当前数据库快照失败：API 调用可能超时、异常或返回 null"),
         });
     }
     if (!isPlainObject(snapshot)) {
@@ -233,7 +234,7 @@ export async function exportDatabaseSnapshotViaApi(options = {}) {
             ok: false,
             operation,
             code: 'invalid_response',
-            message: '导出当前数据库快照失败：exportTableAsJson 未返回对象',
+            message: t("导出当前数据库快照失败：exportTableAsJson 未返回对象"),
             data: { responseType: Array.isArray(snapshot) ? 'array' : typeof snapshot },
         });
     }
@@ -242,7 +243,7 @@ export async function exportDatabaseSnapshotViaApi(options = {}) {
         ok: true,
         operation,
         code: 'ok',
-        message: '已导出当前数据库快照',
+        message: t("已导出当前数据库快照"),
         data: snapshot,
     });
 }
@@ -254,7 +255,7 @@ export async function importTemplateFromDataViaApi(templateData, options = {}) {
             ok: false,
             operation,
             code: 'invalid_input',
-            message: '导入模板失败：templateData 必须是对象',
+            message: t("导入模板失败：templateData 必须是对象"),
         });
     }
 
@@ -289,7 +290,7 @@ export async function refreshDatabaseProjectionViaApi(options = {}) {
                 ok: false,
                 operation,
                 code: 'mutation_result_null',
-                message: '刷新数据库投影失败：refreshDataAndWorldbook 返回 null',
+                message: t("刷新数据库投影失败：refreshDataAndWorldbook 返回 null"),
             });
         }
         if (result === false) {
@@ -297,7 +298,7 @@ export async function refreshDatabaseProjectionViaApi(options = {}) {
                 ok: false,
                 operation,
                 code: 'refresh_rejected',
-                message: '刷新数据库投影失败：refreshDataAndWorldbook 未确认成功',
+                message: t("刷新数据库投影失败：refreshDataAndWorldbook 未确认成功"),
                 data: { result },
             });
         }
@@ -306,7 +307,7 @@ export async function refreshDatabaseProjectionViaApi(options = {}) {
                 ok: false,
                 operation,
                 code: 'mutation_result_invalid',
-                message: '刷新数据库投影失败：refreshDataAndWorldbook 返回值无效',
+                message: t("刷新数据库投影失败：refreshDataAndWorldbook 返回值无效"),
                 data: { result },
             });
         }
@@ -315,7 +316,7 @@ export async function refreshDatabaseProjectionViaApi(options = {}) {
             ok: true,
             operation,
             code: 'ok',
-            message: '数据库投影已刷新',
+            message: t("数据库投影已刷新"),
             data: { result },
         });
     });

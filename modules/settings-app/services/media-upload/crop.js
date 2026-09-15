@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import {
     clampNumber,
     loadImage,
@@ -157,7 +158,7 @@ function buildCropDataUrl(sourceImage, cropRect) {
     const naturalWidth = Number(sourceImage?.naturalWidth || sourceImage?.width || 0);
     const naturalHeight = Number(sourceImage?.naturalHeight || sourceImage?.height || 0);
     if (naturalWidth <= 0 || naturalHeight <= 0) {
-        throw new Error('图片尺寸无效，无法裁剪');
+        throw new Error(t("图片尺寸无效，无法裁剪"));
     }
 
     const safeRect = normalizeCropRect(cropRect, {
@@ -175,7 +176,7 @@ function buildCropDataUrl(sourceImage, cropRect) {
     canvas.height = sh;
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) {
-        throw new Error('无法创建裁剪画布');
+        throw new Error(t("无法创建裁剪画布"));
     }
 
     ctx.drawImage(sourceImage, sx, sy, sw, sh, 0, 0, sw, sh);
@@ -256,12 +257,12 @@ export async function openImageCropDialog(rawDataUrl, options = {}) {
     const runtime = createCropRuntimeAdapter(options.runtime || options.pageRuntime);
     if (runtime.isDisposed()) return null;
 
-    const title = String(options.cropTitle || '裁剪图片').trim() || '裁剪图片';
-    const description = String(options.cropDescription || '拖动裁剪框与边缘圆点，确认后再保存。').trim();
+    const title = String(options.cropTitle || t("裁剪图片")).trim() || t("裁剪图片");
+    const description = String(options.cropDescription || t("拖动裁剪框与边缘圆点，确认后再保存。")).trim();
     const preset = String(options.cropPreset || '').trim();
     const initialCoverage = normalizeCoverage(options.cropInitialCoverage);
     const showFullImageButton = options.showCropFullImageButton !== false;
-    const fullImageButtonText = String(options.cropFullImageButtonText || '全图').trim() || '全图';
+    const fullImageButtonText = String(options.cropFullImageButtonText || t("全图")).trim() || t("全图");
 
     const overlay = document.createElement('div');
     overlay.className = 'phone-image-crop-overlay';
@@ -273,7 +274,7 @@ export async function openImageCropDialog(rawDataUrl, options = {}) {
             </div>
             <div class="phone-image-crop-stage-wrap">
                 <div class="phone-image-crop-stage">
-                    <img class="phone-image-crop-image" alt="待裁剪图片">
+                    <img class="phone-image-crop-image" alt="${t`待裁剪图片`}">
                     <div class="phone-image-crop-box">
                         <div class="phone-image-crop-grid">
                             <span class="phone-image-crop-guideline is-vertical is-one"></span>
@@ -295,12 +296,12 @@ export async function openImageCropDialog(rawDataUrl, options = {}) {
             <div class="phone-image-crop-meta"></div>
             <div class="phone-image-crop-actions">
                 <div class="phone-image-crop-actions-secondary">
-                    <button type="button" class="phone-settings-btn phone-image-crop-reset">重置</button>
+                    <button type="button" class="phone-settings-btn phone-image-crop-reset">${t`重置`}</button>
                     ${showFullImageButton ? '<button type="button" class="phone-settings-btn phone-image-crop-full"></button>' : ''}
                 </div>
                 <div class="phone-image-crop-actions-main">
-                    <button type="button" class="phone-settings-btn phone-image-crop-cancel">取消</button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-primary phone-image-crop-confirm">确认裁剪</button>
+                    <button type="button" class="phone-settings-btn phone-image-crop-cancel">${t`取消`}</button>
+                    <button type="button" class="phone-settings-btn phone-settings-btn-primary phone-image-crop-confirm">${t`确认裁剪`}</button>
                 </div>
             </div>
         </div>
@@ -365,7 +366,7 @@ export async function openImageCropDialog(rawDataUrl, options = {}) {
 
         const pixelWidth = Math.max(1, Math.round(cropRect.w * naturalWidth));
         const pixelHeight = Math.max(1, Math.round(cropRect.h * naturalHeight));
-        metaEl.textContent = `裁剪区域：${pixelWidth} × ${pixelHeight}px`;
+        metaEl.textContent = t`裁剪区域：${pixelWidth} × ${pixelHeight}px`;
     };
 
     const stopDragging = () => {

@@ -94,7 +94,7 @@ try {
         fail('[`index.js`](index.js:206) 初始化日志没有使用 [`EXTENSION_VERSION`](index.js:54)');
     }
 
-    if (!/showNotification\(`玉子手机已加载 \(v\$\{EXTENSION_VERSION\}\)`\s*,\s*'success'\s*\)/.test(indexSource)) {
+    if (!/showNotification\(t`玉子手机已加载 \(v\$\{EXTENSION_VERSION\}\)`\s*,\s*'success'\s*\)/.test(indexSource)) {
         fail('[`index.js`](index.js:208) 加载通知没有使用 [`EXTENSION_VERSION`](index.js:54) 模板字符串');
     }
 

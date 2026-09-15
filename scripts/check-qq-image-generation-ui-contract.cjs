@@ -252,14 +252,11 @@ async function main() {
 
     assert.match(app, /const openMessageMediaViewer =[\s\S]*showDialog\(/u,
         'QQ must open image and video messages with its own dialog system');
-    assert.match(mediaViewer, /yuzi-qq-image-viewer\$\{normalizedImagePath \? '' : ' is-description-only'\}/u,
-        'description-only media must use a dedicated compact viewer state');
-    assert.match(mediaViewer, /if \(normalizedImagePath\) \{[\s\S]*?viewer\.append\(visual\);[\s\S]*?viewer\.append\(copy\);/u,
-        'only a real generated image may render the large visual area');
-    assert.doesNotMatch(mediaViewer, /is-\$\{mediaType\}/u,
-        'description-only media must not reserve a large icon visual area');
-    assert.match(app, /yuzi-qq-image-viewer-description[\s\S]*copy\.textContent/u,
-        'the media viewer must preserve complete narrative content');
+    const sharedViewer = read('modules/ui-runtime/media-viewer-content.js');
+    assert.match(mediaViewer, /createMediaViewerContent\(/u, 'QQ reuses the shared media content renderer');
+    assert.match(sharedViewer, /is-description-only/u, 'description-only media retains its compact state');
+    assert.match(sharedViewer, /if\(imagePath\)[\s\S]*viewer\.append\(visual\)/u, 'only real images receive a visual area');
+    assert.match(sharedViewer, /copy\.textContent/u, 'descriptions remain literal text');
     assert.match(clickHandler, /target\.dataset\.qqViewMedia/u,
         'QQ delegated clicks must recognize the shared media viewer trigger');
     assert.match(clickHandler, /openMessageMediaViewer\(/u,

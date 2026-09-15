@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { getTableData } from '../../../phone-core/data-api.js';
 import { buildTableNavigationContext } from '../../../table-navigation/catalog.js';
 import { VARIABLE_MANAGER_APP } from '../../../variable-manager/index.js';
@@ -74,4 +75,9 @@ export function buildAppearanceAppCatalog(rawData = getTableData()) {
         navigationContext,
         iconSlots: collectAppearanceIconSlots(rawData, { navigationContext }),
     });
+}
+
+// 只供控件显示；name 继续作为外观包匹配事实，不能本地化。
+export function getAppearanceIconDisplayName(item) {
+    return ['system', 'dock'].includes(item?.type) ? t(item.name) : String(item?.name || '');
 }

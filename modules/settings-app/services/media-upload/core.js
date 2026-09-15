@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 export function clampNumber(value, min, max, fallback = min) {
     const num = Number(value);
     if (!Number.isFinite(num)) return fallback;
@@ -8,7 +9,7 @@ export function fileToDataUrl(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(new Error('图片读取失败'));
+        reader.onerror = () => reject(new Error(t("图片读取失败")));
         reader.readAsDataURL(file);
     });
 }
@@ -17,7 +18,7 @@ export function loadImage(dataUrl) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error('图片解析失败'));
+        img.onerror = () => reject(new Error(t("图片解析失败")));
         img.src = dataUrl;
     });
 }

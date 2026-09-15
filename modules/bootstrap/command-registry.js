@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { getTableData } from '../phone-core/data-api.js';
 import { navigateTo } from '../phone-core/routing.js';
@@ -52,17 +53,17 @@ function findDuplicateTableNames(entries) {
 function formatTableListItem(entry, duplicateNameCounts = findDuplicateTableNames([entry])) {
     const duplicateCount = duplicateNameCounts.get(normalizeLookupText(entry.tableName)) || 0;
     const suffix = duplicateCount > 1 ? ` (${entry.sheetKey})` : '';
-    return `${entry.tableName}${suffix} - ${entry.rowCount} 条`;
+    return t`${entry.tableName}${suffix} - ${entry.rowCount} 条`;
 }
 
 function resolveTableEntry(rawQuery, entries = getAvailableTableEntries()) {
     const query = normalizeCommandText(rawQuery);
     if (!query) {
-        return { ok: false, code: 'empty_query', message: '请指定表格名称: /yuziphone-table <表名或sheetKey>' };
+        return { ok: false, code: 'empty_query', message: t("请指定表格名称: /yuziphone-table <表名或sheetKey>") };
     }
 
     if (entries.length === 0) {
-        return { ok: false, code: 'empty_tables', message: '暂无可用表格，无法打开' };
+        return { ok: false, code: 'empty_tables', message: t("暂无可用表格，无法打开") };
     }
 
     const bySheetKey = entries.find((entry) => entry.sheetKey === query);
@@ -78,7 +79,7 @@ function resolveTableEntry(rawQuery, entries = getAvailableTableEntries()) {
         return {
             ok: false,
             code: 'duplicate_name',
-            message: `存在多个名为「${query}」的表格，请使用 sheetKey: ${exactNameMatches.map(entry => entry.sheetKey).join(', ')}`,
+            message: t`存在多个名为「${query}」的表格，请使用 sheetKey: ${exactNameMatches.map(entry => entry.sheetKey).join(', ')}`,
         };
     }
 
@@ -91,14 +92,14 @@ function resolveTableEntry(rawQuery, entries = getAvailableTableEntries()) {
         return {
             ok: false,
             code: 'duplicate_name_case_insensitive',
-            message: `存在多个名称匹配「${query}」的表格，请使用 sheetKey: ${looseNameMatches.map(entry => entry.sheetKey).join(', ')}`,
+            message: t`存在多个名称匹配「${query}」的表格，请使用 sheetKey: ${looseNameMatches.map(entry => entry.sheetKey).join(', ')}`,
         };
     }
 
     return {
         ok: false,
         code: 'not_found',
-        message: `未找到表格「${query}」，可使用 /yuziphone-tables 查看可用表格`,
+        message: t`未找到表格「${query}」，可使用 /yuziphone-tables 查看可用表格`,
     };
 }
 
@@ -116,7 +117,7 @@ function openTableInPhone(tableName, togglePhone, deps = {}) {
         return {
             ok: false,
             code: 'route_unavailable',
-            message: `表格「${entry.tableName}」没有可用导航路由`,
+            message: t`表格「${entry.tableName}」没有可用导航路由`,
             sheetKey: entry.sheetKey,
             tableName: entry.tableName,
         };
@@ -126,7 +127,7 @@ function openTableInPhone(tableName, togglePhone, deps = {}) {
         return {
             ok: false,
             code: 'phone_unavailable',
-            message: '手机界面不可用，无法打开表格',
+            message: t("手机界面不可用，无法打开表格"),
             sheetKey: entry.sheetKey,
             tableName: entry.tableName,
         };
@@ -136,7 +137,7 @@ function openTableInPhone(tableName, togglePhone, deps = {}) {
     return {
         ok: true,
         code: 'opened',
-        message: `已打开表格「${entry.tableName}」`,
+        message: t`已打开表格「${entry.tableName}」`,
         sheetKey: entry.sheetKey,
         tableName: entry.tableName,
     };
@@ -161,13 +162,13 @@ function parseSettingsImportPayload(rawPayload) {
     try {
         const parsed = JSON.parse(String(rawPayload || ''));
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-            return { ok: false, message: '设置导入失败：JSON 须为对象' };
+            return { ok: false, message: t("设置导入失败：JSON 须为对象") };
         }
 
         const namespacePayload = parsed[extensionName];
         if (namespacePayload !== undefined) {
             if (!namespacePayload || typeof namespacePayload !== 'object' || Array.isArray(namespacePayload)) {
-                return { ok: false, message: `设置导入失败：${extensionName} 必须是对象` };
+                return { ok: false, message: t`设置导入失败：${extensionName} 必须是对象` };
             }
             return { ok: true, payload: namespacePayload };
         }
@@ -176,7 +177,7 @@ function parseSettingsImportPayload(rawPayload) {
     } catch (error) {
         return {
             ok: false,
-            message: `设置导入失败：JSON 解析错误：${error?.message || '未知错误'}`,
+            message: t`设置导入失败：JSON 解析错误：${error?.message || t("未知错误")}`,
         };
     }
 }
@@ -204,7 +205,7 @@ function importPhoneSettingsPayload(rawPayload, deps = {}) {
     } = deps;
 
     if (typeof savePhoneSettingsPatch !== 'function') {
-        return { ok: false, message: '设置导入失败：保存处理器不可用' };
+        return { ok: false, message: t("设置导入失败：保存处理器不可用") };
     }
 
     const parsed = parseSettingsImportPayload(rawPayload);
@@ -218,8 +219,8 @@ function importPhoneSettingsPayload(rawPayload, deps = {}) {
         return {
             ok: false,
             message: ignoredKeys.length > 0
-                ? `设置导入失败：未包含可识别设置字段，已忽略 ${ignoredKeys.length} 个未知字段`
-                : '设置导入失败：未包含可导入的设置字段',
+                ? t`设置导入失败：未包含可识别设置字段，已忽略 ${ignoredKeys.length} 个未知字段`
+                : t("设置导入失败：未包含可导入的设置字段"),
         };
     }
 
@@ -227,7 +228,7 @@ function importPhoneSettingsPayload(rawPayload, deps = {}) {
     if (!saved) {
         return {
             ok: false,
-            message: `设置导入未完全成功：已处理 ${patchKeys.length} 个字段${ignoredKeys.length > 0 ? `，忽略 ${ignoredKeys.length} 个未知字段` : ''}`,
+            message: t`设置导入未完全成功：已处理 ${patchKeys.length} 个字段${ignoredKeys.length > 0 ? t`，忽略 ${ignoredKeys.length} 个未知字段` : ''}`,
         };
     }
 
@@ -237,7 +238,7 @@ function importPhoneSettingsPayload(rawPayload, deps = {}) {
 
     return {
         ok: true,
-        message: `设置已导入：${patchKeys.length} 个字段${ignoredKeys.length > 0 ? `，忽略 ${ignoredKeys.length} 个未知字段` : ''}`,
+        message: t`设置已导入：${patchKeys.length} 个字段${ignoredKeys.length > 0 ? t`，忽略 ${ignoredKeys.length} 个未知字段` : ''}`,
     };
 }
 

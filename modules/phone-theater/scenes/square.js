@@ -1,3 +1,4 @@
+import { mount as mountBuiltin } from '../builtin/square.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { buildTheaterDeleteKey } from '../core/delete-key.js';
 import { getCellByHeader, mapTheaterRows, normalizeText, splitSemicolonText } from '../core/table-index.js';
@@ -231,6 +232,7 @@ function deleteEntities(context) {
 
 export const squareScene = Object.freeze({
     id: 'square',
+    mountBuiltin,
     appKey: '__theater_square',
     name: '广场',
     iconText: '广',

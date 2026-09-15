@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { withTimeout } from '../db-bridge.js';
 import { openDatabaseUi, openDatabaseVisualizerUi } from './database-ui-bridge.js';
 
@@ -15,7 +16,7 @@ export async function openVisualizerWithStatus(options = {}) {
             ok: false,
             code: isTimeout ? 'timeout' : 'failed',
             source: 'bridge',
-            message: isTimeout ? '打开可视化编辑器超时' : `打开可视化编辑器失败：${error?.message || '未知错误'}`,
+            message: isTimeout ? t("打开可视化编辑器超时") : t`打开可视化编辑器失败：${error?.message || t("未知错误")}`,
         };
     }
 }
@@ -34,7 +35,7 @@ export async function openDatabaseUiWithStatus(options = {}) {
             ok: false,
             code: isTimeout ? 'timeout' : 'failed',
             source: 'bridge',
-            message: isTimeout ? '打开数据库界面超时' : `打开数据库界面失败：${error?.message || '未知错误'}`,
+            message: isTimeout ? t("打开数据库界面超时") : t`打开数据库界面失败：${error?.message || t("未知错误")}`,
         };
     }
 }

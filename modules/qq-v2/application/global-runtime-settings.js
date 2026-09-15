@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { QQ_V2_BUILT_IN_PROMPT_PRESET_IDS } from '../domain/prompt-preset-ids.js';
 import {
     normalizeQQV2TagName,
@@ -298,14 +299,14 @@ function applyPatch(current, patch) {
     if (Object.hasOwn(proactive, 'everyTurns')) {
         const everyTurns = Number(proactive.everyTurns);
         if (!Number.isInteger(everyTurns) || everyTurns <= 0) {
-            throw new RangeError('主动消息轮数必须是正整数');
+            throw new RangeError(t("主动消息轮数必须是正整数"));
         }
         next.proactive.everyTurns = everyTurns;
     }
     if (Object.hasOwn(proactive, 'privateWeight')) {
         const privateWeight = Number(proactive.privateWeight);
         if (!Number.isInteger(privateWeight) || privateWeight < 0 || privateWeight > 100) {
-            throw new RangeError('私聊主动回复占比必须是 0 到 100 的整数');
+            throw new RangeError(t("私聊主动回复占比必须是 0 到 100 的整数"));
         }
         next.proactive.privateWeight = privateWeight;
     }
@@ -328,7 +329,7 @@ export function createQQV2GlobalRuntimeSettings(options = {}) {
             if (scopeSession.signal?.aborted === true) throw new Error('scope aborted');
             return;
         } catch {
-            const error = new Error('QQ 作用域已失效');
+            const error = new Error(t("QQ 作用域已失效"));
             error.code = 'scope_inactive';
             throw error;
         }

@@ -5,3 +5,9 @@
 @import url('./live.css');
 @import url('./calendar.css');
 @import url('./diary.css');
+
+@import url('./builtin/common.css');
+@import url('./builtin/square.css');
+@import url('./builtin/forum.css');
+@import url('./builtin/diary.css');
+@import url('./builtin/live.css');

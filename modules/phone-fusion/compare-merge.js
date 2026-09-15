@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import {
     buildFusionCompareHtml,
     buildFusionCompareRowHtml,
@@ -48,8 +49,8 @@ function createSourceEntry(origin, source, fallbackName) {
 
 function createSourceEntries(sourceA, sourceB) {
     return [
-        createSourceEntry('A', sourceA, '模板 A'),
-        createSourceEntry('B', sourceB, '模板 B'),
+        createSourceEntry('A', sourceA, t("模板 A")),
+        createSourceEntry('B', sourceB, t("模板 B")),
     ].filter(Boolean);
 }
 
@@ -72,7 +73,7 @@ function getConflictGroupKey(item) {
 }
 
 function getSourceLabel(item) {
-    return item.origin === 'A' ? '模板 A' : '模板 B';
+    return item.origin === 'A' ? t("模板 A") : t("模板 B");
 }
 
 function buildConflictRows(selectionModel) {

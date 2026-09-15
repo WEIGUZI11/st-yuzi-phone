@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const { webcrypto } = require('node:crypto');
 
 async function main() {
+    const { t } = await import('../modules/i18n/index.js');
     const { createMemoryQQV2StateStore } = await import('../modules/qq-v2/storage/state-store.js');
     const { createQQV2Repository } = await import('../modules/qq-v2/domain/repository.js');
     const { createQQV2ProductionRuntime } = await import('../modules/qq-v2/application/production-runtime.js');
@@ -97,7 +98,7 @@ async function main() {
     const body = source.slice(source.indexOf('    const recallMessage = async'), source.indexOf('    const openMessageQuickMenu ='));
     const drafts = new Map([['c', '现有草稿']]);
     let original = { type: 'text', content: '撤回正文' };
-    const recall = new Function('currentScopeKey', 'facade', 'disposed', 'drafts', 'clearOverlay', 'loadMessages', 'render', body + '\nreturn recallMessage;')(
+    const recall = new Function('t', 'currentScopeKey', 'facade', 'disposed', 'drafts', 'clearOverlay', 'loadMessages', 'render', body + '\nreturn recallMessage;')(t,
         () => 'scope', { intent: { recallMessage: async () => ({ ok: true, result: { recalledMessage: original } }) } }, false, drafts, () => {}, async () => {}, async () => {},
     );
     await recall('c', 'm');
@@ -121,7 +122,7 @@ async function main() {
         elements.push(element);
         return element;
     };
-    const editor = new Function('createElement', 'createButton', 'clearOverlay', 'facade', 'loadMessages', 'render', 'shouldSubmitComposerKey', 'showDialog', editorBody + '\nreturn openMessageEditor;')(
+    const editor = new Function('t', 'createElement', 'createButton', 'clearOverlay', 'facade', 'loadMessages', 'render', 'shouldSubmitComposerKey', 'showDialog', editorBody + '\nreturn openMessageEditor;')(t,
         makeElement, makeElement, () => { closes += 1; },
         { intent: { editMessage: async (input) => { saved.push(input); return editorResult; } } },
         async () => {}, async () => {}, () => false, (value) => { dialog = value; },

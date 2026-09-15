@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { getDB } from '../../phone-core/db-bridge.js';
 import { isQQV2DatabaseCurrentApiPresetId } from '../database-current-api.js';
 
@@ -10,20 +11,20 @@ function currentPresetId(preset) {
 }
 
 function createDatabaseApiUnavailableError() {
-    const error = new Error('数据库当前 API 不可用，请确认神·数据库已加载');
+    const error = new Error(t("数据库当前 API 不可用，请确认神·数据库已加载"));
     error.code = 'database_api_unavailable';
     return error;
 }
 
 function createDatabaseApiFailedError() {
-    const error = new Error('数据库当前 API 调用失败');
+    const error = new Error(t("数据库当前 API 调用失败"));
     error.code = 'database_api_failed';
     return error;
 }
 
 function throwIfAborted(signal) {
     if (!signal?.aborted) return;
-    const error = new Error('请求已取消');
+    const error = new Error(t("请求已取消"));
     error.name = 'AbortError';
     throw error;
 }
@@ -49,7 +50,7 @@ export function createQQV2DatabaseCurrentApiBackend(options = {}) {
     return Object.freeze({
         async generate(input = {}) {
             if (!isQQV2DatabaseCurrentApiPresetId(currentPresetId(input.preset))) {
-                const error = new Error('数据库代理只能处理数据库当前 API 虚拟预设');
+                const error = new Error(t("数据库代理只能处理数据库当前 API 虚拟预设"));
                 error.code = 'invalid_database_api_preset';
                 throw error;
             }

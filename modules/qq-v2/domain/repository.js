@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { assistantCharacterLibrary, assistantCharacterView } from './assistant-characters.js';
 import { createEmptyQQV2State } from '../storage/state-store.js';
 import { QQ_V2_BUILT_IN_PROMPT_PRESET_IDS } from './prompt-preset-ids.js';
@@ -31,7 +32,7 @@ function asText(value, maxLength = 0) {
 
 function requireText(value, label, maxLength = 0) {
     const text = asText(value, maxLength);
-    if (!text) throw new QQV2DomainError(`${label}不能为空`);
+    if (!text) throw new QQV2DomainError(t`${label}不能为空`);
     return text;
 }
 
@@ -52,7 +53,7 @@ function createId(prefix) {
 
 function exactContactFormalName(value) {
     const name = String(value ?? '').slice(0, 120);
-    if (!name.trim()) throw new QQV2DomainError('人物名字不能为空');
+    if (!name.trim()) throw new QQV2DomainError(t("人物名字不能为空"));
     return name;
 }
 
@@ -307,32 +308,32 @@ function getScope(state, scopeId, create = false) {
     const id = requireText(scopeId, 'QQ 作用域 ID', 512);
     if (!state.scopes || typeof state.scopes !== 'object') state.scopes = createEmptyQQV2State().scopes;
     if (!state.scopes[id] && create) state.scopes[id] = emptyScope(id);
-    if (!state.scopes[id]) throw new QQV2DomainError('QQ 作用域不存在', 'scope_not_found');
+    if (!state.scopes[id]) throw new QQV2DomainError(t("QQ 作用域不存在"), 'scope_not_found');
     ensureScopeQQV2State(state.scopes[id]);
     return state.scopes[id];
 }
 
 function getPerson(scope, personId) {
     const person = scope.people[asText(personId, 256)];
-    if (!person) throw new QQV2DomainError('QQ 人物不存在', 'person_not_found');
+    if (!person) throw new QQV2DomainError(t("QQ 人物不存在"), 'person_not_found');
     return person;
 }
 
 function groupMemberDisplayName(scope, personId) {
     const id = asText(personId, 256);
-    if (id === SELF_ID) return '用户';
-    return asText(scope.people?.[id]?.formalName, 120) || '群成员';
+    if (id === SELF_ID) return t('用户');
+    return asText(scope.people?.[id]?.formalName, 120) || t('群成员');
 }
 
 function getConversation(scope, conversationId) {
     const conversation = scope.conversations[asText(conversationId, 256)];
-    if (!conversation) throw new QQV2DomainError('QQ 会话不存在', 'conversation_not_found');
+    if (!conversation) throw new QQV2DomainError(t("QQ 会话不存在"), 'conversation_not_found');
     return conversation;
 }
 
 function getGroup(scope, groupId) {
     const group = scope.groups[asText(groupId, 256)];
-    if (!group) throw new QQV2DomainError('QQ群不存在', 'group_not_found');
+    if (!group) throw new QQV2DomainError(t("QQ群不存在"), 'group_not_found');
     return group;
 }
 
@@ -377,7 +378,7 @@ function conversationSummary(scope, conversation) {
 function getScopeAsset(state, scope, assetId) {
     const id = asText(assetId, 256);
     const asset = scope.assets[id] || findImageLibraryAsset(state, id);
-    if (!asset) throw new QQV2DomainError('QQ 媒体资源不存在或不属于当前作用域', 'asset_not_found');
+    if (!asset) throw new QQV2DomainError(t("QQ 媒体资源不存在或不属于当前作用域"), 'asset_not_found');
     return asset;
 }
 
@@ -386,18 +387,18 @@ function requireProfileAsset(state, scope, assetId, expectedKind, conversationId
     if (!id) return '';
     const asset = getScopeAsset(state, scope, id);
     if (asset.kind !== expectedKind) {
-        throw new QQV2DomainError('QQ 媒体资源类型不匹配', 'asset_kind_mismatch');
+        throw new QQV2DomainError(t("QQ 媒体资源类型不匹配"), 'asset_kind_mismatch');
     }
     const targetConversationId = asText(conversationId, 256);
     if (targetConversationId && asset.conversationId && asset.conversationId !== targetConversationId) {
-        throw new QQV2DomainError('QQ 媒体资源不属于当前会话', 'asset_conversation_mismatch');
+        throw new QQV2DomainError(t("QQ 媒体资源不属于当前会话"), 'asset_conversation_mismatch');
     }
     return asset.assetId;
 }
 function imageLibraryKind(library) {
     const name = asText(library, 64);
     const kind = IMAGE_LIBRARY_KINDS[name];
-    if (!kind) throw new QQV2DomainError('图片资料库类型无效', 'image_library_invalid');
+    if (!kind) throw new QQV2DomainError(t("图片资料库类型无效"), 'image_library_invalid');
     return { library: name, kind };
 }
 
@@ -457,18 +458,18 @@ function createPrivateConversation(state, scope, person, random) {
 function normalizeImportedContactAsset(value, expectedKind, label) {
     if (value === null || value === undefined) return null;
     if (!value || typeof value !== 'object' || Array.isArray(value) || !(value.blob instanceof Blob)) {
-        throw new QQV2DomainError(`${label}图片无效`, 'contact_import_asset_invalid');
+        throw new QQV2DomainError(t`${label}图片无效`, 'contact_import_asset_invalid');
     }
     const mimeType = asText(value.mimeType || value.blob.type, 128).toLowerCase();
     if (!/^image\/[a-z0-9.+-]+$/u.test(mimeType)) {
-        throw new QQV2DomainError(`${label}图片类型无效`, 'contact_import_asset_invalid');
+        throw new QQV2DomainError(t`${label}图片类型无效`, 'contact_import_asset_invalid');
     }
     return { kind: expectedKind, blob: value.blob, mimeType };
 }
 
 function normalizeImportedPrivateContact(input, index) {
     const source = input && typeof input === 'object' && !Array.isArray(input) ? input : null;
-    if (!source) throw new QQV2DomainError(`导入联系人 ${index + 1} 无效`, 'contact_import_invalid');
+    if (!source) throw new QQV2DomainError(t`导入联系人 ${index + 1} 无效`, 'contact_import_invalid');
     return {
         formalName: exactContactFormalName(source.formalName),
         signature: asText(source.signature, 1000),
@@ -487,7 +488,7 @@ function activatePrivateContact(scope, conversation, person, input = {}) {
         appendSystemMessage(
             scope,
             conversation,
-            `${asText(input.userName, 120) || '用户'}和${person.formalName}成为好友`,
+            t`${asText(input.userName, 120) || t('用户')}和${person.formalName}成为好友`,
             asText(input.storyTime, 128),
         );
     }
@@ -548,17 +549,17 @@ function canManageTarget(group, actorId, targetId) {
 
 function requireOwner(group, actorId) {
     if (participantRole(group, actorId) !== 'owner') {
-        throw new QQV2DomainError('只有群主可以执行此操作', 'permission_denied');
+        throw new QQV2DomainError(t("只有群主可以执行此操作"), 'permission_denied');
     }
 }
 
 function requireGroupManager(group, actorId, targetId = '') {
     if (targetId && !canManageTarget(group, actorId, targetId)) {
-        throw new QQV2DomainError('当前群身份没有管理该成员的权限', 'permission_denied');
+        throw new QQV2DomainError(t("当前群身份没有管理该成员的权限"), 'permission_denied');
     }
     const role = participantRole(group, actorId);
     if (role !== 'owner' && role !== 'admin') {
-        throw new QQV2DomainError('只有群主或管理员可以执行此操作', 'permission_denied');
+        throw new QQV2DomainError(t("只有群主或管理员可以执行此操作"), 'permission_denied');
     }
 }
 
@@ -585,11 +586,11 @@ function formatStoryTime(time) {
 
 function normalizeMuteUntil(duration, storyTime) {
     if (!Object.prototype.hasOwnProperty.call(MUTE_DURATIONS, duration)) {
-        throw new QQV2DomainError('禁言时长必须是已支持的五档之一', 'invalid_mute_duration');
+        throw new QQV2DomainError(t("禁言时长必须是已支持的五档之一"), 'invalid_mute_duration');
     }
     if (duration === '永久') return 'permanent';
     const origin = parseStoryTime(storyTime);
-    if (origin === null) throw new QQV2DomainError('禁言需要有效的故事时间', 'story_time_required');
+    if (origin === null) throw new QQV2DomainError(t("禁言需要有效的故事时间"), 'story_time_required');
     return formatStoryTime(origin + MUTE_DURATIONS[duration] * 60_000);
 }
 
@@ -619,7 +620,7 @@ function appendSystemMessage(scope, conversation, content, storyTime) {
 
 function messageSenderSnapshot(scope, input, senderId, senderType) {
     if (senderType === 'system' || senderId === '__system__') {
-        return { senderName: '系统', senderAvatarAssetId: '' };
+        return { senderName: t('系统'), senderAvatarAssetId: '' };
     }
     if (senderId === SELF_ID) {
         return {
@@ -636,7 +637,7 @@ function messageSenderSnapshot(scope, input, senderId, senderType) {
 
 function appendOneMessage(scope, conversation, input, options = {}) {
     const type = asText(input?.type, 32);
-    if (!MESSAGE_TYPES.has(type)) throw new QQV2DomainError('不支持的 QQ 消息类型', 'invalid_message_type');
+    if (!MESSAGE_TYPES.has(type)) throw new QQV2DomainError(t("不支持的 QQ 消息类型"), 'invalid_message_type');
     const senderId = requireText(input?.senderId, '消息发送者', 256);
     const senderType = requireText(input?.senderType, '消息发送者类型', 32);
     const storyTime = asText(input?.storyTime, 128);
@@ -646,35 +647,35 @@ function appendOneMessage(scope, conversation, input, options = {}) {
     if (!options.skipSenderValidation && conversation.kind === 'group') {
         const group = getGroup(scope, conversation.groupId);
         if (group.status !== 'active') {
-            throw new QQV2DomainError('已解散群聊不能发送消息', 'group_read_only');
+            throw new QQV2DomainError(t("已解散群聊不能发送消息"), 'group_read_only');
         }
         if (senderId === SELF_ID && (group.selfExited || conversation.status !== 'active')) {
-            throw new QQV2DomainError('已退出群聊不能发送消息', 'group_read_only');
+            throw new QQV2DomainError(t("已退出群聊不能发送消息"), 'group_read_only');
         }
         if (!groupParticipantIds(group).includes(senderId)) {
-            throw new QQV2DomainError('发送者不在当前群聊中', 'group_member_not_found');
+            throw new QQV2DomainError(t("发送者不在当前群聊中"), 'group_member_not_found');
         }
         if (isMuted(group, senderId, storyTime)) {
-            throw new QQV2DomainError('该成员当前处于禁言状态', 'group_member_muted');
+            throw new QQV2DomainError(t("该成员当前处于禁言状态"), 'group_member_muted');
         }
     }
     if (!options.skipSenderValidation && conversation.kind === 'private' && senderId !== SELF_ID && senderId !== conversation.personId) {
-        throw new QQV2DomainError('私聊发送者与会话人物不一致', 'private_sender_invalid');
+        throw new QQV2DomainError(t("私聊发送者与会话人物不一致"), 'private_sender_invalid');
     }
     let transfer = input?.transfer ? copy(input.transfer) : null;
     if (type === 'transfer') {
-        if (!transfer) throw new QQV2DomainError('转账内容不能为空', 'transfer_invalid');
+        if (!transfer) throw new QQV2DomainError(t("转账内容不能为空"), 'transfer_invalid');
         const recipientId = asText(transfer.recipientId, 256)
             || (conversation.kind === 'private'
                 ? (senderId === SELF_ID ? conversation.personId : SELF_ID)
                 : '');
-        if (!recipientId) throw new QQV2DomainError('群转账必须指定收款人', 'transfer_recipient_required');
-        if (recipientId === senderId) throw new QQV2DomainError('不能给自己转账', 'transfer_recipient_invalid');
+        if (!recipientId) throw new QQV2DomainError(t("群转账必须指定收款人"), 'transfer_recipient_required');
+        if (recipientId === senderId) throw new QQV2DomainError(t("不能给自己转账"), 'transfer_recipient_invalid');
         const participantIds = conversation.kind === 'group'
             ? groupParticipantIds(getGroup(scope, conversation.groupId))
             : [SELF_ID, conversation.personId];
         if (!participantIds.includes(recipientId)) {
-            throw new QQV2DomainError('转账收款人不在当前会话中', 'transfer_recipient_invalid');
+            throw new QQV2DomainError(t("转账收款人不在当前会话中"), 'transfer_recipient_invalid');
         }
         transfer = { ...transfer, recipientId, status: asText(transfer.status, 32) || 'pending' };
     }
@@ -682,19 +683,19 @@ function appendOneMessage(scope, conversation, input, options = {}) {
     const quoteMessageId = asText(input?.quoteMessageId, 256);
     const quoteMessage = quoteMessageId ? scope.messages[quoteMessageId] : null;
     if (quoteMessageId && !quoteMessage) {
-        throw new QQV2DomainError('被引用消息不存在', 'quote_not_found');
+        throw new QQV2DomainError(t("被引用消息不存在"), 'quote_not_found');
     }
     if (quoteMessage && quoteMessage.conversationId !== conversation.conversationId) {
-        throw new QQV2DomainError('被引用消息不属于当前会话', 'quote_conversation_mismatch');
+        throw new QQV2DomainError(t("被引用消息不属于当前会话"), 'quote_conversation_mismatch');
     }
     const mentionIds = [...new Set(Array.isArray(input?.mentionIds) ? input.mentionIds.map((id) => asText(id, 256)).filter(Boolean) : [])];
     if (conversation.kind === 'group') {
         const group = getGroup(scope, conversation.groupId);
         if (mentionIds.some((id) => !group.memberIds.includes(id))) {
-            throw new QQV2DomainError('结构化提及目标不在当前群聊中', 'mention_not_found');
+            throw new QQV2DomainError(t("结构化提及目标不在当前群聊中"), 'mention_not_found');
         }
         if (input?.mentionAll === true && !['owner', 'admin'].includes(participantRole(group, senderId))) {
-            throw new QQV2DomainError('只有群主或管理员可以提及全体成员', 'permission_denied');
+            throw new QQV2DomainError(t("只有群主或管理员可以提及全体成员"), 'permission_denied');
         }
     }
 
@@ -811,24 +812,24 @@ function applyGroupManagement(scope, input = {}) {
     const targetName = groupMemberDisplayName(scope, targetId);
 
     if (group.status === 'dissolved' || conversation.status === 'dissolved') {
-        throw new QQV2DomainError('已解散群聊不能再管理', 'group_dissolved');
+        throw new QQV2DomainError(t("已解散群聊不能再管理"), 'group_dissolved');
     }
 
     switch (action) {
     case 'rename':
         requireGroupManager(group, actorId);
         group.name = requireText(value, '群名称', 120);
-        appendSystemMessage(scope, conversation, `${actorName}修改了群名称`, storyTime);
+        appendSystemMessage(scope, conversation, t`${actorName}修改了群名称`, storyTime);
         break;
     case 'add':
         requireGroupManager(group, actorId);
-        if (targetId === SELF_ID) throw new QQV2DomainError('当前用户已经在群聊中', 'group_member_invalid');
+        if (targetId === SELF_ID) throw new QQV2DomainError(t("当前用户已经在群聊中"), 'group_member_invalid');
         getPerson(scope, targetId);
         if ((!input.allowNonFriend && !isPrivateFriend(scope, targetId)) || group.memberIds.includes(targetId)) {
-            throw new QQV2DomainError('不能添加该群成员', 'group_member_invalid');
+            throw new QQV2DomainError(t("不能添加该群成员"), 'group_member_invalid');
         }
         group.memberIds.push(targetId);
-        appendSystemMessage(scope, conversation, `${targetName}加入了群聊`, storyTime);
+        appendSystemMessage(scope, conversation, t`${targetName}加入了群聊`, storyTime);
         break;
     case 'remove':
     case 'kick':
@@ -843,41 +844,41 @@ function applyGroupManagement(scope, input = {}) {
             group.adminIds = group.adminIds.filter((id) => id !== targetId);
             delete group.mutes[targetId];
         }
-        appendSystemMessage(scope, conversation, `${targetName}已被移出群聊`, storyTime);
+        appendSystemMessage(scope, conversation, t`${targetName}已被移出群聊`, storyTime);
         break;
     case 'appoint-admin':
         requireOwner(group, actorId);
         if (participantRole(group, targetId) !== 'member') {
-            throw new QQV2DomainError('只能任命普通成员为管理员', 'group_role_invalid');
+            throw new QQV2DomainError(t("只能任命普通成员为管理员"), 'group_role_invalid');
         }
         group.adminIds.push(targetId);
         if (targetId === SELF_ID) group.selfRole = 'admin';
-        appendSystemMessage(scope, conversation, `${targetName}已被设为管理员`, storyTime);
+        appendSystemMessage(scope, conversation, t`${targetName}已被设为管理员`, storyTime);
         break;
     case 'revoke-admin':
         requireOwner(group, actorId);
         if (participantRole(group, targetId) !== 'admin') {
-            throw new QQV2DomainError('目标不是管理员', 'group_role_invalid');
+            throw new QQV2DomainError(t("目标不是管理员"), 'group_role_invalid');
         }
         group.adminIds = group.adminIds.filter((id) => id !== targetId);
         if (targetId === SELF_ID) group.selfRole = 'member';
-        appendSystemMessage(scope, conversation, `${targetName}不再是管理员`, storyTime);
+        appendSystemMessage(scope, conversation, t`${targetName}不再是管理员`, storyTime);
         break;
     case 'mute':
         requireGroupManager(group, actorId, targetId);
         group.mutes[targetId] = normalizeMuteUntil(asText(input.duration, 64), storyTime);
-        appendSystemMessage(scope, conversation, `${targetName}已被禁言${asText(input.duration, 64)}`, storyTime);
+        appendSystemMessage(scope, conversation, t`${targetName}已被禁言${t(asText(input.duration, 64))}`, storyTime);
         break;
     case 'unmute':
         requireGroupManager(group, actorId, targetId);
         delete group.mutes[targetId];
-        appendSystemMessage(scope, conversation, `${targetName}已解除禁言`, storyTime);
+        appendSystemMessage(scope, conversation, t`${targetName}已解除禁言`, storyTime);
         break;
     case 'leave': {
         const role = participantRole(group, actorId);
-        if (!role) throw new QQV2DomainError('退群人物不在当前群聊中', 'group_member_not_found');
+        if (!role) throw new QQV2DomainError(t("退群人物不在当前群聊中"), 'group_member_not_found');
         if (role === 'owner') {
-            throw new QQV2DomainError('群主必须先转让群主或解散群聊', 'group_owner_must_transfer');
+            throw new QQV2DomainError(t("群主必须先转让群主或解散群聊"), 'group_owner_must_transfer');
         }
         returnPendingGroupTransfers(scope, conversation.conversationId, [actorId], storyTime);
         group.adminIds = group.adminIds.filter((id) => id !== actorId);
@@ -889,39 +890,39 @@ function applyGroupManagement(scope, input = {}) {
         } else {
             group.memberIds = group.memberIds.filter((id) => id !== actorId);
         }
-        appendSystemMessage(scope, conversation, `${actorName}退出了群聊`, storyTime);
+        appendSystemMessage(scope, conversation, t`${actorName}退出了群聊`, storyTime);
         break;
     }
     case 'reinvite':
         requireGroupManager(group, actorId);
         if (targetId !== SELF_ID || !group.selfExited) {
-            throw new QQV2DomainError('当前不能重新邀请该成员', 'group_reinvite_invalid');
+            throw new QQV2DomainError(t("当前不能重新邀请该成员"), 'group_reinvite_invalid');
         }
         group.selfExited = false;
         group.selfRole = 'member';
         conversation.status = 'active';
-        appendSystemMessage(scope, conversation, `${actorName}邀请你重新加入群聊`, storyTime);
+        appendSystemMessage(scope, conversation, t`${actorName}邀请你重新加入群聊`, storyTime);
         break;
     case 'transfer-owner':
         requireOwner(group, actorId);
         if (targetId === actorId || !groupParticipantIds(group).includes(targetId)) {
-            throw new QQV2DomainError('新群主必须是当前其他成员', 'group_owner_invalid');
+            throw new QQV2DomainError(t("新群主必须是当前其他成员"), 'group_owner_invalid');
         }
         group.ownerId = targetId;
         group.adminIds = group.adminIds.filter((id) => id !== actorId && id !== targetId);
         if (targetId === SELF_ID) group.selfRole = 'owner';
         else if (actorId === SELF_ID) group.selfRole = 'member';
-        appendSystemMessage(scope, conversation, `${targetName}已成为群主`, storyTime);
+        appendSystemMessage(scope, conversation, t`${targetName}已成为群主`, storyTime);
         break;
     case 'dissolve':
         requireOwner(group, actorId);
         returnPendingGroupTransfers(scope, conversation.conversationId, null, storyTime);
         group.status = 'dissolved';
         conversation.status = 'dissolved';
-        appendSystemMessage(scope, conversation, `${actorName}解散了群聊`, storyTime);
+        appendSystemMessage(scope, conversation, t`${actorName}解散了群聊`, storyTime);
         break;
     default:
-        throw new QQV2DomainError('不支持的群管理动作', 'group_action_invalid');
+        throw new QQV2DomainError(t("不支持的群管理动作"), 'group_action_invalid');
     }
 
     return group;
@@ -1010,7 +1011,7 @@ export function createQQV2Repository(options = {}) {
         || typeof stateStore.read !== 'function'
         || typeof stateStore.transact !== 'function'
         || typeof stateStore.readMedia !== 'function') {
-        throw new TypeError('QQ v2 repository 需要 stateStore');
+        throw new TypeError(t("QQ v2 repository 需要 stateStore"));
     }
 
     const assertScopeMutationCurrent = (scopeId, operationOptions = {}) => {
@@ -1023,7 +1024,7 @@ export function createQQV2Repository(options = {}) {
             if (scopeSession.signal?.aborted === true) throw new Error('scope aborted');
             return;
         } catch {
-            throw new QQV2DomainError('QQ 作用域已失效', 'scope_inactive');
+            throw new QQV2DomainError(t("QQ 作用域已失效"), 'scope_inactive');
         }
     };
 
@@ -1083,7 +1084,7 @@ export function createQQV2Repository(options = {}) {
             return transactScoped(scopeId, operationOptions, state => {
                 const library = assistantCharacterLibrary(state);
                 const character = Object.hasOwn(library, characterId) ? library[characterId] : null;
-                if (!character || character.isBuiltIn) throw new QQV2DomainError('不能删除该助手人物', 'assistant_not_deletable');
+                if (!character || character.isBuiltIn) throw new QQV2DomainError(t("不能删除该助手人物"), 'assistant_not_deletable');
                 const results = [];
                 for (const scope of Object.values(state.scopes)) {
                     for (const conversation of Object.values(scope.conversations || {})) {
@@ -1103,13 +1104,13 @@ export function createQQV2Repository(options = {}) {
                 const scope = getScope(state, scopeId, false);
                 const library = assistantCharacterLibrary(state);
                 const character = Object.hasOwn(library, characterId) ? library[characterId] : null;
-                if (!character) throw new QQV2DomainError('助手人物不存在', 'assistant_not_found');
+                if (!character) throw new QQV2DomainError(t("助手人物不存在"), 'assistant_not_found');
                 if (Object.hasOwn(patch, 'formalName')) character.formalName = requireText(patch.formalName, '姓名', 120);
                 if (Object.hasOwn(patch, 'persona')) character.persona = String(patch.persona ?? '');
                 if (Object.hasOwn(patch, 'avatarAssetId')) {
                     // 全局人物只能引用全局图片资料，不能悬挂到其他聊天的私有媒体。
                     const id = asText(patch.avatarAssetId, 256);
-                    if (id && !findImageLibraryAsset(state, id)) throw new QQV2DomainError('请选择图片资料中的头像', 'asset_not_found');
+                    if (id && !findImageLibraryAsset(state, id)) throw new QQV2DomainError(t("请选择图片资料中的头像"), 'asset_not_found');
                     character.avatarAssetId = requireProfileAsset(state, scope, id, 'avatar');
                     character.avatarUrl = '';
                 }
@@ -1128,7 +1129,7 @@ export function createQQV2Repository(options = {}) {
                 const library = assistantCharacterLibrary(state);
                 const requestedId = asText(input.characterId, 256);
                 let character = Object.hasOwn(library, requestedId) ? library[requestedId] : null;
-                if (!character && input.characterId) throw new QQV2DomainError('助手人物不存在', 'assistant_not_found');
+                if (!character && input.characterId) throw new QQV2DomainError(t("助手人物不存在"), 'assistant_not_found');
                 if (!character) {
                     const characterId = createId('assistant');
                     character = { characterId, formalName: requireText(input.name, '姓名', 120), persona: '',
@@ -1171,7 +1172,7 @@ export function createQQV2Repository(options = {}) {
                 if (Object.hasOwn(patch, 'counter')) {
                     const counter = Number(patch.counter);
                     if (!Number.isInteger(counter) || counter < 0) {
-                        throw new QQV2DomainError('QQ 主动消息计数必须是非负整数', 'proactive_counter_invalid');
+                        throw new QQV2DomainError(t("QQ 主动消息计数必须是非负整数"), 'proactive_counter_invalid');
                     }
                     next.counter = counter;
                 }
@@ -1262,24 +1263,24 @@ export function createQQV2Repository(options = {}) {
                     const window = patch.timeWindow;
                     if (window?.mode !== 'all' && (!WORLDBOOK_TIME_UNITS.has(window?.unit)
                         || !Number.isInteger(Number(window?.value)) || Number(window.value) <= 0)) {
-                        throw new QQV2DomainError('世界书时间窗口无效', 'worldbook_window_invalid');
+                        throw new QQV2DomainError(t("世界书时间窗口无效"), 'worldbook_window_invalid');
                     }
                     next.timeWindow = normalizeTimeWindow(window, current.timeWindow);
                 }
                 if (Object.hasOwn(patch, 'injectionCount')) {
                     const injectionCount = Number(patch.injectionCount);
                     if (!Number.isInteger(injectionCount) || injectionCount < 0) {
-                        throw new QQV2DomainError('世界书注入条数无效', 'worldbook_injection_count_invalid');
+                        throw new QQV2DomainError(t("世界书注入条数无效"), 'worldbook_injection_count_invalid');
                     }
                     next.injectionCount = injectionCount;
                 }
                 if (Object.hasOwn(patch, 'light')) {
-                    if (!WORLDBOOK_LIGHTS.has(patch.light)) throw new QQV2DomainError('世界书灯色无效', 'worldbook_light_invalid');
+                    if (!WORLDBOOK_LIGHTS.has(patch.light)) throw new QQV2DomainError(t("世界书灯色无效"), 'worldbook_light_invalid');
                     next.light = patch.light;
                 }
                 if (Object.hasOwn(patch, 'depth')) {
                     const depth = Number(patch.depth);
-                    if (!Number.isInteger(depth) || depth < 0) throw new QQV2DomainError('世界书深度无效', 'worldbook_depth_invalid');
+                    if (!Number.isInteger(depth) || depth < 0) throw new QQV2DomainError(t("世界书深度无效"), 'worldbook_depth_invalid');
                     next.depth = depth;
                 }
                 if (Object.hasOwn(patch, 'keywords')) next.keywords = normalizeKeywords(patch.keywords);
@@ -1324,7 +1325,7 @@ export function createQQV2Repository(options = {}) {
                 const conversation = getConversation(scope, conversationId);
                 const increment = Number(amount);
                 if (!Number.isInteger(increment) || increment <= 0) {
-                    throw new QQV2DomainError('未读数增量必须是正整数', 'unread_increment_invalid');
+                    throw new QQV2DomainError(t("未读数增量必须是正整数"), 'unread_increment_invalid');
                 }
                 const current = Number(conversation.unreadCount);
                 conversation.unreadCount = Math.max(0, Number.isInteger(current) ? current : 0) + increment;
@@ -1335,7 +1336,7 @@ export function createQQV2Repository(options = {}) {
             return transactScoped(scopeId, operationOptions, (state) => {
                 const scope = getScope(state, scopeId, false);
                 const conversation = getConversation(scope, conversationId);
-                if (conversation.assistantCharacterId) throw new QQV2DomainError('助手不能注入世界书', 'assistant_worldbook_forbidden');
+                if (conversation.assistantCharacterId) throw new QQV2DomainError(t("助手不能注入世界书"), 'assistant_worldbook_forbidden');
                 const current = conversation.injection;
                 const next = { ...current };
                 if (Object.hasOwn(patch, 'enabled')) next.enabled = patch.enabled === true;
@@ -1348,12 +1349,12 @@ export function createQQV2Repository(options = {}) {
                 if (Object.hasOwn(patch, 'useConversationDepth')) next.useConversationDepth = patch.useConversationDepth === true;
                 next.followGlobal = !(next.useConversationLight || next.useConversationDepth);
                 if (Object.hasOwn(patch, 'light')) {
-                    if (!WORLDBOOK_LIGHTS.has(patch.light)) throw new QQV2DomainError('会话世界书灯色无效', 'worldbook_light_invalid');
+                    if (!WORLDBOOK_LIGHTS.has(patch.light)) throw new QQV2DomainError(t("会话世界书灯色无效"), 'worldbook_light_invalid');
                     next.light = patch.light;
                 }
                 if (Object.hasOwn(patch, 'depth')) {
                     const depth = Number(patch.depth);
-                    if (!Number.isInteger(depth) || depth < 0) throw new QQV2DomainError('会话世界书深度无效', 'worldbook_depth_invalid');
+                    if (!Number.isInteger(depth) || depth < 0) throw new QQV2DomainError(t("会话世界书深度无效"), 'worldbook_depth_invalid');
                     next.depth = depth;
                 }
                 if (Object.hasOwn(patch, 'keywords')) next.keywords = normalizeKeywords(patch.keywords);
@@ -1365,10 +1366,10 @@ export function createQQV2Repository(options = {}) {
             return transactScoped(scopeId, operationOptions, (state) => {
                 const scope = getScope(state, scopeId, false);
                 const conversation = getConversation(scope, conversationId);
-                if (conversation.assistantCharacterId) throw new QQV2DomainError('助手不能注入世界书', 'assistant_worldbook_forbidden');
+                if (conversation.assistantCharacterId) throw new QQV2DomainError(t("助手不能注入世界书"), 'assistant_worldbook_forbidden');
                 const message = scope.messages[asText(messageId, 256)];
                 if (!message || message.conversationId !== conversation.conversationId) {
-                    throw new QQV2DomainError('手选世界书消息不存在', 'message_not_found');
+                    throw new QQV2DomainError(t("手选世界书消息不存在"), 'message_not_found');
                 }
                 message.selectedForInjection = selected === true;
                 const selectedIds = new Set(conversation.injection.selectedMessageIds);
@@ -1382,7 +1383,7 @@ export function createQQV2Repository(options = {}) {
             return transactScoped(scopeId, operationOptions, (state) => {
                 const scope = getScope(state, scopeId, false);
                 const conversation = getConversation(scope, conversationId);
-                if (conversation.assistantCharacterId) throw new QQV2DomainError('助手不能注入世界书', 'assistant_worldbook_forbidden');
+                if (conversation.assistantCharacterId) throw new QQV2DomainError(t("助手不能注入世界书"), 'assistant_worldbook_forbidden');
                 const ids = [...new Set((Array.isArray(messageIds) ? messageIds : [])
                     .map((messageId) => asText(messageId, 256))
                     .filter(Boolean))];
@@ -1502,9 +1503,9 @@ export function createQQV2Repository(options = {}) {
             return transactScoped(scopeId, operationOptions, (state) => {
                 const scope = getScope(state, scopeId, false);
                 const conversation = getConversation(scope, conversationId);
-                if (conversation.assistantCharacterId && Object.keys(profile).some(key => key !== 'backgroundAssetId')) throw new QQV2DomainError('请通过助手人物设置修改资料', 'assistant_profile_managed');
+                if (conversation.assistantCharacterId && Object.keys(profile).some(key => key !== 'backgroundAssetId')) throw new QQV2DomainError(t("请通过助手人物设置修改资料"), 'assistant_profile_managed');
                 if (conversation.kind !== 'private') {
-                    throw new QQV2DomainError('只有私聊会话可以修改人物资料', 'private_conversation_required');
+                    throw new QQV2DomainError(t("只有私聊会话可以修改人物资料"), 'private_conversation_required');
                 }
                 const person = getPerson(scope, conversation.personId);
                 const previousAvatarAssetId = person.avatarAssetId;
@@ -1515,7 +1516,7 @@ export function createQQV2Repository(options = {}) {
                     const collision = Object.values(scope.people).find((candidate) => (
                         candidate.personId !== person.personId && !candidate.assistantCharacterId && candidate.formalName === formalName
                     ));
-                    if (collision) throw new QQV2DomainError('已存在同名联系人', 'person_name_conflict');
+                    if (collision) throw new QQV2DomainError(t("已存在同名联系人"), 'person_name_conflict');
                     person.formalName = formalName;
                     person.normalizedName = formalName;
                 }
@@ -1550,7 +1551,7 @@ export function createQQV2Repository(options = {}) {
                 const scope = getScope(state, scopeId, false);
                 const conversation = getConversation(scope, conversationId);
                 if (conversation.kind !== 'group') {
-                    throw new QQV2DomainError('只有群聊会话可以修改群资料', 'group_conversation_required');
+                    throw new QQV2DomainError(t("只有群聊会话可以修改群资料"), 'group_conversation_required');
                 }
                 const group = getGroup(scope, conversation.groupId);
                 const previousBackgroundAssetId = conversation.backgroundAssetId;
@@ -1565,7 +1566,7 @@ export function createQQV2Repository(options = {}) {
         },
         async importPrivateContacts(scopeId, contacts = [], operationOptions = {}) {
             if (!Array.isArray(contacts)) {
-                throw new QQV2DomainError('导入联系人必须是数组', 'contact_import_invalid');
+                throw new QQV2DomainError(t("导入联系人必须是数组"), 'contact_import_invalid');
             }
             const imported = contacts.map(normalizeImportedPrivateContact);
             if (imported.length === 0) return [];
@@ -1649,10 +1650,10 @@ export function createQQV2Repository(options = {}) {
                 const scope = getScope(state, scopeId, false);
                 const conversation = getConversation(scope, conversationId);
                 if (conversation.kind !== 'private') {
-                    throw new QQV2DomainError('只能激活私聊联系人', 'private_conversation_required');
+                    throw new QQV2DomainError(t("只能激活私聊联系人"), 'private_conversation_required');
                 }
                 if (!['contact', 'active'].includes(conversation.status)) {
-                    throw new QQV2DomainError('当前联系人不能激活会话', 'contact_activation_invalid');
+                    throw new QQV2DomainError(t("当前联系人不能激活会话"), 'contact_activation_invalid');
                 }
                 const person = getPerson(scope, conversation.personId);
                 const activated = activatePrivateContact(scope, conversation, person, input);
@@ -1663,9 +1664,9 @@ export function createQQV2Repository(options = {}) {
             return transactScoped(scopeId, operationOptions, (state) => {
                 const scope = getScope(state, scopeId, false);
                 const conversation = getConversation(scope, conversationId);
-                if (conversation.assistantCharacterId) throw new QQV2DomainError('请通过助手人物设置修改资料', 'assistant_profile_managed');
+                if (conversation.assistantCharacterId) throw new QQV2DomainError(t("请通过助手人物设置修改资料"), 'assistant_profile_managed');
                 if (conversation.kind !== 'private') {
-                    throw new QQV2DomainError('只能删除私聊好友', 'private_conversation_required');
+                    throw new QQV2DomainError(t("只能删除私聊好友"), 'private_conversation_required');
                 }
                 const person = getPerson(scope, conversation.personId);
                 if (conversation.status === 'contact') {
@@ -1678,7 +1679,7 @@ export function createQQV2Repository(options = {}) {
                 appendSystemMessage(
                     scope,
                     conversation,
-                    `${asText(input.userName, 120) || '用户'}删除了${person.formalName}`,
+                    t`${asText(input.userName, 120) || t('用户')}删除了${person.formalName}`,
                     asText(input.storyTime, 128),
                 );
                 return { removed: true, conversation: copy(conversation), person: copy(person) };
@@ -1716,14 +1717,14 @@ export function createQQV2Repository(options = {}) {
                 const scope = getScope(state, scopeId, true);
                 const name = requireText(input.name, '群名称', 120);
                 const memberIds = [...new Set(Array.isArray(input.memberIds) ? input.memberIds.map((id) => asText(id, 256)).filter(Boolean) : [])];
-                if (memberIds.length < 2) throw new QQV2DomainError('创建群聊至少需要两名已有私聊好友', 'group_member_count');
+                if (memberIds.length < 2) throw new QQV2DomainError(t("创建群聊至少需要两名已有私聊好友"), 'group_member_count');
                 memberIds.forEach((personId) => {
                     getPerson(scope, personId);
-                    if (!isPrivateFriend(scope, personId)) throw new QQV2DomainError('群成员必须是已有私聊好友', 'group_member_not_friend');
+                    if (!isPrivateFriend(scope, personId)) throw new QQV2DomainError(t("群成员必须是已有私聊好友"), 'group_member_not_friend');
                 });
                 const ownerId = asText(input.ownerId, 256) || SELF_ID;
                 if (ownerId !== SELF_ID && !memberIds.includes(ownerId)) {
-                    throw new QQV2DomainError('NPC 群主必须是当前群成员', 'group_owner_invalid');
+                    throw new QQV2DomainError(t("NPC 群主必须是当前群成员"), 'group_owner_invalid');
                 }
                 const groupId = createId('group');
                 const conversationId = createId('group-conversation');
@@ -1775,7 +1776,7 @@ export function createQQV2Repository(options = {}) {
         },
         async listMessagePage(scopeId, conversationId, { beforeSequence, fromSequence, limit = 50 } = {}) {
             if (fromSequence !== undefined && (!Number.isSafeInteger(fromSequence) || fromSequence < 0 || beforeSequence !== undefined)) {
-                throw new QQV2DomainError('消息窗口起点无效', 'message_window_invalid');
+                throw new QQV2DomainError(t("消息窗口起点无效"), 'message_window_invalid');
             }
             const state = await stateStore.read();
             const scope = getScope(state, scopeId, false);
@@ -1802,7 +1803,7 @@ export function createQQV2Repository(options = {}) {
             return transactScoped(scopeId, operationOptions, (state) => {
                 const scope = getScope(state, scopeId, false);
                 const conversation = getConversation(scope, conversationId);
-                if (!Array.isArray(inputs) || inputs.length === 0) throw new QQV2DomainError('至少需要一条消息', 'message_required');
+                if (!Array.isArray(inputs) || inputs.length === 0) throw new QQV2DomainError(t("至少需要一条消息"), 'message_required');
                 return inputs.map((input) => appendOneMessage(scope, conversation, input));
             });
         },
@@ -1813,14 +1814,14 @@ export function createQQV2Repository(options = {}) {
                 const normalizedMessageId = requireText(messageId, 'QQ 消息 ID', 256);
                 const message = scope.messages[normalizedMessageId];
                 if (!message || message.conversationId !== conversation.conversationId) {
-                    throw new QQV2DomainError('QQ 消息不存在', 'message_not_found');
+                    throw new QQV2DomainError(t("QQ 消息不存在"), 'message_not_found');
                 }
                 if (message.type !== 'image') {
-                    throw new QQV2DomainError('只有图片消息可以保存生成图片', 'message_type_invalid');
+                    throw new QQV2DomainError(t("只有图片消息可以保存生成图片"), 'message_type_invalid');
                 }
                 const generatedAt = Number(image.generatedAt);
                 if (!Number.isFinite(generatedAt) || generatedAt <= 0) {
-                    throw new QQV2DomainError('生成图片时间无效', 'generated_image_time_invalid');
+                    throw new QQV2DomainError(t("生成图片时间无效"), 'generated_image_time_invalid');
                 }
                 const previousImagePath = asText(message.generatedImagePath, 2048);
                 message.generatedImagePath = requireText(image.path, '生成图片路径', 2048);
@@ -1841,13 +1842,13 @@ export function createQQV2Repository(options = {}) {
                 getConversation(scope, conversationId);
                 const message = scope.messages[asText(messageId, 256)];
                 if (!message || message.conversationId !== conversationId) {
-                    throw new QQV2DomainError('QQ 消息不存在', 'message_not_found');
+                    throw new QQV2DomainError(t("QQ 消息不存在"), 'message_not_found');
                 }
                 if (message.senderType === 'system' || !['text', 'voice', 'image', 'video', 'sticker', 'transfer'].includes(message.type)) {
-                    throw new QQV2DomainError('此消息不能编辑', 'message_not_editable');
+                    throw new QQV2DomainError(t("此消息不能编辑"), 'message_not_editable');
                 }
                 if (typeof content !== 'string' || (message.type !== 'transfer' && !content.trim())) {
-                    throw new QQV2DomainError('消息内容不能为空', 'message_content_required');
+                    throw new QQV2DomainError(t("消息内容不能为空"), 'message_content_required');
                 }
                 if (message.type === 'transfer') message.transfer.note = content;
                 else message.content = content;
@@ -1866,7 +1867,7 @@ export function createQQV2Repository(options = {}) {
                         .sort((a, b) => a.sequence - b.sequence);
                     const target = all.find((message) => message.messageId === operationOptions.recallMessageId);
                     if (!target || target.senderType !== 'self' || target.type === 'system') {
-                        throw new QQV2DomainError('只能撤回当前会话中存在的用户消息', 'message_not_recallable');
+                        throw new QQV2DomainError(t("只能撤回当前会话中存在的用户消息"), 'message_not_recallable');
                     }
                     recalledMessage = copy(target);
                     ids = all.filter((message) => message.sequence >= target.sequence).map((message) => message.messageId);
@@ -1912,7 +1913,7 @@ export function createQQV2Repository(options = {}) {
                     blob: input.blob instanceof Blob ? input.blob : null,
                     mimeType: asText(input.mimeType, 128),
                 };
-                if (!asset.blob) throw new QQV2DomainError('图片资源必须使用 Blob 保存', 'asset_blob_required');
+                if (!asset.blob) throw new QQV2DomainError(t("图片资源必须使用 Blob 保存"), 'asset_blob_required');
                 scope.assets[asset.assetId] = asset;
                 return copy(asset);
             });
@@ -2051,10 +2052,10 @@ export function createQQV2Repository(options = {}) {
         async applyAIActions(scopeId, actions, options = {}) {
             return transactScoped(scopeId, options, (state) => {
                 if (typeof options.isCurrent === 'function' && !options.isCurrent()) {
-                    throw new QQV2DomainError('AI 动作批次已被新的请求取代', 'request_cancelled');
+                    throw new QQV2DomainError(t("AI 动作批次已被新的请求取代"), 'request_cancelled');
                 }
                 const scope = getScope(state, scopeId, false);
-                if (!Array.isArray(actions)) throw new QQV2DomainError('AI 动作批次必须是数组', 'action_batch_invalid');
+                if (!Array.isArray(actions)) throw new QQV2DomainError(t("AI 动作批次必须是数组"), 'action_batch_invalid');
                 const storyTime = asText(options.storyTime, 128);
                 const conversationReferences = new Map(Object.entries(options.references || {}));
                 const personReferences = new Map();
@@ -2067,7 +2068,7 @@ export function createQQV2Repository(options = {}) {
                 };
                 const resolvePerson = (reference) => personReferences.get(reference) || reference;
                 const createPrivate = (action) => {
-                    if (conversationReferences.has(action.id)) throw new QQV2DomainError('新私聊引用重复', 'action_reference_duplicate');
+                    if (conversationReferences.has(action.id)) throw new QQV2DomainError(t("新私聊引用重复"), 'action_reference_duplicate');
                     const formalName = exactContactFormalName(action.name);
                     let person = Object.values(scope.people).find((candidate) => !candidate.assistantCharacterId && candidate.formalName === formalName) || null;
                     if (!person) {
@@ -2086,15 +2087,15 @@ export function createQQV2Repository(options = {}) {
                     return conversation;
                 };
                 const createGroup = (action) => {
-                    if (conversationReferences.has(action.id)) throw new QQV2DomainError('新群聊引用重复', 'action_reference_duplicate');
+                    if (conversationReferences.has(action.id)) throw new QQV2DomainError(t("新群聊引用重复"), 'action_reference_duplicate');
                     const memberIds = [...new Set((action.members || []).map(resolvePerson))];
-                    if (memberIds.length < 2) throw new QQV2DomainError('新群聊至少需要两名成员', 'group_member_count');
+                    if (memberIds.length < 2) throw new QQV2DomainError(t("新群聊至少需要两名成员"), 'group_member_count');
                     memberIds.forEach((personId) => {
                         getPerson(scope, personId);
-                        if (!isPrivateFriend(scope, personId)) throw new QQV2DomainError('新群成员必须是已有私聊好友', 'group_member_not_friend');
+                        if (!isPrivateFriend(scope, personId)) throw new QQV2DomainError(t("新群成员必须是已有私聊好友"), 'group_member_not_friend');
                     });
                     const ownerId = resolvePerson(action.owner);
-                    if (!memberIds.includes(ownerId)) throw new QQV2DomainError('NPC 群主必须是当前群成员', 'group_owner_invalid');
+                    if (!memberIds.includes(ownerId)) throw new QQV2DomainError(t("NPC 群主必须是当前群成员"), 'group_owner_invalid');
                     const groupId = createId('group');
                     const conversationId = createId('group-conversation');
                     const group = { groupId, scopeId: scope.scopeId, conversationId, name: requireText(action.name, '群名称', 120), ownerId, adminIds: [], memberIds, selfRole: 'member', selfExited: false, status: 'active', mutes: {} };
@@ -2111,12 +2112,12 @@ export function createQQV2Repository(options = {}) {
                 };
                 const runGroupAction = (action) => {
                     const conversation = resolveConversation(action.conversation);
-                    if (conversation.kind !== 'group') throw new QQV2DomainError('群管理动作目标必须是群聊', 'group_action_target');
+                    if (conversation.kind !== 'group') throw new QQV2DomainError(t("群管理动作目标必须是群聊"), 'group_action_target');
                     let targetPersonId = resolvePerson(action.target);
                     let allowNonFriend = false;
                     if (action.action === 'add' && action.name) {
                         if (!action.id || personReferences.has(action.id)) {
-                            throw new QQV2DomainError('新增群成员引用缺失或重复', 'action_reference_duplicate');
+                            throw new QQV2DomainError(t("新增群成员引用缺失或重复"), 'action_reference_duplicate');
                         }
                         const formalName = exactContactFormalName(action.name);
                         let person = Object.values(scope.people).find((candidate) => !candidate.assistantCharacterId && candidate.formalName === formalName) || null;
@@ -2143,17 +2144,17 @@ export function createQQV2Repository(options = {}) {
                     const conversation = resolveConversation(action.conversation);
                     const transferMessage = scope.messages[asText(action.message, 256)];
                     if (!transferMessage || transferMessage.conversationId !== conversation.conversationId) {
-                        throw new QQV2DomainError('转账消息不存在或不属于该会话', 'transfer_not_found');
+                        throw new QQV2DomainError(t("转账消息不存在或不属于该会话"), 'transfer_not_found');
                     }
                     if (transferMessage.type !== 'transfer' || !transferMessage.transfer) {
-                        throw new QQV2DomainError('目标消息不是转账', 'transfer_invalid');
+                        throw new QQV2DomainError(t("目标消息不是转账"), 'transfer_invalid');
                     }
                     if (transferMessage.transfer.status !== 'pending') {
-                        throw new QQV2DomainError('该转账当前不能由 AI 处理', 'transfer_not_pending');
+                        throw new QQV2DomainError(t("该转账当前不能由 AI 处理"), 'transfer_not_pending');
                     }
                     const actorId = resolvePerson(action.actor);
                     if (transferMessage.senderId === actorId || transferMessage.transfer.recipientId !== actorId) {
-                        throw new QQV2DomainError('转账处理人不是指定收款人', 'transfer_recipient_invalid');
+                        throw new QQV2DomainError(t("转账处理人不是指定收款人"), 'transfer_recipient_invalid');
                     }
                     transferMessage.transfer.status = action.action === 'accept' ? 'accepted' : 'rejected';
                     transferMessage.transfer.handledStoryTime = storyTime;
@@ -2165,7 +2166,7 @@ export function createQQV2Repository(options = {}) {
                 };
 
                 actions.forEach((action) => {
-                    if (!action || typeof action !== 'object') throw new QQV2DomainError('AI 动作无效', 'action_invalid');
+                    if (!action || typeof action !== 'object') throw new QQV2DomainError(t("AI 动作无效"), 'action_invalid');
                     if (action.type === 'create-private') {
                         createPrivate(action);
                         applied.push({ type: action.type, reference: action.id });
@@ -2197,7 +2198,7 @@ export function createQQV2Repository(options = {}) {
                     }
                     if (action.type === 'read') {
                         const conversation = resolveConversation(action.conversation);
-                        if (conversation.kind !== 'private') throw new QQV2DomainError('read 只允许私聊', 'read_invalid');
+                        if (conversation.kind !== 'private') throw new QQV2DomainError(t("read 只允许私聊"), 'read_invalid');
                         const lastUserMessage = Object.values(scope.messages)
                             .filter((message) => message.conversationId === conversation.conversationId && message.senderId === SELF_ID)
                             .sort((left, right) => right.sequence - left.sequence)[0];
@@ -2223,10 +2224,10 @@ export function createQQV2Repository(options = {}) {
                         });
                         return;
                     }
-                    throw new QQV2DomainError('不支持的 AI 动作', 'action_invalid');
+                    throw new QQV2DomainError(t("不支持的 AI 动作"), 'action_invalid');
                 });
                 if (createdWithoutMessage.size > 0) {
-                    throw new QQV2DomainError('AI 新建会话必须在同一批提供合法首条消息', 'created_conversation_without_message');
+                    throw new QQV2DomainError(t("AI 新建会话必须在同一批提供合法首条消息"), 'created_conversation_without_message');
                 }
                 for (const [conversationId, sequence] of Object.entries(options.handledUserSequences || {})) {
                     const conversation = getConversation(scope, conversationId);
@@ -2237,7 +2238,7 @@ export function createQQV2Repository(options = {}) {
                         && message.sequence === boundary
                     ));
                     if (!Number.isInteger(boundary) || boundary < 1 || !matchingUserMessage) {
-                        throw new QQV2DomainError('未回复批次边界必须指向当前会话的用户消息', 'handled_boundary_invalid');
+                        throw new QQV2DomainError(t("未回复批次边界必须指向当前会话的用户消息"), 'handled_boundary_invalid');
                     }
                     conversation.lastHandledUserSequence = Math.max(
                         Number(conversation.lastHandledUserSequence || 0),

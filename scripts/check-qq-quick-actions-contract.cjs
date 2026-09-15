@@ -4,6 +4,7 @@ const source = fs.readFileSync('modules/qq-v2/ui/app.js', 'utf8');
 const quick = source.slice(source.indexOf('    const openMessageQuickMenu ='), source.indexOf('    const messageMenu = createMessageMenuController'));
 
 async function main() {
+    const { t } = await import('../modules/i18n/index.js');
     const buttons = [];
     const calls = [];
     const rect = { left: 0, top: 0, right: 300, bottom: 500, width: 300, height: 500 };
@@ -19,7 +20,7 @@ async function main() {
         setAttribute() {},
         addEventListener(type, handler) { this.handlers[type] = handler; },
     });
-    const dependencies = {
+    const dependencies = { t,
         openMessageEditor: (...args) => calls.push(['edit', ...args]),
         recallMessage: async (...args) => calls.push(['recall', ...args]),
         viewport: { querySelectorAll: () => [anchor] },

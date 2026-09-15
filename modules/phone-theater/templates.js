@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../utils/dom-escape.js';
 import {
     buildPhoneBackButton,
@@ -14,7 +15,7 @@ function renderEditMenu(editableTables = []) {
         <div class="phone-theater-edit-menu" role="menu">
             ${entries.map((entry) => `
                 <button type="button" class="phone-theater-edit-menu-item" data-action="theater-open-edit-table" data-edit-role="${escapeHtmlAttr(entry.role)}" role="menuitem">
-                    <span>${escapeHtml(entry.label || entry.tableName || '编辑表格')}</span>
+                    <span>${escapeHtml(entry.label || entry.tableName || t("编辑表格"))}</span>
                     ${entry.description ? `<small>${escapeHtml(entry.description)}</small>` : ''}
                 </button>
             `).join('')}
@@ -36,19 +37,19 @@ function renderTitleNavigation(title, navigation) {
         previousHtml: buildPhoneSwitchButton('previous', {
             className: 'phone-theater-table-navigation-button',
             action: 'theater-table-navigation-previous',
-            label: '上一张表',
+            label: t("上一张表"),
             disabled: previous.disabled === true,
             attributes: { 'aria-disabled': previous.disabled ? 'true' : 'false' },
         }),
         nextHtml: buildPhoneSwitchButton('next', {
             className: 'phone-theater-table-navigation-button',
             action: 'theater-table-navigation-next',
-            label: '下一张表',
+            label: t("下一张表"),
             disabled: next.disabled === true,
             attributes: { 'aria-disabled': next.disabled ? 'true' : 'false' },
         }),
         className: 'phone-theater-title-navigation phone-theater-table-navigation',
-        attributes: { 'aria-label': '切换表格' },
+        attributes: { 'aria-label': t("切换表格") },
     });
 }
 
@@ -59,7 +60,7 @@ function renderNavActions(uiState = {}) {
     const canEdit = !!uiState.canEdit;
     const canDelete = !!uiState.canDelete;
     const editMenuOpen = !!uiState.editMenuOpen;
-    const editButtonLabel = editableTables.filter(entry => entry?.available).length > 1 && editMenuOpen ? '收起' : '编辑';
+    const editButtonLabel = editableTables.filter(entry => entry?.available).length > 1 && editMenuOpen ? t("收起") : t("编辑");
 
     if (!canEdit && !canDelete) return '<div class="phone-theater-nav-actions" aria-hidden="true"></div>';
 
@@ -71,7 +72,7 @@ function renderNavActions(uiState = {}) {
                     ${editMenuOpen ? renderEditMenu(editableTables) : ''}
                 </div>
             ` : ''}
-            ${canDelete ? `<button type="button" class="phone-theater-delete-toggle ${deleteMode ? 'is-active' : ''}" data-action="toggle-theater-delete-mode" ${deleting ? 'disabled' : ''}>${deleteMode ? '完成' : '删除'}</button>` : ''}
+            ${canDelete ? `<button type="button" class="phone-theater-delete-toggle ${deleteMode ? 'is-active' : ''}" data-action="toggle-theater-delete-mode" ${deleting ? 'disabled' : ''}>${deleteMode ? t("完成") : t("删除")}</button>` : ''}
         </div>
     `;
 }
@@ -92,17 +93,17 @@ function renderDeleteManageBar(uiState = {}) {
     const deleting = !!uiState.deleting;
     return `
         <div class="phone-theater-manage-bar">
-            <button type="button" class="phone-theater-manage-btn" data-action="theater-select-all" ${deleting || totalCount <= 0 ? 'disabled' : ''}>全选</button>
-            <button type="button" class="phone-theater-manage-btn" data-action="theater-clear-selection" ${deleting || selectedCount <= 0 ? 'disabled' : ''}>取消选择</button>
-            <button type="button" class="phone-theater-manage-btn is-danger" data-action="theater-confirm-delete" ${deleting || selectedCount <= 0 ? 'disabled' : ''}>${deleting ? '删除中...' : `删除已选（${selectedCount}）`}</button>
+            <button type="button" class="phone-theater-manage-btn" data-action="theater-select-all" ${deleting || totalCount <= 0 ? 'disabled' : ''}>${t`全选`}</button>
+            <button type="button" class="phone-theater-manage-btn" data-action="theater-clear-selection" ${deleting || selectedCount <= 0 ? 'disabled' : ''}>${t`取消选择`}</button>
+            <button type="button" class="phone-theater-manage-btn is-danger" data-action="theater-confirm-delete" ${deleting || selectedCount <= 0 ? 'disabled' : ''}>${deleting ? t("删除中...") : t`删除已选（${selectedCount}）`}</button>
         </div>
     `;
 }
 
 function renderSceneContent(viewModel, uiState = {}) {
-    if (!viewModel?.available) return theaterRenderKit.renderEmpty(viewModel?.emptyText || '暂无内容');
+    if (!viewModel?.available) return theaterRenderKit.renderEmpty(viewModel?.emptyText || t("暂无内容"));
     const renderContent = viewModel?.scene?.renderContent;
-    if (typeof renderContent !== 'function') return theaterRenderKit.renderEmpty('未知小剧场入口');
+    if (typeof renderContent !== 'function') return theaterRenderKit.renderEmpty(t("未知小剧场入口"));
     return renderContent(viewModel, uiState, theaterRenderKit);
 }
 

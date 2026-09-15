@@ -158,7 +158,7 @@ async function main() {
         'contact imports must validate the full pack before confirmation');
     assert.match(uiSource, /facade\.intent\.importContactPack\(\{ source \}\)/u,
         'confirmed contact imports must use the facade intent');
-    assert.match(uiSource, /shell\.showToast\?\.\('文件错误', true\);/u,
+    assert.match(uiSource, /shell\.showToast\?\.\(t\("文件错误"\), true\);/u,
         'all contact-pack file errors must use the fixed toast copy');
     assert.match(uiSource, /if \(target\?\.status === 'contact'\) \{[\s\S]*?facade\.intent\.activatePrivateContact/u,
         'opening a resolved contact snapshot must activate that exact conversation');

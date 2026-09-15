@@ -103,7 +103,7 @@ async function main() {
     assert.match(appSource, /conversation\?\.kind === 'group'[\s\S]*submitQuotedTextMessage\(/,
         'only group composer submissions attach quote IDs');
     assert.match(appSource, /yuzi-qq-quote-preview/, 'group chat exposes a removable quote preview');
-    assert.match(appSource, /createButton\('引用'/, 'group chat message menus expose quote actions');
+    assert.match(appSource, /createButton\(t\("引用"\)/, 'group chat message menus expose quote actions');
     assert.match(appSource, /yuzi-qq-mention-panel/, 'group @ suggestions render above the composer input');
     assert.match(appSource, /mentionAll/, 'group @全体成员 uses a structured mention flag');
     assert.match(appSource, /data-qq-group-member-mention/, 'long-pressing a group avatar has a dedicated mention target');

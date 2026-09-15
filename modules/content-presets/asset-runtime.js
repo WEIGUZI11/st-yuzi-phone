@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { resolvePackageReference, stripReferenceSuffix } from './paths.js';
 
 function decodeCssEscapes(value) {
@@ -206,7 +207,7 @@ export function createAssetRuntime(record, options = {}) {
     const resolveAsset = (path) => {
         if (urls.has(path)) return urls.get(path);
         const file = record.files?.[path];
-        if (!file) throw new Error(`资源不存在：${path}`);
+        if (!file) throw new Error(t`资源不存在：${path}`);
         const url = createObjectURL(new BlobCtor([decodeFile(file)], { type: file.mimeType }));
         urls.set(path, url);
         return url;

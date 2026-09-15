@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { getPhoneSettings, savePhoneSetting } from '../../../settings.js';
 import { createDebouncedTask } from '../../../runtime-manager.js';
 import { clampNumber } from '../../../utils/object.js';
@@ -102,7 +103,7 @@ export function setupReadableTextScaleSettings(container) {
         const value = saveScale(source.value);
         syncControls(value);
         applyReadableTextScale(null, value);
-        showToast(container, '主要内容字体大小已更新');
+        showToast(container, t("主要内容字体大小已更新"));
     };
 
     addListener(rangeInput, 'input', handleInput);

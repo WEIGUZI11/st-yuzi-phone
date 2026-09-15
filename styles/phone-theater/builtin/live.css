@@ -1,0 +1,692 @@
+.yuzi-theater-live {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  overflow: hidden;
+  background: #242126;
+  color: #fff;
+  font-family: var(--yuzi-phone-font-family,sans-serif);
+  container: yuzi-theater-live/inline-size;
+}
+.yuzi-theater-live,
+.yuzi-theater-live * {
+  box-sizing: border-box;
+}
+.yuzi-theater-live button {
+  font: inherit;
+}
+.yuzi-theater-live svg {
+  display: block;
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.yuzi-theater-live-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      180deg,
+      #767b83 0%,
+      #5c6570 34%,
+      #352f35 100%);
+}
+.yuzi-theater-live-scene:before {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 50% 28%,
+      rgba(255, 255, 255, .24),
+      transparent 30%),
+    linear-gradient(
+      135deg,
+      rgba(255, 190, 167, .18),
+      transparent 45%);
+  content: "";
+}
+.yuzi-theater-live-scene:after {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, .14),
+      transparent 24%,
+      transparent 50%,
+      rgba(0, 0, 0, .62));
+  content: "";
+}
+.yuzi-theater-live-stage-figure {
+  position: absolute;
+  top: 24%;
+  left: 50%;
+  width: 62%;
+  height: 55%;
+  transform: translateX(-50%);
+  border-radius: 48% 48% 12% 12%;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(236, 218, 207, .65),
+      rgba(82, 70, 79, .75));
+  filter: blur(1px);
+  opacity: .72;
+}
+.yuzi-theater-live-ui {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .62);
+}
+.yuzi-theater-live-topbar {
+  position: absolute;
+  top: 50px;
+  right: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+.yuzi-theater-live-host {
+  display: flex;
+  min-width: 0;
+  max-width: 58%;
+  align-items: center;
+  gap: 7px;
+  height: 42px;
+  padding: 4px 5px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 23px;
+  background: rgba(0, 0, 0, .34);
+  backdrop-filter: blur(8px);
+}
+.yuzi-theater-live-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      145deg,
+      #ff9b87,
+      #7e6eac);
+  font-size: calc(12px * var(--yuzi-phone-readable-text-scale,1));
+  font-weight: 700;
+}
+.yuzi-theater-live-host-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.yuzi-theater-live-host-copy strong,
+.yuzi-theater-live-host-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.yuzi-theater-live-host-copy strong {
+  font-size: calc(11px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-live-host-copy span {
+  color: rgba(255, 255, 255, .72);
+  font-size: calc(8px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-live-follow {
+  flex: none;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 16px;
+  background: #ff3656;
+  color: #fff;
+  font-size: calc(10px * var(--yuzi-phone-readable-text-scale,1));
+  font-weight: 700;
+  cursor: pointer;
+}
+.yuzi-theater-live-follow.is-active {
+  background: rgba(255, 255, 255, .22);
+}
+.yuzi-theater-live-audience {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+}
+.yuzi-theater-live-viewer-avatar {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  margin-left: -8px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 50%;
+  background: #81798a;
+  font-size: calc(9px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-live-viewer-avatar:first-child {
+  margin-left: 0;
+}
+.yuzi-theater-live-count {
+  height: 27px;
+  margin-left: 5px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, .3);
+  color: #fff;
+  font-size: calc(9px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-live-close {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  margin-left: 4px;
+  padding: 5px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .3);
+  color: #fff;
+}
+.yuzi-theater-live-title-panel {
+  position: absolute;
+  top: 104px;
+  right: 14px;
+  left: 14px;
+  text-align: center;
+}
+.yuzi-theater-live-title-panel h1 {
+  margin: 0;
+  font-size: calc(16px * var(--yuzi-phone-readable-text-scale,1));
+  line-height: 1.4;
+}
+.yuzi-theater-live-title-panel p {
+  margin: 4px auto 0;
+  max-width: 82%;
+  overflow: hidden;
+  color: rgba(255, 255, 255, .75);
+  font-size: calc(9px * var(--yuzi-phone-readable-text-scale,1));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.yuzi-theater-live-badge {
+  display: inline-flex;
+  margin-top: 7px;
+  padding: 4px 9px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .3);
+  color: #fff;
+  font-size: calc(9px * var(--yuzi-phone-readable-text-scale,1));
+  backdrop-filter: blur(5px);
+}
+.yuzi-theater-live-chat-wrap {
+  position: absolute;
+  right: 54px;
+  bottom: 67px;
+  left: 10px;
+  height: 31%;
+  min-height: 145px;
+  overflow: hidden;
+  mask-image:
+    linear-gradient(
+      transparent 0,
+      #000 18%,
+      #000 100%);
+}
+.yuzi-theater-live-chat-list {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 5px;
+  transition: transform .42s cubic-bezier(.22, .8, .35, 1);
+}
+.yuzi-theater-live-chat-list.is-paused {
+  transition: none;
+}
+.yuzi-theater-live-chat-line {
+  width: max-content;
+  max-width: 96%;
+  padding: 6px 9px;
+  border-radius: 15px;
+  background: rgba(0, 0, 0, .4);
+  font-size: calc(10px * var(--yuzi-phone-readable-text-scale,1));
+  line-height: 1.35;
+  backdrop-filter: blur(5px);
+  animation: liveChatIn .38s ease both;
+}
+.yuzi-theater-live-level {
+  display: inline-flex;
+  min-width: 24px;
+  height: 15px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 5px;
+  padding: 0 4px;
+  border-radius: 7px;
+  background:
+    linear-gradient(
+      90deg,
+      #ff9b45,
+      #ff4978);
+  font-size: calc(8px * var(--yuzi-phone-readable-text-scale,1));
+  font-weight: 700;
+}
+.yuzi-theater-live-chat-author {
+  margin-right: 4px;
+  color: #9ed2ff;
+}
+.yuzi-theater-live-chat-line[data-kind=stan] .yuzi-theater-live-level {
+  background:
+    linear-gradient(
+      90deg,
+      #ffca45,
+      #ff7b53);
+}
+.yuzi-theater-live-chat-line[data-kind=clash] .yuzi-theater-live-level {
+  background:
+    linear-gradient(
+      90deg,
+      #69b7ff,
+      #7673ff);
+}
+.yuzi-theater-live-pause {
+  position: absolute;
+  right: 11px;
+  bottom: 120px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 9px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .32);
+  color: #fff;
+  backdrop-filter: blur(7px);
+}
+.yuzi-theater-live-pause[data-paused=true] {
+  background: rgba(255, 54, 86, .76);
+}
+.yuzi-theater-live-pause-label {
+  position: absolute;
+  right: 9px;
+  bottom: 101px;
+  width: 44px;
+  color: rgba(255, 255, 255, .78);
+  font-size: calc(8px * var(--yuzi-phone-readable-text-scale,1));
+  text-align: center;
+}
+.yuzi-theater-live-actionbar {
+  position: absolute;
+  right: 8px;
+  bottom: 10px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.yuzi-theater-live-input {
+  min-width: 0;
+  height: 40px;
+  flex: 1;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 21px;
+  background: rgba(0, 0, 0, .34);
+  color: #fff;
+  font-size: calc(11px * var(--yuzi-phone-readable-text-scale,1));
+  outline: none;
+  backdrop-filter: blur(8px);
+}
+.yuzi-theater-live-input::placeholder {
+  color: rgba(255, 255, 255, .72);
+}
+.yuzi-theater-live-action {
+  display: grid;
+  width: 39px;
+  height: 39px;
+  flex: none;
+  padding: 9px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .31);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(7px);
+}
+.yuzi-theater-live-action.is-active[data-yuzi-theater-live-action=like] {
+  background: #ed3659;
+}
+.yuzi-theater-live-action.is-active[data-yuzi-theater-live-action=like] svg {
+  fill: currentColor;
+}
+.yuzi-theater-live-action.is-active[data-yuzi-theater-live-action=gift] {
+  background: #755cff;
+}
+.yuzi-theater-live-empty {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  left: 20px;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, .75);
+  font-size: calc(12px * var(--yuzi-phone-readable-text-scale,1));
+  text-align: center;
+}
+@keyframes liveChatIn {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .yuzi-theater-live-chat-line {
+    animation: none;
+  }
+  .yuzi-theater-live-chat-list {
+    transition: none;
+  }
+}
+@container yuzi-theater-live (max-width:320px) {
+  .yuzi-theater-live-topbar {
+    right: 7px;
+    left: 7px;
+  }
+  .yuzi-theater-live-host {
+    max-width: 55%;
+  }
+  .yuzi-theater-live-viewer-avatar:nth-child(3) {
+    display: none;
+  }
+  .yuzi-theater-live-actionbar {
+    gap: 5px;
+  }
+  .yuzi-theater-live-action {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+  }
+  .yuzi-theater-live-input {
+    height: 38px;
+  }
+  .yuzi-theater-live-chat-wrap {
+    right: 48px;
+  }
+}
+.yuzi-theater-live-host {
+  max-width: 68%;
+}
+.yuzi-theater-live-host-copy strong {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  word-break: break-word;
+  line-height: 1.15;
+}
+.yuzi-theater-live-count {
+  display: grid;
+  min-width: 50px;
+  place-items: center;
+  text-align: center;
+}
+.yuzi-theater-live-title-panel > p {
+  display: none;
+}
+.yuzi-theater-live-stage-summary {
+  position: absolute;
+  top: 31%;
+  right: 18px;
+  left: 18px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .22);
+  color: #fff;
+  font-size: calc(13px * var(--yuzi-phone-readable-text-scale,1));
+  font-weight: 600;
+  line-height: 1.65;
+  text-align: center;
+  white-space: pre-wrap;
+  backdrop-filter: blur(3px);
+}
+.yuzi-theater-live-chat-wrap {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  touch-action: pan-y;
+  mask-image:
+    linear-gradient(
+      transparent 0,
+      #000 18%,
+      #000 100%);
+}
+.yuzi-theater-live-chat-wrap::-webkit-scrollbar {
+  display: none;
+}
+.yuzi-theater-live-chat-list {
+  position: static !important;
+  min-height: 100%;
+  padding-top: 28px;
+}
+.yuzi-theater-live-heart-layer {
+  position: absolute;
+  z-index: 3;
+  right: 70px;
+  bottom: 48px;
+  width: 64px;
+  height: 185px;
+  overflow: visible;
+  pointer-events: none;
+}
+.yuzi-theater-live-float-heart {
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  color: rgba(255, 74, 111, .7);
+  font-size: calc(28px * var(--yuzi-phone-readable-text-scale,1));
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+  animation: yuziTheaterLiveHeartRise 1.7s ease-out forwards;
+}
+.yuzi-theater-live-float-heart.v1 {
+  right: 23px;
+  font-size: calc(21px * var(--yuzi-phone-readable-text-scale,1));
+  animation-delay: .08s;
+}
+.yuzi-theater-live-float-heart.v2 {
+  right: 0;
+  color: rgba(255, 255, 255, .62);
+  font-size: calc(18px * var(--yuzi-phone-readable-text-scale,1));
+  animation-delay: .16s;
+}
+.yuzi-theater-live-float-heart.v3 {
+  right: 31px;
+  color: rgba(255, 116, 147, .58);
+  font-size: calc(25px * var(--yuzi-phone-readable-text-scale,1));
+  animation-delay: .24s;
+}
+.yuzi-theater-live-float-heart.v4 {
+  right: 13px;
+  color: rgba(255, 255, 255, .5);
+  font-size: calc(16px * var(--yuzi-phone-readable-text-scale,1));
+  animation-delay: .32s;
+}
+@keyframes yuziTheaterLiveHeartRise {
+  0% {
+    transform: translate3d(0, 0, 0) scale(.65);
+    opacity: 0;
+  }
+  18% {
+    opacity: .85;
+  }
+  65% {
+    transform: translate3d(-11px, -105px, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(8px, -168px, 0) scale(1.15);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .yuzi-theater-live-float-heart {
+    animation-duration: .01ms;
+  }
+}
+.yuzi-theater-live-title-panel h1 {
+  overflow: visible;
+  white-space: normal;
+}
+.yuzi-theater-live-topbar {
+  align-items: flex-start;
+}
+.yuzi-theater-live-host {
+  width: 158px !important;
+  max-width: 158px !important;
+  flex: none;
+}
+.yuzi-theater-live-host-copy {
+  width: 62px;
+  min-width: 0;
+  overflow: hidden;
+}
+.yuzi-theater-live-host-copy strong {
+  display: block;
+  width: 62px;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+}
+.yuzi-theater-live-room-track {
+  display: flex;
+  width: max-content;
+  animation: yuziTheaterLiveRoomRight 12s linear infinite;
+}
+.yuzi-theater-live-room-text {
+  flex: none;
+  max-width: none;
+  padding-right: 28px;
+}
+.yuzi-theater-live-follow {
+  margin-left: auto;
+}
+.yuzi-theater-live-audience {
+  min-width: 0;
+  flex: 1;
+}
+.yuzi-theater-live-viewer-avatar {
+  flex: none;
+}
+.yuzi-theater-live-count,
+.yuzi-theater-live-close {
+  flex: none;
+}
+@keyframes yuziTheaterLiveRoomRight {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@container yuzi-theater-live (max-width:330px) {
+  .yuzi-theater-live-host {
+    width: 145px !important;
+    max-width: 145px !important;
+  }
+  .yuzi-theater-live-host-copy,
+  .yuzi-theater-live-host-copy strong {
+    width: 50px;
+  }
+  .yuzi-theater-live-viewer-avatar:nth-child(2),
+  .yuzi-theater-live-viewer-avatar:nth-child(3) {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .yuzi-theater-live-room-track {
+    animation: none;
+    transform: none;
+  }
+}
+.yuzi-theater-live-chat-wrap {
+  bottom: 112px !important;
+}
+.yuzi-theater-live-pause {
+  bottom: 122px !important;
+}
+.yuzi-theater-live-pause-label {
+  display: none !important;
+}
+.yuzi-theater-live-actionbar {
+  bottom: 34px !important;
+}
+.yuzi-theater-live-pause {
+  top: 22% !important;
+  bottom: auto !important;
+  right: 16px !important;
+}
+.yuzi-theater-live-pause-label {
+  top: calc(22% + 46px) !important;
+  bottom: auto !important;
+  right: 12px !important;
+}
+.yuzi-theater-live[data-has-generated-image=true] .yuzi-theater-live-title-panel,
+.yuzi-theater-live[data-has-generated-image=true] .yuzi-theater-live-stage-summary,
+.yuzi-theater-live[data-has-generated-image=true] .yuzi-theater-live-stage-figure {
+  display: none !important;
+}
+.yuzi-theater-live-scene[data-has-image=true]:before {
+  display: none;
+}
+.yuzi-theater-live .yuzi-phone-theater-image-button {
+  position:absolute;
+  right:70px;
+  top:22%;
+  bottom:auto;
+  width:40px;
+  height:40px;
+  z-index:5;
+}
+.yuzi-theater-live .yuzi-phone-theater-image-note {
+  display: none;
+}
+.yuzi-theater-live-empty-barrage {
+  color: #ddd;
+  font-size: 12px;
+}
+.yuzi-theater-live[data-theme=dark] .yuzi-theater-live-scene {
+  background:
+    linear-gradient(
+      180deg,
+      #454d58,
+      #222b35 45%,
+      #10161d);
+}
+.yuzi-theater-live[data-theme=dark] .yuzi-theater-live-scene:after {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, .28),
+      transparent 35%,
+      rgba(0, 0, 0, .72));
+}

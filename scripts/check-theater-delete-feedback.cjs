@@ -105,7 +105,7 @@ assertOrdered(executeBody, [
     'state.deleteManageMode = false;',
     'state.selectedKeys.clear();',
     'requestRenderIfActive(container, options);',
-    "showToastIfActive(container, options, result.message || '删除完成', result.refreshed === false);",
+    "showToastIfActive(container, options, result.message || t(\"删除完成\"), result.refreshed === false);",
     'return;',
 ], 'executeConfirmedDelete 成功删除但投影刷新失败时必须使用异常样式');
 assert(
@@ -114,7 +114,7 @@ assert(
 );
 assertOrdered(executeBody, [
     'requestRenderIfActive(container, options);',
-    "showToastIfActive(container, options, result?.message || '删除失败', true);",
+    "showToastIfActive(container, options, result?.message || t(\"删除失败\"), true);",
 ], 'executeConfirmedDelete 删除失败仍必须使用错误样式');
 
 console.log('[theater-delete-feedback-check] 检查通过');

@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger, handleError } from '../error-handler.js';
 import { showNotification } from '../integration/toast-bridge.js';
 import { hasFallbackSlashCommands } from './host-adapter.js';
@@ -76,7 +77,7 @@ function executePhoneAction(action) {
                 break;
         }
     } catch (error) {
-        handleError(error, `执行手机操作失败: ${action}`);
+        handleError(error, t`执行手机操作失败: ${action}`);
     }
 }
 
@@ -93,12 +94,12 @@ function getPhoneStatusSnapshot() {
         isVisible: !!(container && container.classList.contains('visible')),
         hasToggle: !!toggle,
         position: toggle ? {
-            left: toggle.style.left || '默认',
-            top: toggle.style.top || '默认',
+            left: toggle.style.left || t("默认"),
+            top: toggle.style.top || t("默认"),
         } : null,
         size: container ? {
-            width: container.style.width || '自动',
-            height: container.style.height || '自动',
+            width: container.style.width || t("自动"),
+            height: container.style.height || t("自动"),
         } : null,
         registeredCommands: getRegisteredCommandsSnapshot(),
         hasFallbackCommands: hasFallbackSlashCommands(),
@@ -111,18 +112,18 @@ function showPhoneStatus() {
         Logger.info('[玉子手机] Slash 状态详情:', snapshot);
 
         const summary = snapshot.isVisible
-            ? '玉子手机当前已打开，详细状态已输出到控制台'
-            : '玉子手机当前已关闭，详细状态已输出到控制台';
+            ? t("玉子手机当前已打开，详细状态已输出到控制台")
+            : t("玉子手机当前已关闭，详细状态已输出到控制台");
 
         showNotification(summary, 'info');
     } catch (error) {
-        handleError(error, '获取手机状态失败');
+        handleError(error, t("获取手机状态失败"));
     }
 }
 
 function showPhoneHelp() {
     Logger.info('[玉子手机] Slash 命令帮助:\n/yuziphone\n/yuziphone open\n/yuziphone close\n/yuziphone toggle\n/yuziphone reset\n/yuziphone status\n/yuziphone help\n/yuziphone-table <表名>\n/yuziphone-tables\n/yuziphone-settings reset\n/yuziphone-settings export\n/yuziphone-settings import <JSON>');
-    showNotification('Slash 命令帮助已输出到控制台', 'info');
+    showNotification(t("Slash 命令帮助已输出到控制台"), 'info');
 }
 
 function parseSettingsCommandArgs(args) {
@@ -144,7 +145,7 @@ function parseSettingsCommandArgs(args) {
     return { action, payload };
 }
 
-function normalizeCommandResult(result, defaultSuccessMessage = '操作已完成') {
+function normalizeCommandResult(result, defaultSuccessMessage = t("操作已完成")) {
     if (result && typeof result === 'object' && !Array.isArray(result)) {
         return {
             ok: result.ok === true,
@@ -157,7 +158,7 @@ function normalizeCommandResult(result, defaultSuccessMessage = '操作已完成
     }
 
     if (result === false) {
-        return { ok: false, message: '操作失败' };
+        return { ok: false, message: t("操作失败") };
     }
 
     return { ok: true, message: defaultSuccessMessage };
@@ -174,13 +175,13 @@ export function handleTableCommand(args) {
     try {
         const handler = getCommandHandler('open-table');
         if (handler) {
-            const result = normalizeCommandResult(handler(tableName), `已打开表格「${tableName}」`);
+            const result = normalizeCommandResult(handler(tableName), t`已打开表格「${tableName}」`);
             showNotification(result.message, result.ok ? 'success' : 'warning');
         } else {
-            showNotification('表格打开功能暂不可用', 'warning');
+            showNotification(t("表格打开功能暂不可用"), 'warning');
         }
     } catch (error) {
-        handleError(error, `打开表格失败: ${tableName}`);
+        handleError(error, t`打开表格失败: ${tableName}`);
     }
 }
 
@@ -190,16 +191,16 @@ export function handleListTablesCommand() {
         if (handler) {
             const tables = handler();
             if (Array.isArray(tables) && tables.length > 0) {
-                const message = ['📋 可用表格列表', '─'.repeat(20), ...tables.map(tableName => `• ${tableName}`)].join('\n');
+                const message = [t("📋 可用表格列表"), '─'.repeat(20), ...tables.map(tableName => `• ${tableName}`)].join('\n');
                 showNotification(message, 'info');
             } else {
-                showNotification('暂无可用表格', 'info');
+                showNotification(t("暂无可用表格"), 'info');
             }
         } else {
-            showNotification('表格列表功能暂不可用', 'warning');
+            showNotification(t("表格列表功能暂不可用"), 'warning');
         }
     } catch (error) {
-        handleError(error, '获取表格列表失败');
+        handleError(error, t("获取表格列表失败"));
     }
 }
 
@@ -232,13 +233,13 @@ async function resetPhoneSettings() {
     try {
         const handler = getCommandHandler('reset-settings');
         if (handler) {
-            const result = normalizeCommandResult(await handler(), '设置已重置');
+            const result = normalizeCommandResult(await handler(), t("设置已重置"));
             showNotification(result.message, result.ok ? 'success' : 'warning');
         } else {
-            showNotification('未检测到设置重置处理器，无法安全重置扩展设置', 'warning');
+            showNotification(t("未检测到设置重置处理器，无法安全重置扩展设置"), 'warning');
         }
     } catch (error) {
-        handleError(error, '重置设置失败');
+        handleError(error, t("重置设置失败"));
     }
 }
 
@@ -249,12 +250,12 @@ function exportPhoneSettings() {
             const settings = handler();
             const json = JSON.stringify(settings, null, 2);
             copyToClipboard(json);
-            showNotification('设置已复制到剪贴板', 'success');
+            showNotification(t("设置已复制到剪贴板"), 'success');
         } else {
-            showNotification('未检测到设置导出处理器，无法导出扩展设置', 'warning');
+            showNotification(t("未检测到设置导出处理器，无法导出扩展设置"), 'warning');
         }
     } catch (error) {
-        handleError(error, '导出设置失败');
+        handleError(error, t("导出设置失败"));
     }
 }
 
@@ -268,14 +269,14 @@ function importPhoneSettings(rawPayload = '') {
     try {
         const handler = getCommandHandler('import-settings');
         if (!handler) {
-            showNotification('未检测到设置导入处理器，无法导入扩展设置', 'warning');
+            showNotification(t("未检测到设置导入处理器，无法导入扩展设置"), 'warning');
             return;
         }
 
-        const result = normalizeCommandResult(handler(payload), '设置已导入');
+        const result = normalizeCommandResult(handler(payload), t("设置已导入"));
         showNotification(result.message, result.ok ? 'success' : 'warning');
     } catch (error) {
-        handleError(error, '导入设置失败');
+        handleError(error, t("导入设置失败"));
     }
 }
 

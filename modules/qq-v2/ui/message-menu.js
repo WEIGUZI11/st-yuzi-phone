@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { writeToClipboard } from '../../utils/clipboard.js';
 import { normalizeComposerSubmission } from './composer.js';
 
@@ -28,7 +29,7 @@ function cloneQuote(value) {
 
 
 export function quotePreviewText(quote) {
-    return quote?.status === 'deleted' ? '原消息已删除' : String(quote?.content ?? '');
+    return quote?.status === 'deleted' ? t("原消息已删除") : String(quote?.content ?? '');
 }
 
 export function createQuoteDrafts() {

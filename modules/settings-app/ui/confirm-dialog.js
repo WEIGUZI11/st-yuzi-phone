@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { escapeHtml } from '../../utils/dom-escape.js';
 
 function createDialogRuntime(runtime) {
@@ -47,7 +48,7 @@ function normalizeClassTokens(value) {
  * @param {string|string[]} options.overlayClassName overlay 额外 class
  * @param {Function} options.onCancel 取消回调
  */
-export function showConfirmDialog(container, title, message, onConfirm, confirmText = '确认', cancelText = '取消', runtime = null, options = {}) {
+export function showConfirmDialog(container, title, message, onConfirm, confirmText = t("确认"), cancelText = t("取消"), runtime = null, options = {}) {
     const runtimeApi = createDialogRuntime(runtime);
     const candidateMountRoot = container.matches('.phone-app-page')
         ? container
@@ -89,6 +90,6 @@ export function showConfirmDialog(container, title, message, onConfirm, confirmT
     runtimeApi.setTimeout(() => overlay.classList.add('phone-confirm-dialog-show'), 10);
 }
 
-export function showAlertDialog(container, title, message, confirmText = '知道了', runtime = null, options = {}) {
+export function showAlertDialog(container, title, message, confirmText = t("知道了"), runtime = null, options = {}) {
     showConfirmDialog(container, title, message, null, confirmText, '', runtime, { ...options, hideCancel: true });
 }

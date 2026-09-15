@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { createAppearanceAssetCodec } from './appearance-asset-repository.js';
 
 // 隔离手机运行时设置与宿主的可序列化设置，避免其他扩展触发保存时带走图片。
@@ -21,14 +22,14 @@ export function createAppearanceSettingsContext({ getHostContext, extensionName,
 
     function save() {
         const ctx = getContext();
-        if (!ctx) throw new Error('酒馆设置上下文不可用');
+        if (!ctx) throw new Error(t("酒馆设置上下文不可用"));
         const snapshot = structuredClone(ctx.extensionSettings[extensionName]);
         const preserved = new Map(missing);
         queue = queue.then(async () => {
             const stored = await codec.serialize(snapshot, preserved);
             const host = getHostContext();
             if (!host?.extensionSettings || typeof host.saveSettingsDebounced !== 'function') {
-                throw new Error('酒馆设置上下文不可用');
+                throw new Error(t("酒馆设置上下文不可用"));
             }
             // 资源提交后才发布引用；失败时宿主原设置（包括旧版图片）完全不动。
             const previous = host.extensionSettings[extensionName];
@@ -51,7 +52,7 @@ export function createAppearanceSettingsContext({ getHostContext, extensionName,
         if (initialization) return initialization;
         initialization = (async () => {
             const ctx = getContext();
-            if (!ctx) throw new Error('酒馆设置上下文不可用');
+            if (!ctx) throw new Error(t("酒馆设置上下文不可用"));
             const original = ctx.extensionSettings[extensionName];
             if (!original) return;
             const hydrated = await codec.hydrate(original);

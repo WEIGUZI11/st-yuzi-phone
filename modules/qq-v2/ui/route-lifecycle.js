@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 const LOCAL_NAVIGATION_REASONS = new Set(['conversation-opened']);
 const asScopeId = result => String(result?.context?.scopeId || '').trim();
 
@@ -25,7 +26,7 @@ export function createQQRouteLifecycle({
     const showToastOnce = () => {
         if (toastShown || !canRender()) return;
         toastShown = true;
-        try { shell.showToast?.('QQ 暂时无法加载'); } catch { /* Advisory only. */ }
+        try { shell.showToast?.(t("QQ 暂时无法加载")); } catch { /* Advisory only. */ }
     };
     const showReadFailure = () => {
         if (!canRender()) return;

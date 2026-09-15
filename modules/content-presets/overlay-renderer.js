@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { createContentPresetDisplayRuntime } from './display-runtime.js';
 import { createContentPresetHostAppearance } from './host-appearance.js';
 import { contentPresetImageGenerationHost } from './image-generation-host.js';
@@ -59,7 +60,7 @@ function appendAfter(target, root) {
 
 function createRoot(documentRef, className) {
     const root = documentRef?.createElement?.('div');
-    if (!root) throw new Error('展示容器不可用');
+    if (!root) throw new Error(t("展示容器不可用"));
     root.className = className;
     return root;
 }
@@ -115,7 +116,7 @@ export function createContentPresetOverlayRenderer(options = {}) {
             const record = await getPreset(definition.presetId);
             if (isStale()) return { status: 'stale', emittedCount: 0 };
             const display = record?.displays?.find(value => value.id === definition.displayId);
-            if (!display?.activatable || display.kind !== kind) throw new Error('自定义展示已失效');
+            if (!display?.activatable || display.kind !== kind) throw new Error(t("自定义展示已失效"));
 
             const root = createRoot(
                 documentRef,
@@ -132,7 +133,7 @@ export function createContentPresetOverlayRenderer(options = {}) {
                 if (!target?.element || !appendAfter(target.element, root)) throw new Error('no-ai-message');
             } else {
                 const layer = options.layerRuntime?.mount?.();
-                if (!layer?.appendChild) throw new Error('全屏浮层不可用');
+                if (!layer?.appendChild) throw new Error(t("全屏浮层不可用"));
                 layer.appendChild(root);
             }
 

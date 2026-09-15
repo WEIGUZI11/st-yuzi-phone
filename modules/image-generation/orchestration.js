@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { filterImagePromptOutput } from './prompt-output-filter.js';
 
 function text(value) {
@@ -98,7 +99,7 @@ export function createImageGenerationOrchestrator(options = {}) {
                     status: 'failed',
                     error: {
                         code: text(error?.code) || 'image-prompt-translation-failed',
-                        message: text(error?.message) || '生图提示词转换失败',
+                        message: text(error?.message) || t("生图提示词转换失败"),
                     },
                 };
             }
@@ -122,7 +123,7 @@ export function createImageGenerationOrchestrator(options = {}) {
             if (deadline !== null && deadline - Number(now()) <= 0) {
                 return failedResult(
                     'timeout',
-                    { code: 'image-generation-timeout', message: '图片生成总超时' },
+                    { code: 'image-generation-timeout', message: t("图片生成总超时") },
                     naturalPrompt,
                     naturalPrompt,
                 );

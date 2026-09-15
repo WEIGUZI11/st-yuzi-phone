@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import {
     getTableData,
@@ -363,7 +364,7 @@ export function createGenericTableViewerRuntime(container, context, hooks = {}) 
                 eventType: String(event?.type || 'yuzi-phone-table-updated'),
                 receivedAt: Date.now(),
             });
-            showInlineToast(container, '表格已有外部更新，当前草稿保存或退出编辑后再刷新', true);
+            showInlineToast(container, t("表格已有外部更新，当前草稿保存或退出编辑后再刷新"), true);
             return;
         }
 

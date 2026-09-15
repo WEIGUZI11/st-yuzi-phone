@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import {
     getPhoneSettings as getStoredPhoneSettings,
     savePhoneSetting as persistPhoneSetting,
@@ -296,7 +297,7 @@ export function createImageGenerationSettingsService(options = {}) {
                     status: 'failed',
                     error: {
                         code: error?.code || 'image-prompt-translation-failed',
-                        message: error?.message || '生图提示词转换失败',
+                        message: error?.message || t("生图提示词转换失败"),
                     },
                 };
             }
@@ -340,7 +341,7 @@ export function createImageGenerationSettingsService(options = {}) {
                     mappingDiagnostics: cloneValue(
                         Array.isArray(composition.mappingDiagnostics) ? composition.mappingDiagnostics : [],
                     ),
-                    error: { code: 'image-generation-timeout', message: '图片生成总超时' },
+                    error: { code: 'image-generation-timeout', message: t("图片生成总超时") },
                 };
             }
         }

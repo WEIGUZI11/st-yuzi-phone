@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { Logger } from '../../error-handler.js';
 import {
     DEFAULT_API_TIMEOUT,
@@ -131,7 +132,7 @@ function buildDeleteBatchDiagnostics({ tableName = '', deleteStrategy = 'none', 
     };
 }
 
-function buildApiUnavailableResult(message = '数据库API不可用') {
+function buildApiUnavailableResult(message = t("数据库API不可用")) {
     return {
         ok: false,
         code: 'api_unavailable',
@@ -145,7 +146,7 @@ function buildMethodMissingResult(methodName, message = '') {
     return {
         ok: false,
         code: 'method_missing',
-        message: message || `数据库 API 缺少方法：${safeMethodName}`,
+        message: message || t`数据库 API 缺少方法：${safeMethodName}`,
         refreshed: false,
     };
 }
@@ -155,15 +156,15 @@ function normalizeBooleanMutationResult(result, operationName) {
         return { ok: true, code: 'ok', message: '' };
     }
     if (result === null) {
-        return { ok: false, code: 'mutation_result_null', message: `${operationName} 返回 null` };
+        return { ok: false, code: 'mutation_result_null', message: t`${operationName} 返回 null` };
     }
     if (result === false) {
-        return { ok: false, code: 'mutation_failed', message: `${operationName} 明确返回失败` };
+        return { ok: false, code: 'mutation_failed', message: t`${operationName} 明确返回失败` };
     }
     return {
         ok: false,
         code: 'mutation_result_invalid',
-        message: `${operationName} 返回值无效`,
+        message: t`${operationName} 返回值无效`,
     };
 }
 
@@ -173,15 +174,15 @@ function normalizeInsertMutationResult(rawRowIndex) {
         return { ok: true, code: 'ok', message: '', rowIndex };
     }
     if (rawRowIndex === null) {
-        return { ok: false, code: 'mutation_result_null', message: 'insertRow 返回 null', rowIndex };
+        return { ok: false, code: 'mutation_result_null', message: t("insertRow 返回 null"), rowIndex };
     }
     if (rawRowIndex === false) {
-        return { ok: false, code: 'mutation_failed', message: 'insertRow 明确返回失败', rowIndex };
+        return { ok: false, code: 'mutation_failed', message: t("insertRow 明确返回失败"), rowIndex };
     }
     return {
         ok: false,
         code: 'mutation_result_invalid',
-        message: 'insertRow 未返回有效数据行索引',
+        message: t("insertRow 未返回有效数据行索引"),
         rowIndex,
     };
 }
@@ -190,7 +191,7 @@ function buildTableNameMissingResult(actionName) {
     return {
         ok: false,
         code: 'table_name_missing',
-        message: `${actionName}失败：缺少表格名称`,
+        message: t`${actionName}失败：缺少表格名称`,
         refreshed: false,
     };
 }
@@ -484,7 +485,7 @@ async function tryDeleteRowsViaSqlMutation(api, safeTableName, normalizedRowInde
             context: { tableName: safeTableName, physicalTableName: mappingResult.physicalTableName, rowIds },
             error,
         });
-        mutationResult = { ok: false, code: 'mutation_rejected', message: error?.message || 'SQL 批量删除调用异常', changes: null, errors: [error] };
+        mutationResult = { ok: false, code: 'mutation_rejected', message: error?.message || t("SQL 批量删除调用异常"), changes: null, errors: [error] };
     }
 
     const attemptedRowIndexes = normalizedRowIndexes;
@@ -530,8 +531,8 @@ async function tryDeleteRowsViaSqlMutation(api, safeTableName, normalizedRowInde
     const refreshed = mutationResult.ok && deletedRowIndexes.length > 0;
     const confirmedFailureCode = mutationResult.ok ? 'mutation_failed' : (mutationResult.code || 'mutation_failed');
     const confirmedFailureMessage = mutationResult.ok
-        ? '删除失败：数据库已确认未删除目标行'
-        : (mutationResult.message || '删除失败：数据库未确认删除目标行');
+        ? t("删除失败：数据库已确认未删除目标行")
+        : (mutationResult.message || t("删除失败：数据库未确认删除目标行"));
 
     return {
         shouldFallback: false,
@@ -542,11 +543,11 @@ async function tryDeleteRowsViaSqlMutation(api, safeTableName, normalizedRowInde
                 ? 'partial_unknown'
                 : (deletedRowIndexes.length > 0 ? 'partial_failed' : confirmedFailureCode)),
         message: allDeleted
-            ? '删除成功'
+            ? t("删除成功")
             : (partialUnknown
-                ? 'SQL 批量删除结果无法完整确认，已可能写入，不执行逐行回退'
+                ? t("SQL 批量删除结果无法完整确认，已可能写入，不执行逐行回退")
                 : (deletedRowIndexes.length > 0
-                    ? `部分删除失败：已删除 ${deletedRowIndexes.length} 行，仍有 ${batchRowIndexes.notDeletedRowIndexes.length} 行未删除`
+                    ? t`部分删除失败：已删除 ${deletedRowIndexes.length} 行，仍有 ${batchRowIndexes.notDeletedRowIndexes.length} 行未删除`
                     : confirmedFailureMessage)),
         tableName: safeTableName,
         ...batchRowIndexes,
@@ -594,7 +595,7 @@ async function deleteRowsViaLegacyDeleteRowLoop(api, safeTableName, normalizedRo
         } catch (error) {
             failedRowIndexes.push(uiRowIndex);
             failureCode = 'mutation_rejected';
-            failureMessage = error?.message || 'deleteRow 调用异常';
+            failureMessage = error?.message || t("deleteRow 调用异常");
             logger.warn({
                 action: 'delete-rows-batch.error',
                 message: '批量 deleteRow 调用异常',
@@ -620,10 +621,10 @@ async function deleteRowsViaLegacyDeleteRowLoop(api, safeTableName, normalizedRo
             ? 'ok'
             : (deletedRowIndexes.length > 0 ? 'partial_failed' : (failureCode || 'mutation_failed')),
         message: allDeleted
-            ? '删除成功'
+            ? t("删除成功")
             : (deletedRowIndexes.length > 0
-                ? `部分删除失败：已删除 ${deletedRowIndexes.length} 行，仍有 ${batchRowIndexes.notDeletedRowIndexes.length} 行未删除`
-                : (failureMessage || '删除失败：数据库未确认删除目标行')),
+                ? t`部分删除失败：已删除 ${deletedRowIndexes.length} 行，仍有 ${batchRowIndexes.notDeletedRowIndexes.length} 行未删除`
+                : (failureMessage || t("删除失败：数据库未确认删除目标行"))),
         tableName: safeTableName,
         ...batchRowIndexes,
         deletedCount: deletedRowIndexes.length,
@@ -729,7 +730,7 @@ export async function updateTableCell(tableName, rowIndex, colIdentifier, value,
         void options;
         const api = getDB();
         const safeTableName = normalizeTableName(tableName);
-        if (!safeTableName) return buildTableNameMissingResult('单元格更新');
+        if (!safeTableName) return buildTableNameMissingResult(t("单元格更新"));
         if (!api) return buildApiUnavailableResult();
         if (typeof api.updateCell !== 'function') return buildMethodMissingResult('updateCell');
 
@@ -752,7 +753,7 @@ export async function updateTableCell(tableName, rowIndex, colIdentifier, value,
                 context: { tableName: safeTableName, rowIndex, colIdentifier },
                 error,
             });
-            return { ok: false, code: 'mutation_rejected', message: error?.message || '未知错误', refreshed: false };
+            return { ok: false, code: 'mutation_rejected', message: error?.message || t("未知错误"), refreshed: false };
         }
     });
 }
@@ -764,9 +765,9 @@ export async function updateTableRow(tableName, rowIndex, data, options = {}) {
         const safeTableName = normalizeTableName(tableName);
         const payload = normalizePayload(data);
         const payloadKeys = getPayloadKeys(payload);
-        if (!safeTableName) return buildTableNameMissingResult('行更新');
+        if (!safeTableName) return buildTableNameMissingResult(t("行更新"));
         if (!Number.isInteger(Number(rowIndex)) || Number(rowIndex) < 1) {
-            return { ok: false, code: 'row_index_invalid', message: '行更新失败：行索引无效', refreshed: false };
+            return { ok: false, code: 'row_index_invalid', message: t("行更新失败：行索引无效"), refreshed: false };
         }
         if (!api) return buildApiUnavailableResult();
         if (typeof api.updateRow !== 'function') return buildMethodMissingResult('updateRow');
@@ -815,7 +816,7 @@ export async function updateTableRow(tableName, rowIndex, data, options = {}) {
                 },
                 error,
             });
-            return { ok: false, code: 'mutation_rejected', message: error?.message || '未知错误', persisted: false, refreshed: false };
+            return { ok: false, code: 'mutation_rejected', message: error?.message || t("未知错误"), persisted: false, refreshed: false };
         }
     });
 }
@@ -827,7 +828,7 @@ export async function insertTableRow(tableName, data, options = {}) {
         const safeTableName = normalizeTableName(tableName);
         const payload = normalizePayload(data);
         const payloadKeys = getPayloadKeys(payload);
-        if (!safeTableName) return buildTableNameMissingResult('新增行');
+        if (!safeTableName) return buildTableNameMissingResult(t("新增行"));
         if (!api) {
             logger.warn({
                 action: 'insert-row.api-unavailable',
@@ -893,7 +894,7 @@ export async function insertTableRow(tableName, data, options = {}) {
                 },
                 error,
             });
-            return { ok: false, code: 'mutation_rejected', message: error?.message || '未知错误', persisted: false, refreshed: false };
+            return { ok: false, code: 'mutation_rejected', message: error?.message || t("未知错误"), persisted: false, refreshed: false };
         }
     });
 }
@@ -905,9 +906,9 @@ export async function insertTableRowsBatch(tableName, rows = [], options = {}) {
         const safeTableName = normalizeTableName(tableName);
         const sourceRows = Array.isArray(rows) ? rows : [];
         const payloads = sourceRows.filter((row) => row && typeof row === 'object' && !Array.isArray(row)).map(normalizePayload);
-        if (!safeTableName) return { ...buildTableNameMissingResult('批量新增行'), payloads: [], rowIndexes: [], rollback: null };
+        if (!safeTableName) return { ...buildTableNameMissingResult(t("批量新增行")), payloads: [], rowIndexes: [], rollback: null };
         if (payloads.length === 0) {
-            return { ok: false, code: 'empty_rows', message: '批量新增失败：没有可新增的行', payloads: [], rowIndexes: [], refreshed: false, rollback: null };
+            return { ok: false, code: 'empty_rows', message: t("批量新增失败：没有可新增的行"), payloads: [], rowIndexes: [], refreshed: false, rollback: null };
         }
         if (!api) {
             return { ...buildApiUnavailableResult(), payloads, rowIndexes: [], rollback: null };
@@ -955,8 +956,8 @@ export async function insertTableRowsBatch(tableName, rows = [], options = {}) {
             failedAt = failedAt < 0 ? insertedRowIndexes.length : failedAt;
             failureResult = {
                 code: 'mutation_rejected',
-                message: error?.message || '未知错误',
-                errorMessage: error?.message || '未知错误',
+                message: error?.message || t("未知错误"),
+                errorMessage: error?.message || t("未知错误"),
             };
         }
 
@@ -967,8 +968,8 @@ export async function insertTableRowsBatch(tableName, rows = [], options = {}) {
                 ok: false,
                 code: rollback.ok ? `${failureCode}_rolled_back` : `${failureCode}_rollback_failed`,
                 message: rollback.ok
-                    ? `批量新增失败：第 ${failedAt + 1} 行未确认写入，已回滚本批次已插入行`
-                    : `批量新增失败：第 ${failedAt + 1} 行未确认写入，且回滚部分已插入行失败`,
+                    ? t`批量新增失败：第 ${failedAt + 1} 行未确认写入，已回滚本批次已插入行`
+                    : t`批量新增失败：第 ${failedAt + 1} 行未确认写入，且回滚部分已插入行失败`,
                 tableName: safeTableName,
                 payloads,
                 rowIndexes: insertedRowIndexes,
@@ -983,7 +984,7 @@ export async function insertTableRowsBatch(tableName, rows = [], options = {}) {
         return {
             ok: true,
             code: 'ok',
-            message: '批量新增成功',
+            message: t("批量新增成功"),
             tableName: safeTableName,
             payloads,
             rowIndexes: insertedRowIndexes,
@@ -1008,7 +1009,7 @@ async function rollbackInsertedRows(api, tableName, insertedRowIndexes = []) {
             ok: dbIndexes.length === 0,
             deletedCount: 0,
             failedRowIndexes: dbIndexes,
-            message: dbIndexes.length === 0 ? '没有需要回滚的行' : '回滚失败：deleteRow 不可用',
+            message: dbIndexes.length === 0 ? t("没有需要回滚的行") : t("回滚失败：deleteRow 不可用"),
         };
     }
 
@@ -1035,7 +1036,7 @@ async function rollbackInsertedRows(api, tableName, insertedRowIndexes = []) {
         ok: failed.length === 0,
         deletedCount,
         failedRowIndexes: failed,
-        message: failed.length === 0 ? '回滚成功' : `回滚失败：${failed.length} 行未删除`,
+        message: failed.length === 0 ? t("回滚成功") : t`回滚失败：${failed.length} 行未删除`,
     };
 }
 
@@ -1045,9 +1046,9 @@ export async function deleteTableRowViaApi(tableName, rowIndex, options = {}) {
         const api = getDB();
         const safeTableName = normalizeTableName(tableName);
         const dbRowIndex = Number(rowIndex);
-        if (!safeTableName) return buildTableNameMissingResult('删除行');
+        if (!safeTableName) return buildTableNameMissingResult(t("删除行"));
         if (!Number.isInteger(dbRowIndex) || dbRowIndex < 1) {
-            return { ok: false, code: 'row_index_invalid', message: '删除失败：行索引无效', refreshed: false };
+            return { ok: false, code: 'row_index_invalid', message: t("删除失败：行索引无效"), refreshed: false };
         }
         if (!api) return buildApiUnavailableResult();
         if (typeof api.deleteRow !== 'function') return buildMethodMissingResult('deleteRow');
@@ -1069,7 +1070,7 @@ export async function deleteTableRowViaApi(tableName, rowIndex, options = {}) {
                 context: { tableName: safeTableName, rowIndex: dbRowIndex },
                 error,
             });
-            return { ok: false, code: 'mutation_rejected', message: error?.message || '未知错误', refreshed: false };
+            return { ok: false, code: 'mutation_rejected', message: error?.message || t("未知错误"), refreshed: false };
         }
     });
 }
@@ -1083,7 +1084,7 @@ export async function deleteTableRowsBatch(tableName, rowIndexes = [], options =
         if (!safeTableName) {
             const fallbackReason = 'table_name_missing';
             return {
-                ...buildTableNameMissingResult('批量删除行'),
+                ...buildTableNameMissingResult(t("批量删除行")),
                 tableName: safeTableName,
                 deletedCount: 0,
                 ...buildBatchDeleteRowIndexResult({ requestedRowIndexes: normalizedRowIndexes }),
@@ -1097,7 +1098,7 @@ export async function deleteTableRowsBatch(tableName, rowIndexes = [], options =
             return {
                 ok: false,
                 code: 'empty_selection',
-                message: '未选择可删除的条目',
+                message: t("未选择可删除的条目"),
                 tableName: safeTableName,
                 deletedCount: 0,
                 ...buildBatchDeleteRowIndexResult(),
@@ -1128,7 +1129,7 @@ export async function deleteTableRowsBatch(tableName, rowIndexes = [], options =
         if (typeof api.deleteRow !== 'function') {
             const fallbackReason = sqlResult.fallbackReason || 'deleteRow_missing';
             return {
-                ...buildMethodMissingResult('deleteRow', '数据库 API 缺少 executeSqlMutation 快路径及 deleteRow 回退方法'),
+                ...buildMethodMissingResult('deleteRow', t("数据库 API 缺少 executeSqlMutation 快路径及 deleteRow 回退方法")),
                 tableName: safeTableName,
                 deletedCount: 0,
                 ...buildBatchDeleteRowIndexResult({ requestedRowIndexes: normalizedRowIndexes }),

@@ -1,3 +1,4 @@
+import { t } from './i18n/index.js';
 // modules/error-handler.js
 /**
  * Yuzi Phone - 统一错误处理系统
@@ -531,7 +532,7 @@ function shouldLog(level) {
  * @param {boolean} options.logError - 是否记录错误
  * @param {boolean} options.throwError - 是否重新抛出错误
  */
-export function handleError(error, userMessage = '操作失败', options = {}) {
+export function handleError(error, userMessage = t('操作失败'), options = {}) {
     const {
         showNotification: shouldShowNotification = true,
         logError: shouldLogError = true,
@@ -558,7 +559,7 @@ export function handleError(error, userMessage = '操作失败', options = {}) {
         let notificationMessage = userMessage;
         
         if (error instanceof YuziPhoneError) {
-            notificationMessage = `${userMessage} (错误码: ${error.code})`;
+            notificationMessage = t`${userMessage} (错误码: ${error.code})`;
         }
         
         notify(notificationMessage, 'error');
@@ -586,7 +587,7 @@ export function handleError(error, userMessage = '操作失败', options = {}) {
  * const safeSave = withErrorHandler(saveData, '保存数据失败');
  * await safeSave();
  */
-export function withErrorHandler(func, userMessage = '操作失败', options = {}) {
+export function withErrorHandler(func, userMessage = t('操作失败'), options = {}) {
     return async function (...args) {
         try {
             return await func.apply(this, args);
@@ -604,7 +605,7 @@ export function withErrorHandler(func, userMessage = '操作失败', options = {
  * @param {Object} options - 选项
  * @returns {Function} 包装后的函数
  */
-export function withSyncErrorHandler(func, userMessage = '操作失败', options = {}) {
+export function withSyncErrorHandler(func, userMessage = t('操作失败'), options = {}) {
     return function (...args) {
         try {
             return func.apply(this, args);

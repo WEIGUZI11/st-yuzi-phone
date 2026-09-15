@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { Logger } from '../../error-handler.js';
 import {
     DEFAULT_API_TIMEOUT,
@@ -85,18 +86,18 @@ function normalizeRowCount(result, rows, values) {
 
 function normalizeQueryResult(result, nullFailure = null) {
     if (result === null) {
-        return nullFailure || buildFailure('query_failed', '数据库只读查询返回 null');
+        return nullFailure || buildFailure('query_failed', t("数据库只读查询返回 null"));
     }
     if (!result || typeof result !== 'object' || Array.isArray(result)) {
-        return buildFailure('query_failed', 'SQL 查询返回值不是对象', { rawResult: result });
+        return buildFailure('query_failed', t("SQL 查询返回值不是对象"), { rawResult: result });
     }
     if ('rows' in result && !Array.isArray(result.rows)) {
-        return buildFailure('query_failed', 'SQL 查询 rows 字段不是数组', { result });
+        return buildFailure('query_failed', t("SQL 查询 rows 字段不是数组"), { result });
     }
     const errors = Array.isArray(result.errors) ? result.errors : [];
-    if (errors.length > 0) return buildFailure('query_failed', 'SQL 查询返回错误', { result, errors });
-    if (result.saved === false) return buildFailure('query_failed', 'SQL 查询未确认保存/读取状态', { result });
-    if ('success' in result && result.success === false) return buildFailure('query_failed', 'SQL 查询未确认成功', { result });
+    if (errors.length > 0) return buildFailure('query_failed', t("SQL 查询返回错误"), { result, errors });
+    if (result.saved === false) return buildFailure('query_failed', t("SQL 查询未确认保存/读取状态"), { result });
+    if ('success' in result && result.success === false) return buildFailure('query_failed', t("SQL 查询未确认成功"), { result });
 
     const rows = normalizeRows(result);
     const columns = normalizeColumns(result);
@@ -107,10 +108,10 @@ function normalizeQueryResult(result, nullFailure = null) {
 
 export async function querySqlViaApi(sqlOrOptions, params = [], options = {}) {
     const sql = normalizeSqlInput(sqlOrOptions);
-    if (!sql) return buildFailure('invalid_sql', 'SQL 查询失败：缺少 SQL');
+    if (!sql) return buildFailure('invalid_sql', t("SQL 查询失败：缺少 SQL"));
 
     const api = getDB();
-    if (!api) return buildFailure('api_unavailable', '数据库 API 不可用');
+    if (!api) return buildFailure('api_unavailable', t("数据库 API 不可用"));
 
     const querySql = api.querySql;
     const executeSqlQuery = api.executeSqlQuery;
@@ -119,7 +120,7 @@ export async function querySqlViaApi(sqlOrOptions, params = [], options = {}) {
         : (typeof executeSqlQuery === 'function' ? 'executeSqlQuery' : '');
     const method = methodName === 'querySql' ? querySql : executeSqlQuery;
     if (!methodName) {
-        return buildFailure('runtime_not_ready', 'SQLite 只读 runtime 尚未就绪');
+        return buildFailure('runtime_not_ready', t("SQLite 只读 runtime 尚未就绪"));
     }
 
     try {
@@ -137,21 +138,21 @@ export async function querySqlViaApi(sqlOrOptions, params = [], options = {}) {
             : null);
     } catch (error) {
         logger.warn({ action: 'query-sql.error', message: 'SQL 查询调用异常', error });
-        return buildFailure('query_failed', error?.message || 'SQL 查询调用异常', { errors: [error] });
+        return buildFailure('query_failed', error?.message || t("SQL 查询调用异常"), { errors: [error] });
     }
 }
 
 export async function queryTableRowsViaApi(options = {}) {
     if (!options || typeof options !== 'object' || Array.isArray(options)) {
-        return buildFailure('invalid_options', '表格查询失败：options 必须是对象');
+        return buildFailure('invalid_options', t("表格查询失败：options 必须是对象"));
     }
 
     const api = getDB();
-    if (!api) return buildFailure('api_unavailable', '数据库 API 不可用');
+    if (!api) return buildFailure('api_unavailable', t("数据库 API 不可用"));
 
     const method = api.queryTableRows;
     if (typeof method !== 'function') {
-        return buildFailure('runtime_not_ready', 'SQLite 表格只读 runtime 尚未就绪');
+        return buildFailure('runtime_not_ready', t("SQLite 表格只读 runtime 尚未就绪"));
     }
 
     try {
@@ -169,19 +170,19 @@ export async function queryTableRowsViaApi(options = {}) {
             : null);
     } catch (error) {
         logger.warn({ action: 'query-table-rows.error', message: '表格只读查询调用异常', error });
-        return buildFailure('query_failed', error?.message || '表格只读查询调用异常', { errors: [error] });
+        return buildFailure('query_failed', error?.message || t("表格只读查询调用异常"), { errors: [error] });
     }
 }
 
 export async function executeSqlMutationViaApi(sqlOrOptions, params = [], options = {}) {
     const sql = normalizeSqlInput(sqlOrOptions);
-    if (!sql) return buildFailure('invalid_sql', 'SQL 写入失败：缺少 SQL');
+    if (!sql) return buildFailure('invalid_sql', t("SQL 写入失败：缺少 SQL"));
 
     return enqueueTableMutation('executeSqlMutationViaApi', async () => {
         const api = getDB();
-        if (!api) return buildFailure('api_unavailable', '数据库 API 不可用');
+        if (!api) return buildFailure('api_unavailable', t("数据库 API 不可用"));
         if (typeof api.executeSqlMutation !== 'function') {
-            return buildFailure('method_missing', '数据库 API 缺少 executeSqlMutation');
+            return buildFailure('method_missing', t("数据库 API 缺少 executeSqlMutation"));
         }
 
         try {
@@ -194,7 +195,7 @@ export async function executeSqlMutationViaApi(sqlOrOptions, params = [], option
                 ? settlement
                 : buildFailure(settlement.code, settlement.message, settlement);
         } catch (error) {
-            return buildFailure('mutation_rejected', error?.message || 'SQL 写入 API 调用被拒绝', { errors: [error] });
+            return buildFailure('mutation_rejected', error?.message || t("SQL 写入 API 调用被拒绝"), { errors: [error] });
         }
     });
 }

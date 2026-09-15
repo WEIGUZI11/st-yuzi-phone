@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import {
     APPEARANCE_FONT_LIBRARY_DEFAULTS,
     APPEARANCE_FONT_LIBRARY_LIMITS,
@@ -16,21 +17,21 @@ const DEFAULT_FONT_ID = APPEARANCE_FONT_LIBRARY_DEFAULTS.activeFontId;
 const BUILTIN_FONTS = Object.freeze([
     Object.freeze({
         id: 'builtin.system-ui',
-        name: '系统清晰',
+        get name() { return t("系统清晰"); },
         family: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", "HarmonyOS Sans", "Noto Sans CJK SC", sans-serif',
-        previewText: '玉子手机 · 清晰耐看的系统界面字体',
+        get previewText() { return t('玉子手机 · 清晰耐看的系统界面字体'); },
     }),
     Object.freeze({
         id: 'builtin.modern-sans',
-        name: '现代黑体',
+        get name() { return t("现代黑体"); },
         family: '"Helvetica Neue", "HarmonyOS Sans", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif',
-        previewText: '玉子手机 · 干净利落的现代黑体观感',
+        get previewText() { return t('玉子手机 · 干净利落的现代黑体观感'); },
     }),
     Object.freeze({
         id: 'builtin.chill-round',
-        name: '寒蝉圆体',
+        get name() { return t("寒蝉圆体"); },
         family: '"YuziPhoneChillRoundF", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif',
-        previewText: '玉子手机 · 柔和圆润的内置中文圆体',
+        get previewText() { return t('玉子手机 · 柔和圆润的内置中文圆体'); },
         fontFaces: Object.freeze([
             Object.freeze({
                 family: 'YuziPhoneChillRoundF',
@@ -50,9 +51,9 @@ const BUILTIN_FONTS = Object.freeze([
     }),
     Object.freeze({
         id: 'builtin.basic-sans',
-        name: '基础无衬线',
+        get name() { return t("基础无衬线"); },
         family: 'sans-serif',
-        previewText: '玉子手机 · 使用浏览器基础无衬线字体',
+        get previewText() { return t('玉子手机 · 使用浏览器基础无衬线字体'); },
     }),
 ]);
 
@@ -222,6 +223,8 @@ function buildScopedFontOverrideCss(activeFont) {
         `#${FONT_CONTAINER_ID}[data-yuzi-phone-font-id]`,
         `#${FONT_CONTAINER_ID}[data-yuzi-phone-font-id] .yuzi-phone-shell`,
         `#${FONT_CONTAINER_ID}[data-yuzi-phone-font-id] .phone-page`,
+        `#${FONT_CONTAINER_ID}[data-yuzi-phone-font-id] .yuzi-phone-theater-builtin`,
+        `#${FONT_CONTAINER_ID}[data-yuzi-phone-font-id] .yuzi-phone-theater-builtin *:not(svg):not(svg *):not(.fa):not(.fas):not(.far):not(.fal):not(.fab):not(.fa-solid):not(.fa-regular):not(.fa-brands):not(.monospace):not(.phone-monospace):not(code):not(pre):not(kbd):not(samp)`,
         `#${FONT_CONTAINER_ID}[data-yuzi-phone-font-id] .yuzi-qq-app`,
         `#${FONT_CONTAINER_ID}[data-yuzi-phone-font-id] .yuzi-qq-app *:not(svg):not(svg *):not(.fa):not(.fas):not(.far):not(.fal):not(.fab):not(.fa-solid):not(.fa-regular):not(.fa-brands):not(.monospace):not(.phone-monospace):not(code):not(pre):not(kbd):not(samp):not(input):not(textarea):not(select)`,
         `#${FONT_CONTAINER_ID}[data-yuzi-phone-font-id] .phone-app-page`,
@@ -261,7 +264,7 @@ function resolveActiveFont(library = getNormalizedFontLibrary()) {
             ...userFont,
             builtin: false,
             cssFamily: buildUserFontCssFamily(userFont),
-            previewText: `玉子手机 · ${userFont.name}`,
+            previewText: t`玉子手机 · ${userFont.name}`,
         };
     }
 
@@ -311,23 +314,23 @@ export function getAppearanceFontLibraryViewModel() {
 export function importAppearanceFontCssUrl({ name, cssUrl, family } = {}) {
     const normalizedUrl = normalizeCssFontUrlInput(cssUrl);
     if (!normalizedUrl) {
-        return createResult(false, '导入失败：字体 CSS URL 必须是 https:// 完整地址');
+        return createResult(false, t("导入失败：字体 CSS URL 必须是 https:// 完整地址"));
     }
 
     const normalizedFamily = normalizeAppearanceFontFamilyName(family);
     if (!normalizedFamily) {
-        return createResult(false, '导入失败：字体族名不能为空');
+        return createResult(false, t("导入失败：字体族名不能为空"));
     }
 
     const library = getNormalizedFontLibrary();
     if (library.userFonts.length >= APPEARANCE_FONT_LIBRARY_LIMITS.userFonts) {
-        return createResult(false, `导入失败：最多只能保存 ${APPEARANCE_FONT_LIBRARY_LIMITS.userFonts} 个用户字体`);
+        return createResult(false, t`导入失败：最多只能保存 ${APPEARANCE_FONT_LIBRARY_LIMITS.userFonts} 个用户字体`);
     }
 
     const hash = computeAppearanceFontHash(`${normalizedUrl}#${normalizedFamily}`);
     const duplicate = library.userFonts.find((font) => font.hash === hash);
     if (duplicate) {
-        return createResult(false, `字体已存在：${duplicate.name}`, { duplicateId: duplicate.id });
+        return createResult(false, t`字体已存在：${duplicate.name}`, { duplicateId: duplicate.id });
     }
 
     const normalizedName = normalizeString(name, normalizedFamily).slice(0, APPEARANCE_FONT_LIBRARY_LIMITS.nameLength) || normalizedFamily;
@@ -350,61 +353,61 @@ export function importAppearanceFontCssUrl({ name, cssUrl, family } = {}) {
     });
     const saved = saveFontLibrary(nextLibrary);
     return saved
-        ? createResult(true, `已导入并应用字体：${font.name}`, { font: nextLibrary.userFonts.find((item) => item.id === font.id) || font })
-        : createResult(false, '导入失败：设置保存失败');
+        ? createResult(true, t`已导入并应用字体：${font.name}`, { font: nextLibrary.userFonts.find((item) => item.id === font.id) || font })
+        : createResult(false, t("导入失败：设置保存失败"));
 }
 
 export async function importAppearanceFontFile(file) {
     if (!file) {
-        return createResult(false, '导入失败：没有选择字体文件');
+        return createResult(false, t("导入失败：没有选择字体文件"));
     }
 
     const size = Number(file.size) || 0;
     if (size <= 0) {
-        return createResult(false, '导入失败：字体文件为空');
+        return createResult(false, t("导入失败：字体文件为空"));
     }
     if (size > APPEARANCE_FONT_LIBRARY_LIMITS.singleFontBytes) {
-        return createResult(false, `导入失败：单个字体不能超过 ${Math.round(APPEARANCE_FONT_LIBRARY_LIMITS.singleFontBytes / 1024 / 1024)}MB`);
+        return createResult(false, t`导入失败：单个字体不能超过 ${Math.round(APPEARANCE_FONT_LIBRARY_LIMITS.singleFontBytes / 1024 / 1024)}MB`);
     }
 
     let rawDataUrl = '';
     try {
         rawDataUrl = await fileToDataUrl(file);
     } catch {
-        return createResult(false, '导入失败：无法读取字体文件');
+        return createResult(false, t("导入失败：无法读取字体文件"));
     }
 
     const format = detectFontFormat(file, rawDataUrl);
     if (!format || !FONT_FORMATS[format]) {
-        return createResult(false, '导入失败：仅支持 woff2、woff、ttf、otf 字体');
+        return createResult(false, t("导入失败：仅支持 woff2、woff、ttf、otf 字体"));
     }
 
     const dataUrl = normalizeFontDataUrl(rawDataUrl, format);
     const bytes = estimateBase64Bytes(dataUrl);
     if (!dataUrl || bytes <= 0) {
-        return createResult(false, '导入失败：字体数据无效');
+        return createResult(false, t("导入失败：字体数据无效"));
     }
     if (bytes > APPEARANCE_FONT_LIBRARY_LIMITS.singleFontBytes) {
-        return createResult(false, `导入失败：字体编码后超过 ${Math.round(APPEARANCE_FONT_LIBRARY_LIMITS.singleFontBytes / 1024 / 1024)}MB`);
+        return createResult(false, t`导入失败：字体编码后超过 ${Math.round(APPEARANCE_FONT_LIBRARY_LIMITS.singleFontBytes / 1024 / 1024)}MB`);
     }
 
     const library = getNormalizedFontLibrary();
     if (library.userFonts.length >= APPEARANCE_FONT_LIBRARY_LIMITS.userFonts) {
-        return createResult(false, `导入失败：最多只能保存 ${APPEARANCE_FONT_LIBRARY_LIMITS.userFonts} 个用户字体`);
+        return createResult(false, t`导入失败：最多只能保存 ${APPEARANCE_FONT_LIBRARY_LIMITS.userFonts} 个用户字体`);
     }
 
     const totalBytes = library.userFonts.reduce((sum, font) => sum + Math.max(0, Number(font.bytes) || 0), 0);
     if (totalBytes + bytes > APPEARANCE_FONT_LIBRARY_LIMITS.totalFontBytes) {
-        return createResult(false, `导入失败：字体库总容量不能超过 ${Math.round(APPEARANCE_FONT_LIBRARY_LIMITS.totalFontBytes / 1024 / 1024)}MB`);
+        return createResult(false, t`导入失败：字体库总容量不能超过 ${Math.round(APPEARANCE_FONT_LIBRARY_LIMITS.totalFontBytes / 1024 / 1024)}MB`);
     }
 
     const hash = computeAppearanceFontHash(dataUrl);
     const duplicate = library.userFonts.find((font) => font.hash === hash);
     if (duplicate) {
-        return createResult(false, `字体已存在：${duplicate.name}`, { duplicateId: duplicate.id });
+        return createResult(false, t`字体已存在：${duplicate.name}`, { duplicateId: duplicate.id });
     }
 
-    const rawName = normalizeString(file.name).replace(/\.[a-z0-9]+$/i, '') || `用户字体 ${library.userFonts.length + 1}`;
+    const rawName = normalizeString(file.name).replace(/\.[a-z0-9]+$/i, '') || t`用户字体 ${library.userFonts.length + 1}`;
     const font = {
         id: `user_font_${hash.replace(/[^a-zA-Z0-9_-]/g, '_')}`.slice(0, APPEARANCE_FONT_LIBRARY_LIMITS.idLength),
         name: rawName.slice(0, APPEARANCE_FONT_LIBRARY_LIMITS.nameLength),
@@ -425,8 +428,8 @@ export async function importAppearanceFontFile(file) {
     });
     const saved = saveFontLibrary(nextLibrary);
     return saved
-        ? createResult(true, `已导入并应用字体：${font.name}`, { font: nextLibrary.userFonts.find((item) => item.id === font.id) || font })
-        : createResult(false, '导入失败：设置保存失败');
+        ? createResult(true, t`已导入并应用字体：${font.name}`, { font: nextLibrary.userFonts.find((item) => item.id === font.id) || font })
+        : createResult(false, t("导入失败：设置保存失败"));
 }
 
 export function selectAppearanceFont(fontId) {
@@ -438,20 +441,20 @@ export function selectAppearanceFont(fontId) {
     const saved = saveFontLibrary(nextLibrary);
     const activeFont = resolveActiveFont(nextLibrary);
     return saved
-        ? createResult(true, `已应用字体：${activeFont.name}`, { activeFont })
-        : createResult(false, '字体应用失败：设置保存失败');
+        ? createResult(true, t`已应用字体：${activeFont.name}`, { activeFont })
+        : createResult(false, t("字体应用失败：设置保存失败"));
 }
 
 export function deleteAppearanceFont(fontId) {
     const targetId = normalizeString(fontId);
     if (!targetId || targetId.startsWith('builtin.')) {
-        return createResult(false, '内置字体不能删除');
+        return createResult(false, t("内置字体不能删除"));
     }
 
     const library = getNormalizedFontLibrary();
     const target = library.userFonts.find((font) => font.id === targetId);
     if (!target) {
-        return createResult(false, '删除失败：字体不存在');
+        return createResult(false, t("删除失败：字体不存在"));
     }
 
     const nextFonts = library.userFonts.filter((font) => font.id !== targetId);
@@ -461,8 +464,8 @@ export function deleteAppearanceFont(fontId) {
         userFonts: nextFonts,
     });
     return saved
-        ? createResult(true, `已删除字体：${target.name}`)
-        : createResult(false, '删除失败：设置保存失败');
+        ? createResult(true, t`已删除字体：${target.name}`)
+        : createResult(false, t("删除失败：设置保存失败"));
 }
 
 export function applyAppearanceFontLibrary(root = null) {

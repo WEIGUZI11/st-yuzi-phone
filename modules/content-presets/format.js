@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import {
     CONTENT_PRESET_API_VERSION,
     CONTENT_PRESET_FORMAT,
@@ -133,7 +134,7 @@ export function isTrustedContentPresetRecord(value) {
 
 export function parseContentPresetBundle(input) {
     let value = input;
-    if (typeof input === 'string') { try { value = JSON.parse(input); } catch (error) { throw new Error(`玉子美化预设不是有效 JSON：${error.message}`); } }
-    if (!isContentPresetBundle(value)) throw new Error(`不支持的玉子美化预设格式，需要 ${CONTENT_PRESET_FORMAT}@${CONTENT_PRESET_FORMAT_VERSION} apiVersion=${CONTENT_PRESET_API_VERSION}，或旧版 v2/api1 页面预设`);
+    if (typeof input === 'string') { try { value = JSON.parse(input); } catch (error) { throw new Error(t`玉子美化预设不是有效 JSON：${error.message}`); } }
+    if (!isContentPresetBundle(value)) throw new Error(t`不支持的玉子美化预设格式，需要 ${CONTENT_PRESET_FORMAT}@${CONTENT_PRESET_FORMAT_VERSION} apiVersion=${CONTENT_PRESET_API_VERSION}，或旧版 v2/api1 页面预设`);
     return value;
 }

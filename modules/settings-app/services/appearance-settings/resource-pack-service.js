@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { getTableData } from '../../../phone-core/data-api.js';
 import {
     getPhoneSettings,
@@ -97,7 +98,7 @@ function parsePackInput(input) {
     if (isPlainObject(input)) {
         return input;
     }
-    throw new Error('外观包必须是 JSON 对象');
+    throw new Error(t("外观包必须是 JSON 对象"));
 }
 
 function normalizeImageResource(raw, index = 0, kind = 'resource') {
@@ -183,18 +184,18 @@ function normalizeIconSlotResourceList(list, kind) {
 
 function validatePack(pack) {
     if (!isPlainObject(pack)) {
-        throw new Error('外观包必须是对象');
+        throw new Error(t("外观包必须是对象"));
     }
     if (pack.format !== APPEARANCE_PACK_FORMAT) {
-        throw new Error(`外观包 format 必须是 ${APPEARANCE_PACK_FORMAT}`);
+        throw new Error(t`外观包 format 必须是 ${APPEARANCE_PACK_FORMAT}`);
     }
 
     const schemaVersion = Number(pack.schemaVersion || 0);
     if (!Number.isFinite(schemaVersion) || schemaVersion < APPEARANCE_PACK_MIN_COMPAT_SCHEMA_VERSION) {
-        throw new Error('外观包 schemaVersion 过旧或无效');
+        throw new Error(t("外观包 schemaVersion 过旧或无效"));
     }
     if (schemaVersion > APPEARANCE_PACK_SCHEMA_VERSION) {
-        throw new Error(`外观包 schemaVersion=${schemaVersion} 高于当前支持版本 ${APPEARANCE_PACK_SCHEMA_VERSION}`);
+        throw new Error(t`外观包 schemaVersion=${schemaVersion} 高于当前支持版本 ${APPEARANCE_PACK_SCHEMA_VERSION}`);
     }
 
     return {
@@ -377,7 +378,7 @@ export function clearAppearanceResourcePoolIcons() {
             removedPoolIcons: 0,
             removedOrphanAppIcons: 0,
             skippedOrphanCleanup: !activeKeyResult.available,
-            message: activeKeyResult.available ? '未发现可清理的未使用图标' : '当前数据不可用，已跳过隐藏旧图标扫描',
+            message: activeKeyResult.available ? t("未发现可清理的未使用图标") : t("当前数据不可用，已跳过隐藏旧图标扫描"),
         };
     }
 
@@ -397,7 +398,7 @@ export function clearAppearanceResourcePoolIcons() {
             removedPoolIcons: 0,
             removedOrphanAppIcons: 0,
             skippedOrphanCleanup: !activeKeyResult.available,
-            message: '未使用图标清理失败：设置保存失败',
+            message: t("未使用图标清理失败：设置保存失败"),
         };
     }
 
@@ -408,7 +409,7 @@ export function clearAppearanceResourcePoolIcons() {
         removedPoolIcons,
         removedOrphanAppIcons,
         skippedOrphanCleanup: !activeKeyResult.available,
-        message: `已清理未使用图标 ${removedCount} 个（兼容旧资源 ${removedPoolIcons} 个，隐藏旧图标 ${removedOrphanAppIcons} 个）`,
+        message: t`已清理未使用图标 ${removedCount} 个（兼容旧资源 ${removedPoolIcons} 个，隐藏旧图标 ${removedOrphanAppIcons} 个）`,
     };
 }
 
@@ -421,7 +422,7 @@ export function exportAppearanceResourcePack(options = {}) {
     if (settings.backgroundImage) {
         const currentWallpaper = createExportResource({
             id: 'current-background',
-            name: '当前背景',
+            name: t("当前背景"),
             dataUrl: settings.backgroundImage,
             source: 'current',
         });
@@ -431,7 +432,7 @@ export function exportAppearanceResourcePack(options = {}) {
     Object.entries(settings.appIcons || {}).forEach(([key, dataUrl]) => {
         const icon = createExportResource({
             id: `current-icon-${key}`,
-            name: slotNameMap.get(key) || `当前图标 ${key}`,
+            name: slotNameMap.get(key) || t`当前图标 ${key}`,
             dataUrl,
             source: 'current',
             slotKey: key,
@@ -439,7 +440,7 @@ export function exportAppearanceResourcePack(options = {}) {
         if (icon) icons.push(icon);
     });
 
-    const packName = safeString(options.packName, 120) || '玉子手机外观资源包';
+    const packName = safeString(options.packName, 120) || t("玉子手机外观资源包");
     return {
         success: true,
         pack: {
@@ -490,12 +491,12 @@ export function validateAppearanceResourcePack(input) {
         const wallpaper = pack.wallpapers[0] || null;
 
         if (wallpaper && wallpaper.bytes > STORAGE_BUDGETS.backgroundImageBytes) {
-            return createAppearancePackFailure('导入失败：背景图过大', ['背景图超过当前背景容量上限，未导入']);
+            return createAppearancePackFailure(t("导入失败：背景图过大"), [t("背景图超过当前背景容量上限，未导入")]);
         }
 
         const oversizedIcon = packIcons.find(icon => icon.bytes > STORAGE_BUDGETS.appIconBytes);
         if (oversizedIcon) {
-            return createAppearancePackFailure('导入失败：图标过大', [`图标“${oversizedIcon.name}”超过单图容量上限，未导入`]);
+            return createAppearancePackFailure(t("导入失败：图标过大"), [t`图标“${oversizedIcon.name}”超过单图容量上限，未导入`]);
         }
 
         return {
@@ -508,11 +509,11 @@ export function validateAppearanceResourcePack(input) {
             unmatchedIcons: 0,
             warnings: [],
             errors: [],
-            message: '外观包校验通过',
+            message: t("外观包校验通过"),
         };
     } catch (error) {
-        const message = error?.message || '未知错误';
-        return createAppearancePackFailure(`导入失败：${message}`, [message]);
+        const message = error?.message || t("未知错误");
+        return createAppearancePackFailure(t`导入失败：${message}`, [message]);
     }
 }
 
@@ -539,8 +540,8 @@ export function applyAppearanceResourcePack(packInput, options = {}) {
 
     if (nextTotalIconBytes > STORAGE_BUDGETS.appIconsTotalBytes) {
         return createAppearancePackFailure(
-            '导入失败：图标总容量超限',
-            ['导入后图标总容量超过上限，未导入'],
+            t("导入失败：图标总容量超限"),
+            [t("导入后图标总容量超过上限，未导入")],
             warnings,
             {
                 discardedIcons: assignment.discarded.length,
@@ -550,15 +551,15 @@ export function applyAppearanceResourcePack(packInput, options = {}) {
     }
 
     if (iconSlots.length === 0 && packIcons.length > 0) {
-        warnings.push('当前没有可分配图标位，图标已丢弃');
+        warnings.push(t("当前没有可分配图标位，图标已丢弃"));
     } else if (assignment.discarded.length > 0) {
-        warnings.push(`有 ${assignment.discarded.length} 个图标超过当前图标位数量，已丢弃`);
+        warnings.push(t`有 ${assignment.discarded.length} 个图标超过当前图标位数量，已丢弃`);
     }
     if (assignment.scoreMatchedIcons.length > 0) {
-        warnings.push(`有 ${assignment.scoreMatchedIcons.length} 个图标通过名称相似度匹配`);
+        warnings.push(t`有 ${assignment.scoreMatchedIcons.length} 个图标通过名称相似度匹配`);
     }
     if (assignment.sequentialFilledIcons.length > 0) {
-        warnings.push(`有 ${assignment.sequentialFilledIcons.length} 个图标未找到名称相似项，已按剩余图标位顺序补位`);
+        warnings.push(t`有 ${assignment.sequentialFilledIcons.length} 个图标未找到名称相似项，已按剩余图标位顺序补位`);
     }
 
     const backup = {
@@ -584,8 +585,8 @@ export function applyAppearanceResourcePack(packInput, options = {}) {
         savePhoneSettingsPatch(backup);
         flushPhoneSettingsSave();
         return createAppearancePackFailure(
-            '导入失败：设置保存失败',
-            ['设置保存失败，已回滚'],
+            t("导入失败：设置保存失败"),
+            [t("设置保存失败，已回滚")],
             warnings,
             {
                 discardedIcons: assignment.discarded.length,
@@ -604,7 +605,7 @@ export function applyAppearanceResourcePack(packInput, options = {}) {
         unmatchedIcons: assignment.discarded.length,
         warnings,
         errors: [],
-        message: `导入完成：背景 ${wallpaper ? 1 : 0}，分配图标 ${assignment.assigned.length}，丢弃多余图标 ${assignment.discarded.length}`,
+        message: t`导入完成：背景 ${wallpaper ? 1 : 0}，分配图标 ${assignment.assigned.length}，丢弃多余图标 ${assignment.discarded.length}`,
     };
 }
 

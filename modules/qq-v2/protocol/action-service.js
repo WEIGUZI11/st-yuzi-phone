@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { parseQQV2Response, validateQQV2ActionBatch } from './xml.js';
 import { mapQQV2StickerActionReferences } from '../prompt/sticker-catalog.js';
 
@@ -40,7 +41,7 @@ function mapActionReferences(action, personReferences, messageReferences) {
 export function createQQV2ActionService(options = {}) {
     const repository = options.repository;
     if (!repository || typeof repository.getConversation !== 'function' || typeof repository.applyAIActions !== 'function') {
-        throw new TypeError('QQ v2 action service 需要 repository');
+        throw new TypeError(t("QQ v2 action service 需要 repository"));
     }
     const parseResponse = typeof options.parseResponse === 'function' ? options.parseResponse : parseQQV2Response;
     const validateActions = typeof options.validateActions === 'function' ? options.validateActions : validateQQV2ActionBatch;
@@ -48,10 +49,10 @@ export function createQQV2ActionService(options = {}) {
     return Object.freeze({
         async execute(input = {}) {
             const scopeId = String(input.scopeId ?? '').trim();
-            if (!scopeId) throw new TypeError('QQ v2 action service 需要 scopeId');
+            if (!scopeId) throw new TypeError(t("QQ v2 action service 需要 scopeId"));
             const isCurrent = typeof input.isCurrent === 'function' ? input.isCurrent : () => true;
             if (!isCurrent()) {
-                const error = new Error('QQ AI 动作批次已被新的请求取代');
+                const error = new Error(t("QQ AI 动作批次已被新的请求取代"));
                 error.code = 'request_cancelled';
                 throw error;
             }
@@ -65,7 +66,7 @@ export function createQQV2ActionService(options = {}) {
             const actions = await parseResponse(input.response, input.parseOptions || {});
             const assistantTargets = [...conversations.values()].filter(item => item?.assistantCharacterId);
             if (assistantTargets.length && (conversations.size !== 1 || actions.some(action => !['message', 'transfer'].includes(action.type)))) {
-                throw Object.assign(new Error('陪聊只能回复当前会话或处理转账'), { code: 'assistant_action_forbidden' });
+                throw Object.assign(new Error(t("陪聊只能回复当前会话或处理转账")), { code: 'assistant_action_forbidden' });
             }
             if (input.diagnostic) input.diagnostic.stage = 'validate';
             await validateActions(actions, {
@@ -92,7 +93,7 @@ export function createQQV2ActionService(options = {}) {
                 asObject(input.stickerReferences),
             );
             if (!isCurrent()) {
-                const error = new Error('QQ AI 动作批次已被新的请求取代');
+                const error = new Error(t("QQ AI 动作批次已被新的请求取代"));
                 error.code = 'request_cancelled';
                 throw error;
             }

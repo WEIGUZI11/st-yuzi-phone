@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { createDebouncedTask } from '../../runtime-manager.js';
 import { escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { clampNumber } from '../../utils/object.js';
@@ -17,14 +18,14 @@ function buildToggleCoverPreviewHtml(shape, coverDataUrl, sizePx = 40) {
     const shapeClass = safeShape === 'circle' ? 'is-circle' : 'is-rounded';
     const textHtml = safeShape === 'circle' || safeCover
         ? ''
-        : '<span class="phone-toggle-preview-text">玉子</span>';
+        : `<span class="phone-toggle-preview-text">${t("玉子")}</span>`;
 
     return `
         <div class="phone-toggle-preview-shell">
             <div class="phone-toggle-preview-button ${shapeClass} ${stateClass}"
                 style="${coverStyle}--yuzi-phone-toggle-preview-size:${escapeHtmlAttr(safeSize)}px;"
                 role="img"
-                aria-label="${safeCover ? '按钮封面预览' : '毛玻璃按钮预览'}">
+                aria-label="${safeCover ? t("按钮封面预览") : t("毛玻璃按钮预览")}">
                 <span class="phone-toggle-preview-icon">${PHONE_ICONS.phone || ''}</span>
                 ${textHtml}
             </div>
@@ -157,7 +158,7 @@ export function renderButtonStylePage(ctx) {
             saveToggleSizeDebounced(next);
         }
 
-        if (withToast) showToast(container, `按钮大小已调整为 ${next}px`);
+        if (withToast) showToast(container, t`按钮大小已调整为 ${next}px`);
 
         const latestCover = typeof getPhoneSettings().phoneToggleCoverImage === 'string'
             ? getPhoneSettings().phoneToggleCoverImage.trim()
@@ -186,7 +187,7 @@ export function renderButtonStylePage(ctx) {
             renderCoverPreview(nextShape, latestCover, getCurrentSize());
             savePhoneSetting('phoneToggleStyleShape', nextShape);
             emitToggleStyleUpdated();
-            showToast(container, nextShape === 'circle' ? '按钮已切换为圆形（文字已隐藏）' : '按钮已切换为长方形');
+            showToast(container, nextShape === 'circle' ? t("按钮已切换为圆形（文字已隐藏）") : t("按钮已切换为长方形"));
         });
     });
 
@@ -194,12 +195,12 @@ export function renderButtonStylePage(ctx) {
         if (!(floatingToggleCheckbox instanceof HTMLInputElement)) return;
         savePhoneSetting('floatingToggleEnabled', floatingToggleCheckbox.checked);
         emitToggleStyleUpdated();
-        showToast(container, floatingToggleCheckbox.checked ? '悬浮入口已显示' : '悬浮入口已隐藏');
+        showToast(container, floatingToggleCheckbox.checked ? t("悬浮入口已显示") : t("悬浮入口已隐藏"));
     });
 
     addListener(resetPositionBtn, 'click', () => {
         emitTogglePositionReset();
-        showToast(container, '悬浮按钮位置已重置');
+        showToast(container, t("悬浮按钮位置已重置"));
     });
 
     addListener(uploadBtn, 'click', () => {
@@ -208,12 +209,12 @@ export function renderButtonStylePage(ctx) {
 
             const safeDataUrl = String(dataUrl || '').trim();
             if (!safeDataUrl) {
-                showToast(container, '封面读取失败：空数据', true);
+                showToast(container, t("封面读取失败：空数据"), true);
                 return;
             }
 
             if (estimateBase64Bytes(safeDataUrl) > STORAGE_BUDGETS.toggleCoverBytes) {
-                showToast(container, `按钮封面过大（>${Math.round(STORAGE_BUDGETS.toggleCoverBytes / 1024 / 1024)}MB）`, true);
+                showToast(container, t`按钮封面过大（>${Math.round(STORAGE_BUDGETS.toggleCoverBytes / 1024 / 1024)}MB）`, true);
                 return;
             }
 
@@ -223,17 +224,17 @@ export function renderButtonStylePage(ctx) {
             if (clearBtn instanceof HTMLButtonElement) {
                 clearBtn.disabled = false;
             }
-            showToast(container, '按钮封面已更新');
+            showToast(container, t("按钮封面已更新"));
         }, {
             runtime,
             compress: false,
             maxSizeMB: 8,
-            cropTitle: '裁剪悬浮按钮图片',
-            cropDescription: '可自由调整按钮封面区域，建议保留主体在中心位置。',
+            cropTitle: t("裁剪悬浮按钮图片"),
+            cropDescription: t("可自由调整按钮封面区域，建议保留主体在中心位置。"),
             cropPreset: getCurrentShape() === 'circle' ? 'toggle-cover-circle' : 'toggle-cover-rounded',
             onError: (msg) => {
                 if (!isPageActive()) return;
-                showToast(container, msg || '按钮封面上传失败', true);
+                showToast(container, msg || t("按钮封面上传失败"), true);
             },
         });
     });
@@ -245,7 +246,7 @@ export function renderButtonStylePage(ctx) {
         if (clearBtn instanceof HTMLButtonElement) {
             clearBtn.disabled = true;
         }
-        showToast(container, '按钮封面已清除');
+        showToast(container, t("按钮封面已清除"));
     });
 
 }

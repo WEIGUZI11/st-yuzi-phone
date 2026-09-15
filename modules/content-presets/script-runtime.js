@@ -1,4 +1,5 @@
-function abortError() { return new DOMException('玉子美化模块加载已取消', 'AbortError'); }
+import { t } from '../i18n/index.js';
+function abortError() { return new DOMException(t("玉子美化模块加载已取消"), 'AbortError'); }
 
 function awaitDeadline(promise, { signal, timeoutMs = 10000, onLateResolve } = {}) {
     return new Promise((resolve, reject) => {
@@ -14,7 +15,7 @@ function awaitDeadline(promise, { signal, timeoutMs = 10000, onLateResolve } = {
         };
         const onAbort = () => finish(reject, abortError());
         signal?.addEventListener?.('abort', onAbort, { once: true });
-        timer = setTimeout(() => finish(reject, new Error('玉子美化模块接入超时')), timeoutMs);
+        timer = setTimeout(() => finish(reject, new Error(t("玉子美化模块接入超时"))), timeoutMs);
         Promise.resolve(promise).then((value) => {
             if (settled) {
                 try { onLateResolve?.(value); } catch {}
@@ -35,7 +36,7 @@ export async function importContentPresetModule(options = {}) {
     try {
         url = createObjectURL(new BlobCtor([String(options.source || '')], { type: options.mimeType || 'text/javascript' }));
         const namespace = await awaitDeadline(importModule(url), options);
-        if (typeof namespace?.mount !== 'function') throw new Error('玉子美化模块缺少 mount(context) 导出');
+        if (typeof namespace?.mount !== 'function') throw new Error(t("玉子美化模块缺少 mount(context) 导出"));
         let released = false;
         return Object.freeze({ mount: namespace.mount, disposeModuleUrl() { if (!released) { released = true; revokeObjectURL(url); } } });
     } catch (error) {

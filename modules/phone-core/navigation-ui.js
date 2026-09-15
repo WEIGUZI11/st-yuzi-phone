@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { PHONE_ICONS, PHONE_NAV_ICON_PATHS } from '../phone-home/icons.js';
 import { escapeHtml, escapeHtmlAttr } from '../utils/dom-escape.js';
 
@@ -85,7 +86,7 @@ function getDirectionIcon(direction) {
 export function buildPhoneBackButton({
     className = '',
     attributes = {},
-    label = '返回',
+    label = t("返回"),
     disabled = false,
     action,
 } = {}) {
@@ -107,7 +108,7 @@ export function buildPhoneSwitchButton(direction, {
     action,
 } = {}) {
     const normalizedDirection = normalizeSwitchDirection(direction);
-    const accessibleLabel = label || (normalizedDirection === 'previous' ? '上一项' : '下一项');
+    const accessibleLabel = label || (normalizedDirection === 'previous' ? t("上一项") : t("下一项"));
     const classes = joinClassNames(
         `phone-nav-icon-button phone-nav-switch-button is-${normalizedDirection}`,
         className,

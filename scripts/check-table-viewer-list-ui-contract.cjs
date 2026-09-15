@@ -7,6 +7,7 @@ const ROOT = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 async function main() {
+    const { t } = await import('../modules/i18n/index.js');
     const template = await import(pathToFileURL(path.join(ROOT, 'modules/table-viewer/list-page-template.js')));
     for (const count of [0, 1, 12]) {
         assert.equal(template.buildGenericListToolbarInfoHtml({ visibleCount: count, totalRowCount: 99, searchQuery: 'a', toolbarHint: '不要显示' }), `<span class="phone-generic-result-pill">${count}条</span>`);
@@ -38,7 +39,7 @@ async function main() {
         addEventListener(name, listener) { this.listeners[name] = listener; }
         removeEventListener() {}
     }
-    const sandbox = { Element, HTMLElement, HTMLInputElement: class {}, Logger: { withScope: () => ({ warn() {} }) } };
+    const sandbox = { t, Element, HTMLElement, HTMLInputElement: class {}, Logger: { withScope: () => ({ warn() {} }) } };
     vm.createContext(sandbox);
     vm.runInContext(read('modules/table-viewer/list-page-controller.js').replace(/^import .*;\r?\n/gm, '').replace('export function bindGenericListPageController', 'function bindGenericListPageController'), sandbox);
     const container = new HTMLElement();

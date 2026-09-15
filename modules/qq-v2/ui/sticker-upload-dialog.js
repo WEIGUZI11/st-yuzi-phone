@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 function element(tagName, className = '') {
     const node = document.createElement(tagName);
     if (className) node.className = className;
@@ -12,7 +13,7 @@ function button(label, className) {
 }
 
 function defaultDescription(fileName, index) {
-    return String(fileName || '').trim().replace(/\.[^.]+$/u, '') || `新表情 ${index + 1}`;
+    return String(fileName || '').trim().replace(/\.[^.]+$/u, '') || t`新表情 ${index + 1}`;
 }
 
 export function createStickerUploadDialog({ files = [], close, save, onSaved } = {}) {
@@ -25,10 +26,10 @@ export function createStickerUploadDialog({ files = [], close, save, onSaved } =
         preview.src = previewUrl;
         const details = element('span', 'yuzi-qq-sticker-upload-details');
         const name = element('span', 'yuzi-qq-sticker-upload-name');
-        name.textContent = `${index + 1}. ${record?.name || `表情 ${index + 1}`}`;
+        name.textContent = `${index + 1}. ${record?.name || t`表情 ${index + 1}`}`;
         const description = element('textarea', 'yuzi-qq-sticker-description-input');
-        description.placeholder = '表情含义';
-        description.setAttribute('aria-label', `${name.textContent}的表情含义`);
+        description.placeholder = t("表情含义");
+        description.setAttribute('aria-label', t`${name.textContent}的表情含义`);
         description.value = defaultDescription(record?.name, index);
         description.maxLength = 4000;
         description.rows = 2;
@@ -43,14 +44,14 @@ export function createStickerUploadDialog({ files = [], close, save, onSaved } =
     const status = element('p', 'yuzi-qq-form-error');
     content.append(list, status);
 
-    const cancel = button('取消', 'yuzi-qq-secondary-button');
+    const cancel = button(t("取消"), 'yuzi-qq-secondary-button');
     cancel.addEventListener('click', () => close?.());
-    const confirm = button(`保存 ${entries.length} 个表情`, 'yuzi-qq-primary-button');
+    const confirm = button(t`保存 ${entries.length} 个表情`, 'yuzi-qq-primary-button');
     confirm.addEventListener('click', async () => {
         const descriptions = entries.map(({ description }) => description.value.trim());
         const invalidIndex = descriptions.findIndex((description) => !description);
         if (invalidIndex >= 0) {
-            status.textContent = `请填写第 ${invalidIndex + 1} 个表情的含义`;
+            status.textContent = t`请填写第 ${invalidIndex + 1} 个表情的含义`;
             entries[invalidIndex].description.focus();
             return;
         }
@@ -62,13 +63,13 @@ export function createStickerUploadDialog({ files = [], close, save, onSaved } =
                 description: descriptions[index],
                 blob: file,
             })));
-            if (!result?.ok) throw new Error(result?.error?.message || '表情保存失败');
+            if (!result?.ok) throw new Error(result?.error?.message || t("表情保存失败"));
             close?.();
             await onSaved?.(result);
         } catch (error) {
             confirm.disabled = false;
             cancel.disabled = false;
-            status.textContent = error?.message || '表情保存失败';
+            status.textContent = error?.message || t("表情保存失败");
         }
     });
 

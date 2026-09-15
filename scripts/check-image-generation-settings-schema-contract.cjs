@@ -19,6 +19,8 @@ async function testImageGenerationDefaultsAndNormalization() {
 
     assert.deepEqual(IMAGE_GENERATION_DEFAULTS, {
         enabled: false,
+        qqEnabled: true,
+        theaterEnabled: {square:false, forum:false, live:false},
         timeoutMs: 300_000,
         roleMappings: [],
         tableDisplayEnabledBySheetKey: {},
@@ -38,6 +40,8 @@ async function testImageGenerationDefaultsAndNormalization() {
     });
     assert.deepEqual(normalized, {
         enabled: true,
+        qqEnabled: true,
+        theaterEnabled: {square:false, forum:false, live:false},
         timeoutMs: 1_800_000,
         roleMappings: [],
         tableDisplayEnabledBySheetKey: {},
@@ -207,6 +211,8 @@ async function testSettingsFacadeExportsImageGenerationSchema() {
     assert.equal(typeof settings.normalizeImageGenerationSettings, 'function');
     assert.deepEqual(settings.IMAGE_GENERATION_DEFAULTS, {
         enabled: false,
+        qqEnabled: true,
+        theaterEnabled: {square:false, forum:false, live:false},
         timeoutMs: 300_000,
         roleMappings: [],
         tableDisplayEnabledBySheetKey: {},
@@ -270,6 +276,8 @@ async function testSettingsServiceLoadsNormalizedMappingViewModel() {
     assert.deepEqual(viewModel, {
         config: {
             enabled: true,
+            qqEnabled: true,
+            theaterEnabled: {square:false, forum:false, live:false},
             timeoutMs: 120_000,
             roleMappings: [
                 {
@@ -366,7 +374,7 @@ async function testSettingsServiceBuildsPreviewFromDraftConfigAndTestInput() {
         },
     });
 
-    assert.deepEqual(viewModel.config, draftConfig);
+    assert.deepEqual(viewModel.config, {...draftConfig, qqEnabled:true, theaterEnabled:{square:false, forum:false, live:false}});
     assert.deepEqual(viewModel.testInput, {
         names: '小玉',
         description: '站在雨中',
@@ -417,6 +425,8 @@ async function testSettingsServiceSavesOneNormalizedConfigObject() {
         status: 'saved',
         config: {
             enabled: true,
+            qqEnabled: true,
+            theaterEnabled: {square:false, forum:false, live:false},
             timeoutMs: 10_000,
             roleMappings: [
                 {

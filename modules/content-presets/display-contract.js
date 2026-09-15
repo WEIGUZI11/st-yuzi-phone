@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import {
     CONTENT_PRESET_DISPLAY_INTEGRATIONS,
     CONTENT_PRESET_DISPLAY_INTERACTIONS,
@@ -21,7 +22,7 @@ function freezeList(values) { return Object.freeze([...values]); }
 
 function normalizeTarget(source) {
     if (!hasOnlyKeys(source, ['tableName', 'fields']) || !exactText(source.tableName) || !exactTextList(source.fields)) {
-        throw new Error('展示 targets 必须声明唯一的表名和至少一个无重复必需字段');
+        throw new Error(t("展示 targets 必须声明唯一的表名和至少一个无重复必需字段"));
     }
     return Object.freeze({ tableName: source.tableName, fields: freezeList(source.fields) });
 }
@@ -29,7 +30,7 @@ function normalizeTarget(source) {
 function normalizeIntegrations(source) {
     if (!hasOnlyKeys(source, CONTENT_PRESET_DISPLAY_INTEGRATIONS) || Object.keys(source).length === 0
         || Object.values(source).some(value => value !== true)) {
-        throw new Error('展示 integrations 只能显式声明 theme 或 font 为 true');
+        throw new Error(t("展示 integrations 只能显式声明 theme 或 font 为 true"));
     }
     return Object.freeze(Object.fromEntries(Object.keys(source).map(key => [key, true])));
 }
@@ -45,13 +46,13 @@ function normalizeImageCanvas(source, targets) {
         || !exactTextList(source.stableIdentityFields)
         || !exactTextList(source.promptFields)
         || (source.promptSuffix !== undefined && typeof source.promptSuffix !== 'string')) {
-        throw new Error('展示 imageGeneration.canvases 必须完整声明归属表、稳定标识字段、画布和提示词字段');
+        throw new Error(t("展示 imageGeneration.canvases 必须完整声明归属表、稳定标识字段、画布和提示词字段"));
     }
     const target = targets.find(value => value.tableName === source.tableName);
-    if (!target) throw new Error(`展示生图归属表未声明为 targets：${source.tableName}`);
+    if (!target) throw new Error(t`展示生图归属表未声明为 targets：${source.tableName}`);
     const targetFields = new Set(target.fields);
     if (![...source.stableIdentityFields, ...source.promptFields].every(field => targetFields.has(field))) {
-        throw new Error('展示生图字段必须全部属于归属表的必需字段');
+        throw new Error(t("展示生图字段必须全部属于归属表的必需字段"));
     }
     return Object.freeze({
         tableName: source.tableName,
@@ -63,11 +64,11 @@ function normalizeImageCanvas(source, targets) {
 }
 function normalizeImageGeneration(source, targets) {
     if (!hasOnlyKeys(source, ['canvases']) || !Array.isArray(source.canvases) || source.canvases.length === 0) {
-        throw new Error('展示 imageGeneration 必须声明至少一个画布');
+        throw new Error(t("展示 imageGeneration 必须声明至少一个画布"));
     }
     const canvases = source.canvases.map(canvas => normalizeImageCanvas(canvas, targets));
     const identities = new Set(canvases.map(canvas => `${canvas.tableName}\u001F${canvas.canvas}`));
-    if (identities.size !== canvases.length) throw new Error('展示 imageGeneration 不允许同一归属表重复画布名');
+    if (identities.size !== canvases.length) throw new Error(t("展示 imageGeneration 不允许同一归属表重复画布名"));
     return Object.freeze({ canvases: freezeList(canvases) });
 }
 
@@ -102,12 +103,12 @@ export function isPageItemHostCapabilities(source) {
 }
 
 function normalizeInteractions(source, kind, imageGeneration) {
-    if (kind !== 'inline') throw new Error('只有 inline 展示可以声明 interactions');
+    if (kind !== 'inline') throw new Error(t("只有 inline 展示可以声明 interactions"));
     if (!exactTextList(source) || source.some(value => !CONTENT_PRESET_DISPLAY_INTERACTIONS.includes(value))) {
-        throw new Error('展示 interactions 包含不支持或重复的动作');
+        throw new Error(t("展示 interactions 包含不支持或重复的动作"));
     }
     if (source.includes('image-generate') && !imageGeneration) {
-        throw new Error('image-generate 交互需要 imageGeneration 声明');
+        throw new Error(t("image-generate 交互需要 imageGeneration 声明"));
     }
     return freezeList(source);
 }
@@ -123,15 +124,15 @@ export function normalizeDisplayMetadata(source) {
         || !CONTENT_PRESET_DISPLAY_KINDS.includes(source.kind)
         || !Array.isArray(source.targets)
         || source.targets.length === 0) {
-        throw new Error('展示声明缺少稳定身份、名称、类型或 targets');
+        throw new Error(t("展示声明缺少稳定身份、名称、类型或 targets"));
     }
     const targets = source.targets.map(normalizeTarget);
     if (new Set(targets.map(target => target.tableName)).size !== targets.length) {
-        throw new Error('展示 targets 不允许重复同一物理表');
+        throw new Error(t("展示 targets 不允许重复同一物理表"));
     }
     const integrations = Object.prototype.hasOwnProperty.call(source, 'integrations') ? normalizeIntegrations(source.integrations) : undefined;
     const imageGeneration = Object.prototype.hasOwnProperty.call(source, 'imageGeneration') ? normalizeImageGeneration(source.imageGeneration, targets) : undefined;
-    if (imageGeneration && source.kind !== 'inline') throw new Error('只有 inline 展示可以声明 imageGeneration');
+    if (imageGeneration && source.kind !== 'inline') throw new Error(t("只有 inline 展示可以声明 imageGeneration"));
     const interactions = Object.prototype.hasOwnProperty.call(source, 'interactions') ? normalizeInteractions(source.interactions, source.kind, imageGeneration) : undefined;
     return Object.freeze({
         id: source.id,

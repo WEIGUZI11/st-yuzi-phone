@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { buildTableNavigationCatalog } from '../table-navigation/catalog.js';
 import { normalizeMatchText } from './matcher.js';
 import { createTableSnapshot } from './snapshot.js';
@@ -90,7 +91,7 @@ export function createContentPresetImageActions(options = {}) {
     const subscribeSettings = typeof options.subscribeSettings === 'function' ? options.subscribeSettings : () => NOOP;
     const service = options.imageGenerationService;
     if (!service || typeof service.generate !== 'function' || typeof service.read !== 'function') {
-        throw new TypeError('内容预设生图动作需要 generate/read 服务');
+        throw new TypeError(t("内容预设生图动作需要 generate/read 服务"));
     }
 
     async function resolve(canvasName, rowValues, { requireEnabled = true, requireIdentity = true } = {}) {

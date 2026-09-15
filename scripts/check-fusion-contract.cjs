@@ -81,7 +81,7 @@ function main() {
     check(results, 'templates', '模板 B 使用简化后的当前表格文案', has(contents.templates, '选择当前表格'));
     check(results, 'templates', '旧的当前数据库表格按钮文案已删除', !has(contents.templates, '从当前数据库表格选择'));
     check(results, 'templates', '模板 A/B 来源图标统一使用 upload', !has(contents.templates, 'PHONE_ICONS.puzzle') && countOccurrences(contents.templates, 'PHONE_ICONS.upload') >= 2);
-    check(results, 'templates', '导入为模板/预设入口在 phase-6 已启用', has(contents.templates, 'id="phone-fusion-import-template" title="将合并结果导入为数据库模板/预设"'));
+    check(results, 'templates', '导入为模板/预设入口在 phase-6 已启用', has(contents.templates, 'id="phone-fusion-import-template" title="${t`将合并结果导入为数据库模板/预设`}"'));
     check(results, 'templates', '导入为模板/预设入口不再是 phase-6 禁用占位', !has(contents.templates, 'id="phone-fusion-import-template" disabled'));
     check(results, 'templates', '导入目标提供 scope 选择', has(contents.templates, 'id="phone-fusion-template-scope"'));
     check(results, 'templates', '导入目标提供 presetName 输入', has(contents.templates, 'id="phone-fusion-template-preset-name"'));

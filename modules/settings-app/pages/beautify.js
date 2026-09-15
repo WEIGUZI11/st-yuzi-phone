@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { buildBeautifyTemplatePageHtml } from '../layout/frame.js';
 import { downloadTextFile } from '../services/media-upload/download.js';
 import { showConfirmDialog } from '../ui/confirm-dialog.js';
@@ -72,7 +73,7 @@ export function createBeautifyTemplatePage(ctx) {
         const revision = contentPresetWorkshopService.getSnapshot?.().revision ?? renderedRevision;
         if (renderedRevision < revision) await requestRefresh(revision);
         if (refreshFailure && refreshFailure.revision >= revision) {
-            const error = new Error(`操作已提交，但模板工坊刷新失败：${refreshFailure.error?.message || '读取最新状态失败'}`);
+            const error = new Error(t`操作已提交，但模板工坊刷新失败：${refreshFailure.error?.message || t("读取最新状态失败")}`);
             error.code = 'CONTENT_PRESET_WORKSHOP_REFRESH_FAILED_AFTER_COMMIT';
             error.cause = refreshFailure.error;
             throw error;

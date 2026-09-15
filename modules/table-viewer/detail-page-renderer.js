@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { getTableData } from '../phone-core/data-api.js';
 import { createDdlFieldMetadata } from './ddl-field-metadata.js';
 import { createGenericTemplateStylePayload } from './generic-style-payload.js';
@@ -84,7 +85,7 @@ export function renderGenericDetailPage(options = {}) {
         if (typeof render === 'function') {
             render();
         }
-        showInlineToast(container, '当前详情行已不存在，已返回列表', true);
+        showInlineToast(container, t("当前详情行已不存在，已返回列表"), true);
         return;
     }
 

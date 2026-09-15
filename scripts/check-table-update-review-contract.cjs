@@ -174,7 +174,7 @@ function main() {
         || has(contents.session, 'diffSnapshots(sessionState.baselineSnapshot, sessionState.latestSnapshot'));
     check(results, 'service', '审核服务 stop 会释放 runtime 并重置状态', has(contents.service, 'export function stopTableUpdateReviewService()')
         && has(contents.service, 'runtime.dispose();')
-        && has(contents.service, "resetReviewState('审核服务已停止')"));
+        && has(contents.service, "resetReviewState(t(\"审核服务已停止\"))"));
 
     check(results, 'floorWindow', '楼层窗口 MESSAGE_SENT 只关闭接收窗口，不创建用户审核楼', has(contents.floorWindow, 'closeReceivingWindow')
         && has(contents.floorWindow, "onMessageSent(() => closeReceivingWindow('message-sent'))")
@@ -198,9 +198,9 @@ function main() {
         && has(contents.snapshot, "'行号'")
         && has(contents.snapshot, 'function isReviewIdentityHeader(header)')
         && has(contents.snapshot, 'if (isReviewIdentityHeader(headers[index])) continue;')
-        && appearsBefore(contents.snapshot, 'if (isReviewIdentityHeader(headers[index])) continue;', 'return \'未命名\';'));
+        && appearsBefore(contents.snapshot, 'if (isReviewIdentityHeader(headers[index])) continue;', "return t(\"未命名\");"));
     check(results, 'templates', '审核变更项保留 data-row-id 供定位但不再显示 ID 小字', has(contents.templates, 'data-row-id="${escapeHtmlAttr(change.rowId || \'\')}"')
-        && has(contents.templates, 'const rowLabel = `第 ${formatCount(change.rowIndex) + 1} 行`;')
+        && has(contents.templates, "const rowLabel = t`第 ${formatCount(change.rowIndex) + 1} 行`;")
         && !has(contents.templates, 'ID ${change.rowId}'));
 
     check(results, 'navigationIntent', '审核导航 intent 暴露 attempt 创建、set/peek/clear/consume/discard API', has(contents.navigationIntent, 'export function createTableReviewNavigationAttemptId()')

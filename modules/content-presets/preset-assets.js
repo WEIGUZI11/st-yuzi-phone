@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { enqueueContentPresetMutation } from './mutation-coordinator.js';
 import { getPresetRecord, updatePresetFiles } from './repository.js';
 
@@ -23,12 +24,12 @@ const DEFAULT_DEPS = Object.freeze({
 });
 
 function resolveSlot(value) {
-    if (typeof value !== 'string' || !value.trim()) throw new Error('图片资源槽不能为空');
+    if (typeof value !== 'string' || !value.trim()) throw new Error(t("图片资源槽不能为空"));
     try {
         const basePath = `user-assets/${encodeURIComponent(value)}`;
         return Object.freeze({ basePath, paths: Object.freeze(MANAGED_EXTENSIONS.map(extension => `${basePath}.${extension}`)) });
     } catch {
-        throw new Error('图片资源槽包含无法编码的字符');
+        throw new Error(t("图片资源槽包含无法编码的字符"));
     }
 }
 
@@ -52,11 +53,11 @@ async function decodeImageBlob(blob) {
         await new Promise((resolve, reject) => {
             const image = new Image();
             image.onload = () => resolve();
-            image.onerror = () => reject(new Error('图片无法解码'));
+            image.onerror = () => reject(new Error(t("图片无法解码")));
             image.src = url;
         });
     } catch {
-        throw new Error('图片无法解码');
+        throw new Error(t("图片无法解码"));
     } finally {
         if (url) URL.revokeObjectURL(url);
     }
@@ -79,7 +80,7 @@ function fileToBlob(file, BlobCtor) {
 
 export function createPresetAssetsRuntime(presetId, options = {}) {
     const id = String(presetId ?? '').trim();
-    if (!id) throw new Error('预设 ID 不能为空');
+    if (!id) throw new Error(t("预设 ID 不能为空"));
     const runtimeDeps = { ...DEFAULT_DEPS, ...options };
     const BlobCtor = options.BlobCtor || Blob;
     const createObjectURL = options.createObjectURL || URL.createObjectURL;
@@ -88,7 +89,7 @@ export function createPresetAssetsRuntime(presetId, options = {}) {
     let live = true;
 
     const assertLive = () => {
-        if (!live) throw new Error('预设图片运行时已失效');
+        if (!live) throw new Error(t("预设图片运行时已失效"));
     };
     const revokeUrl = (path) => {
         const url = urls.get(path);
@@ -118,7 +119,7 @@ export function createPresetAssetsRuntime(presetId, options = {}) {
                 if (urls.has(basePath)) return urls.get(basePath);
                 const record = await runtimeDeps.getPresetRecord(id);
                 assertLive();
-                if (!record) throw new Error(`预设不存在：${id}`);
+                if (!record) throw new Error(t`预设不存在：${id}`);
                 const file = paths.map(path => record.files?.[path]).find(Boolean);
                 return file ? cacheUrl(basePath, fileToBlob(file, BlobCtor)) : null;
             });
@@ -126,7 +127,7 @@ export function createPresetAssetsRuntime(presetId, options = {}) {
         async save(slot, image) {
             return runForSlot(slot, async ({ basePath, paths }) => {
                 assertLive();
-                if (!(image instanceof BlobCtor)) throw new Error('只能保存图片 Blob');
+                if (!(image instanceof BlobCtor)) throw new Error(t("只能保存图片 Blob"));
                 await runtimeDeps.decodeImage(image);
                 assertLive();
                 const content = await blobToBase64(image);

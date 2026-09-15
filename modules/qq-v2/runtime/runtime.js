@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { createQQV2ScopeCoordinator } from './scope-coordinator.js';
 
 function cloneScope(scope) {
@@ -19,7 +20,7 @@ function cloneStoryMessages(messages) {
 export function createQQV2Runtime(options = {}) {
     const host = options.host;
     if (!host || typeof host.readScope !== 'function') {
-        throw new TypeError('QQ v2 runtime 需要有效的 host adapter');
+        throw new TypeError(t("QQ v2 runtime 需要有效的 host adapter"));
     }
 
     const onScopeChanged = typeof options.onScopeChanged === 'function'
@@ -68,7 +69,7 @@ export function createQQV2Runtime(options = {}) {
     return Object.freeze({
         async initialize() {
             if (coordinator.getStatus().phase === 'destroyed') {
-                throw new Error('已销毁的 QQ v2 runtime 不能再次初始化');
+                throw new Error(t("已销毁的 QQ v2 runtime 不能再次初始化"));
             }
             return refreshScope();
         },

@@ -137,7 +137,7 @@ async function main() {
     assertIncludes(interactionsSource, 'function getDeleteTarget(element)', '交互层必须读取结构化删除目标');
     assertIncludes(interactionsSource, 'function collectSelectedDeleteTargets(page)', '交互层必须收集结构化删除目标');
     assertIncludes(interactionsSource, 'function normalizeDeleteTargets(targets)', '交互层必须对删除目标做父子去重');
-    assertIncludes(interactionsSource, 'return `确认删除${getDeleteTargetKindLabel(target.kind)}「${target.label}」？`;', '单目标确认标题必须暴露删除类型与名称');
+    assertIncludes(interactionsSource, "return t`确认删除${getDeleteTargetKindLabel(target.kind)}「${target.label}」？`;", '单目标确认标题必须暴露删除类型与名称');
     assertOrdered(interactionsSource, [
         "if (page.classList.contains('vm-delete-mode')) {",
         'const collapseTrigger = target.closest(COLLAPSIBLE_TRIGGER_SELECTOR);',

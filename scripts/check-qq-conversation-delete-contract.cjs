@@ -292,7 +292,7 @@ async function testSwipeAndDeleteDialogContract() {
         'the confirmation copy must use the approved conversation-specific wording');
     assert.match(app, /const confirm = createButton\(dialogCopy\.confirmLabel,/,
         'the confirm action must use the conversation-specific label');
-    assert.match(app, /cancel\.disabled = true;\s*confirm\.disabled = true;\s*confirm\.textContent = '删除中…'/,
+    assert.match(app, /cancel\.disabled = true;\s*confirm\.disabled = true;\s*confirm\.textContent = t\("删除中…"\)/,
         'deletion must lock both buttons and only change the confirm text');
     assert.match(app, /cancel\.disabled = false;\s*confirm\.disabled = false;\s*confirm\.textContent = dialogCopy\.confirmLabel;/,
         'a failed deletion must unlock the same dialog for retry');

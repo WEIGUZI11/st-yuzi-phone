@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import {
     getPhoneSettings as getStoredPhoneSettings,
     savePhoneSetting as persistPhoneSetting,
@@ -159,11 +160,11 @@ function buildStatusLabel(entry, availability) {
     if (customLabel) return customLabel;
     if (availability === 'available') {
         return entry?.modelId === TABLE_POPUP_MODEL_ID
-            ? '普通表格弹窗'
-            : '横向滚动弹幕';
+            ? t("普通表格弹窗")
+            : t("横向滚动弹幕");
     }
-    if (availability === 'format_mismatch') return '格式不匹配';
-    return '暂未适配';
+    if (availability === 'format_mismatch') return t("格式不匹配");
+    return t("暂未适配");
 }
 
 function buildTableViewModels(sourceCatalog, normalizedConfig) {
@@ -183,7 +184,7 @@ function buildTableViewModels(sourceCatalog, normalizedConfig) {
         return {
             ...resolvedEntry,
             sheetKey,
-            tableName: asId(entry?.tableName) || sheetKey || '未命名表格',
+            tableName: asId(entry?.tableName) || sheetKey || t("未命名表格"),
             availability,
             enabled: availability === 'available' && (
                 typeof explicitEnabled === 'boolean' ? explicitEnabled : defaultEnabled
@@ -235,7 +236,7 @@ function buildErrorViewModel(config, error) {
         status: 'error',
         error: {
             code: asId(error?.code) || 'table_data_unavailable',
-            message: asId(error?.message) || '当前无法读取表格目录。',
+            message: asId(error?.message) || t("当前无法读取表格目录。"),
         },
         config: clone(config),
         tables: [],

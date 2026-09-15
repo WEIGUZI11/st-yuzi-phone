@@ -1,3 +1,5 @@
+import { t } from '../../i18n/index.js';
+import { createMediaViewerContent } from '../../ui-runtime/media-viewer-content.js';
 import { createMessageWindow, mergeMessagePage, reconcileMessageScrollAnchor } from './message-window.js';
 import { createAssistantUI } from './assistant.js';
 import { pickImageFiles } from '../../settings-app/services/media-upload.js';
@@ -71,22 +73,22 @@ const TAB_META = Object.freeze({
 });
 
 const TOOL_META = Object.freeze({
-    voice: { label: '语音', icon: 'microphone', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.voice },
-    image: { label: '图片', icon: 'image', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.image },
-    video: { label: '视频', icon: 'camera', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.video },
-    transfer: { label: '转账', icon: 'wallet', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.transfer },
-    emoji: { label: '表情', icon: 'face-smile', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.emoji },
-    plus: { label: '更多', icon: 'circle-plus', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.plus },
+    voice: { get label() { return t("语音"); }, icon: 'microphone', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.voice },
+    image: { get label() { return t("图片"); }, icon: 'image', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.image },
+    video: { get label() { return t("视频"); }, icon: 'camera', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.video },
+    transfer: { get label() { return t("转账"); }, icon: 'wallet', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.transfer },
+    emoji: { get label() { return t("表情"); }, icon: 'face-smile', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.emoji },
+    plus: { get label() { return t("更多"); }, icon: 'circle-plus', figmaIcon: QQ_FIGMA_TOOL_ICON_MAP.plus },
 });
 
 const EMPTY_PAGE = Object.freeze({ items: [], hasMore: false, nextBeforeSequence: null });
 const DEFAULT_WORLDBOOK_INJECTION_COUNT = 30;
 
 const QQ_SETTINGS_GROUPS = Object.freeze([
-    Object.freeze({ kind: 'reply', title: 'AI \u56de\u590d\u4e0e\u4e3b\u52a8\u6d88\u606f' }),
-    Object.freeze({ kind: 'context', title: '\u4e0a\u4e0b\u6587' }),
-    Object.freeze({ kind: 'worldbook', title: '\u4e16\u754c\u4e66\u6ce8\u5165' }),
-    Object.freeze({ kind: 'image-library', title: '\u56fe\u7247\u8d44\u6599' }),
+    Object.freeze({ kind: 'reply', get title() { return t("AI 回复与主动消息"); } }),
+    Object.freeze({ kind: 'context', get title() { return t("上下文"); } }),
+    Object.freeze({ kind: 'worldbook', get title() { return t("世界书注入"); } }),
+    Object.freeze({ kind: 'image-library', get title() { return t("图片资料"); } }),
 ]);
 const QQ_WORLDBOOK_TIME_UNITS = new Set(['hour', 'day', 'month', 'year']);
 
@@ -337,11 +339,11 @@ function normalizeContactName(value) {
 function messagePreview(message) {
     if (!message) return '';
     const labels = {
-        voice: '[语音]',
-        image: '[图片]',
-        video: '[视频]',
-        transfer: '[转账]',
-        sticker: '[表情]',
+        voice: t("[语音]"),
+        image: t("[图片]"),
+        video: t("[视频]"),
+        transfer: t("[转账]"),
+        sticker: t("[表情]"),
     };
     return labels[message.type] || asText(message.content);
 }
@@ -377,9 +379,9 @@ function formatListTime(value, currentStoryTime) {
         new Date(current).getUTCDate(),
     ) - Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())) / (24 * 60 * 60 * 1000));
     if (dayDistance <= 0) return time;
-    if (dayDistance === 1) return '昨天';
-    if (dayDistance < 7) return `${dayDistance}天前`;
-    if (dayDistance < 28) return `${Math.floor(dayDistance / 7)}周前`;
+    if (dayDistance === 1) return t("昨天");
+    if (dayDistance < 7) return t`${dayDistance}天前`;
+    if (dayDistance < 28) return t`${Math.floor(dayDistance / 7)}周前`;
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 }
 
@@ -395,8 +397,8 @@ function formatMessageTime(value, currentStoryTime) {
         new Date(current).getUTCMonth(),
         new Date(current).getUTCDate(),
     ) - Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())) / (24 * 60 * 60 * 1000));
-    if (dayDistance === 0) return `今天 ${time}`;
-    if (dayDistance === 1) return `昨天 ${time}`;
+    if (dayDistance === 0) return t`今天 ${time}`;
+    if (dayDistance === 1) return t`昨天 ${time}`;
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')} ${time}`;
 }
 
@@ -419,15 +421,15 @@ function chatTitle(conversation) {
 function groupRoleLabel(group, personId) {
     const id = asText(personId);
     if (!id) return '';
-    if (asText(group?.ownerId) === id) return '群主';
-    return asArray(group?.adminIds).includes(id) ? '管理员' : '';
+    if (asText(group?.ownerId) === id) return t("群主");
+    return asArray(group?.adminIds).includes(id) ? t("管理员") : '';
 }
 
 function chatStatusText(conversation) {
-    if (conversation?.kind !== 'group') return '在线';
+    if (conversation?.kind !== 'group') return t("在线");
     const group = asObject(conversation.group);
     const memberCount = asArray(group.memberIds).length + (group.selfExited === true ? 0 : 1);
-    return `${group.selfExited === true ? '已退出 · ' : ''}${memberCount}名成员`;
+    return t`${group.selfExited === true ? t("已退出 · ") : ''}${memberCount}名成员`;
 }
 
 function groupTransferRecipients(conversation) {
@@ -440,7 +442,7 @@ function groupTransferRecipients(conversation) {
 function transferRecipientName(conversation, message) {
     const recipientId = asText(message?.transfer?.recipientId);
     if (!recipientId) return '';
-    if (recipientId === '__self__') return '你';
+    if (recipientId === '__self__') return t("你");
     const person = groupTransferRecipients(conversation)
         .find((member) => member.personId === recipientId);
     return asText(person?.formalName) || recipientId;
@@ -456,12 +458,13 @@ function groupMemberManagementActions(group, personId) {
     const source = asObject(group);
     const targetId = asText(personId);
     if (!targetId || source.status !== 'active' || source.selfExited === true) return [];
-    const targetRole = groupRoleLabel(source, targetId) || 'member';
-    if (targetRole === '群主') return [];
+    const targetRole = asText(source.ownerId) === targetId ? 'owner'
+        : asArray(source.adminIds).includes(targetId) ? 'admin' : 'member';
+    if (targetRole === 'owner') return [];
     const muted = Boolean(asObject(source.mutes)[targetId]);
     if (source.selfRole === 'owner') {
         return [
-            targetRole === '管理员' ? 'revoke-admin' : 'appoint-admin',
+            targetRole === 'admin' ? 'revoke-admin' : 'appoint-admin',
             muted ? 'unmute' : 'mute',
             'kick',
             'transfer-owner',
@@ -513,22 +516,22 @@ function conversationDeletionCopy(conversation) {
         && conversation.group?.selfExited !== true;
     if (activeGroup) {
         return Object.freeze({
-            title: '清空聊天记录',
-            message: '只会清空当前群聊历史并从消息页隐藏，群联系人仍会保留。',
-            confirmLabel: '清空',
+            title: t("清空聊天记录"),
+            message: t("只会清空当前群聊历史并从消息页隐藏，群联系人仍会保留。"),
+            confirmLabel: t("清空"),
         });
     }
     if (conversation?.kind === 'group') {
         return Object.freeze({
-            title: '删除群聊',
-            message: '将永久删除该群聊及本地历史，删除后不可恢复。',
-            confirmLabel: '删除',
+            title: t("删除群聊"),
+            message: t("将永久删除该群聊及本地历史，删除后不可恢复。"),
+            confirmLabel: t("删除"),
         });
     }
     return Object.freeze({
-        title: '删除会话',
-        message: '确定删除该会话吗？删除后不可恢复',
-        confirmLabel: '删除',
+        title: t("删除会话"),
+        message: t("确定删除该会话吗？删除后不可恢复"),
+        confirmLabel: t("删除"),
     });
 }
 
@@ -676,7 +679,7 @@ function hasRealMessage(conversation) {
 function createMessageRootRow(conversation, index, currentStoryTime) {
     const preview = messagePreview(conversation?.lastMessage);
     const senderName = conversation?.lastMessage?.senderType === 'self'
-        ? '我'
+        ? t("我")
         : asText(conversation?.lastMessage?.senderName);
     return Object.freeze({
         conversation,
@@ -847,7 +850,7 @@ function profileViewModel(conversation) {
         formalName: contactFormalName(conversation),
         status,
         isFriend,
-        messageLabel: isReadonly ? '查看消息' : '发消息',
+        messageLabel: isReadonly ? t("查看消息") : t("发消息"),
         actions: Object.freeze(isFriend
             ? ['remove-friend', 'edit-profile', 'message']
             : isReadonly
@@ -1215,7 +1218,7 @@ export function createQQApp({
         const copy = createElement('div', 'yuzi-qq-quote-card-copy');
         const meta = createElement('div', 'yuzi-qq-quote-card-meta');
         const sender = createElement('strong', 'yuzi-qq-quote-card-sender');
-        sender.textContent = asText(quote?.senderName) || '群成员';
+        sender.textContent = asText(quote?.senderName) || t("群成员");
         meta.append(sender);
         const storyTime = asText(quote?.storyTime);
         if (storyTime) {
@@ -1230,8 +1233,8 @@ export function createQQApp({
         card.append(copy);
         if (typeof onClose === 'function') {
             const close = createButton('', 'yuzi-qq-quote-card-close', {
-                'aria-label': '取消引用',
-                title: '取消引用',
+                'aria-label': t("取消引用"),
+                title: t("取消引用"),
             });
             close.append(createIcon('xmark'));
             close.addEventListener('click', (event) => {
@@ -1248,7 +1251,7 @@ export function createQQApp({
 
     const stickerImage = (stickerId, fallback, className = 'yuzi-qq-sticker-image') => {
         const element = createElement('span', className);
-        element.textContent = fallback || '[\u8868\u60c5]';
+        element.textContent = fallback || t("[表情]");
         const token = renderEpoch;
         const stickerSession = leaseSessionFor(token)?.stickers;
         if (!stickerId || !stickerSession) return element;
@@ -1286,7 +1289,7 @@ export function createQQApp({
     const identityAvatar = (context, profile, title, token) => {
         const identity = asObject(context?.user);
         const element = createButton('', 'yuzi-qq-identity-avatar yuzi-qq-current-profile-trigger', {
-            'aria-label': '\u5f53\u524d\u7528\u6237\u8d44\u6599', 'data-qq-current-profile': '1', title: '\u5f53\u524d\u7528\u6237\u8d44\u6599',
+            'aria-label': t("当前用户资料"), 'data-qq-current-profile': '1', title: t("当前用户资料"),
         });
         element.textContent = initial(identity.name || title);
         const hostAvatar = asText(identity.avatar);
@@ -1335,7 +1338,8 @@ export function createQQApp({
 
     const isImageGenerationEnabled = () => {
         try {
-            return asObject(typeof getSettings === 'function' ? getSettings() : {}).imageGeneration?.enabled === true;
+            const config = asObject(typeof getSettings === 'function' ? getSettings() : {}).imageGeneration;
+            return config?.enabled === true && config?.qqEnabled !== false;
         } catch {
             return false;
         }
@@ -1347,7 +1351,7 @@ export function createQQApp({
         readPage: (conversationId) => getMessageState(conversationId),
         writePage: (conversationId, messagePage) => pages.set(conversationId, messagePage),
         render: (options) => render(options),
-        notifyFailure: () => shell.showToast?.('图片生成失败', true),
+        notifyFailure: () => shell.showToast?.(t("图片生成失败"), true),
         isConversationVisible: (conversationId) => (
             !disposed
             && page?.type === 'chat'
@@ -1414,7 +1418,7 @@ export function createQQApp({
         const leading = createElement('div', 'phone-nav-leading');
         if (back) {
             const backButton = createButton('', 'phone-nav-icon-button phone-nav-back yuzi-qq-icon-button', {
-                'aria-label': '返回', 'data-qq-back': '1', title: '返回',
+                'aria-label': t("返回"), 'data-qq-back': '1', title: t("返回"),
             });
             backButton.append(createPhoneNavIconElement('back'));
             leading.append(backButton);
@@ -1455,7 +1459,7 @@ export function createQQApp({
     const makeProfileTop = () => {
         const top = createElement('div', 'yuzi-qq-profile-top');
         const backButton = createButton('', 'phone-nav-icon-button phone-nav-back yuzi-qq-icon-button yuzi-qq-profile-back-control', {
-            'aria-label': '\u8fd4\u56de', 'data-qq-back': '1', title: '\u8fd4\u56de',
+            'aria-label': t("返回"), 'data-qq-back': '1', title: t("返回"),
         });
         backButton.append(createPhoneNavIconElement('back'));
         top.append(backButton);
@@ -1483,7 +1487,7 @@ export function createQQApp({
         const statusDot = createElement('span', 'yuzi-qq-identity-status-dot');
         statusDot.setAttribute('aria-hidden', 'true');
         const statusText = createElement('span');
-        statusText.textContent = '\u5728\u7ebf - WIFI';
+        statusText.textContent = t("在线 - WIFI");
         status.append(statusDot, statusText);
         copy.append(heading);
         if (showPresence) copy.append(status);
@@ -1498,7 +1502,7 @@ export function createQQApp({
         const header = createElement('header', `phone-nav-bar is-embedded yuzi-qq-chat-header yuzi-qq-${chatKind}-chat-header is-left-aligned`);
         const leading = createElement('div', 'phone-nav-leading');
         const backButton = createButton('', 'phone-nav-icon-button phone-nav-back yuzi-qq-icon-button yuzi-qq-chat-back-button yuzi-qq-private-chat-back-button', {
-            'aria-label': '\u8fd4\u56de', 'data-qq-back': '1', title: '\u8fd4\u56de',
+            'aria-label': t("返回"), 'data-qq-back': '1', title: t("返回"),
         });
         backButton.append(createPhoneNavIconElement('back'));
         leading.append(backButton);
@@ -1519,7 +1523,7 @@ export function createQQApp({
         center.append(copy);
         const actions = createElement('div', `phone-nav-trailing yuzi-qq-chat-header-actions yuzi-qq-${chatKind}-chat-header-actions`);
         const detail = createButton('', 'phone-nav-icon-button yuzi-qq-icon-button yuzi-qq-chat-overflow-button', {
-            'aria-label': '\u4f1a\u8bdd\u8be6\u60c5', title: '\u4f1a\u8bdd\u8be6\u60c5', 'data-qq-conversation-detail': conversation.conversationId,
+            'aria-label': t("会话详情"), title: t("会话详情"), 'data-qq-conversation-detail': conversation.conversationId,
         });
         detail.append(createIcon('bars'));
         actions.append(detail);
@@ -1530,8 +1534,9 @@ export function createQQApp({
     const makeNav = () => {
         const navigation = createElement('nav', 'yuzi-qq-nav yuzi-qq-root-tabbar');
         navigation.setAttribute('data-phone-bottom-bar', '');
-        navigation.setAttribute('aria-label', 'QQ 主导航');
-        TABS.forEach(([id, label]) => {
+        navigation.setAttribute('aria-label', t("QQ 主导航"));
+        TABS.forEach(([id, sourceLabel]) => {
+            const label = t(sourceLabel);
             const item = createButton(label, `yuzi-qq-nav-item yuzi-qq-root-tab${tab === id ? ' is-active' : ''}`, {
                 'data-qq-tab': id,
             });
@@ -1552,7 +1557,7 @@ export function createQQApp({
         const dialog = createElement('section', `yuzi-qq-dialog ${className}`.trim());
         dialog.setAttribute('role', 'dialog');
         dialog.setAttribute('aria-modal', 'true');
-        dialog.setAttribute('aria-label', title || 'QQ 对话框');
+        dialog.setAttribute('aria-label', title || t("QQ 对话框"));
         dialog.tabIndex = -1;
         if (title) {
             const heading = createElement('h2', 'yuzi-qq-dialog-title');
@@ -1621,7 +1626,7 @@ export function createQQApp({
         const anchorRight = Math.max(0, (viewportRect.right - anchorRect.right) / scaleX);
         layer.setAttribute('style', `--yuzi-qq-anchored-menu-top:${anchorTop}px;--yuzi-qq-anchored-menu-right:${anchorRight}px`);
         menu.setAttribute('role', 'menu');
-        menu.setAttribute('aria-label', '新建');
+        menu.setAttribute('aria-label', t("新建"));
         menu.tabIndex = -1;
 
         layer.addEventListener('click', (event) => {
@@ -1669,7 +1674,7 @@ export function createQQApp({
                 conversationId: asText(conversation.conversationId),
             });
             if (!activated?.ok) {
-                report(new Error(activated?.error?.message || '无法打开会话'));
+                report(new Error(activated?.error?.message || t("无法打开会话")));
                 return;
             }
             target = activated.result?.conversation || conversation;
@@ -1683,7 +1688,7 @@ export function createQQApp({
         go({ type: 'chat', conversationId });
         const opened = await facade.intent.openConversation({ conversationId: target.conversationId });
         if (!opened?.ok) {
-            report(new Error(opened?.error?.message || '无法打开会话'));
+            report(new Error(opened?.error?.message || t("无法打开会话")));
             if (page?.type === 'chat' && page.conversationId === conversationId) {
                 page = page.returnTo || null;
                 void render().catch(report);
@@ -1720,7 +1725,7 @@ export function createQQApp({
             metadata.append(badge);
         }
         row.append(metadata);
-        const remove = createButton('删除', 'yuzi-qq-swipe-delete yuzi-qq-message-conversation-delete', {
+        const remove = createButton(t("删除"), 'yuzi-qq-swipe-delete yuzi-qq-message-conversation-delete', {
             'data-qq-delete-conversation': conversation.conversationId,
         });
         shell.append(row, remove);
@@ -1743,11 +1748,11 @@ export function createQQApp({
         const main = createElement('main', 'yuzi-qq-view yuzi-qq-list-view yuzi-qq-message-root-view');
         main.dataset.qqMessageRoot = '1';
         const add = createButton('', 'yuzi-qq-icon-button yuzi-qq-identity-action yuzi-qq-message-root-add-action', {
-            'aria-label': '新建会话', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: '新建会话', ...(assistant ? { 'data-qq-add-assistant': '1' } : { 'data-qq-add-contact': '1' }),
+            'aria-label': t("新建会话"), 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: t("新建会话"), ...(assistant ? { 'data-qq-add-assistant': '1' } : { 'data-qq-add-contact': '1' }),
         });
         add.append(createIcon('plus'));
         const [header, model] = await Promise.all([
-            makeRootIdentityHeader(token, assistant ? '助手' : '消息', {
+            makeRootIdentityHeader(token, assistant ? t("助手") : t("消息"), {
                 action: add,
                 className: 'yuzi-qq-message-root-header',
                 titleClassName: 'yuzi-qq-message-root-title',
@@ -1762,7 +1767,7 @@ export function createQQApp({
         const search = createElement('div', 'yuzi-qq-search yuzi-qq-message-root-search');
         search.append(createIcon('magnifying-glass', 'yuzi-qq-search-icon'));
         const searchLabel = createElement('span');
-        searchLabel.textContent = '搜索';
+        searchLabel.textContent = t("搜索");
         search.append(searchLabel);
         search.setAttribute('aria-hidden', 'true');
         const list = createElement('div', 'yuzi-qq-conversation-list yuzi-qq-message-root-list yuzi-qq-root-scroll-list');
@@ -1778,15 +1783,15 @@ export function createQQApp({
     const renderContactsRoot = async (token) => {
         const main = createElement('main', 'yuzi-qq-view yuzi-qq-list-view yuzi-qq-contact-root-view');
         const contactPack = createButton('', 'yuzi-qq-icon-button yuzi-qq-identity-action yuzi-qq-contact-root-pack-action', {
-            'aria-label': '导入或导出联系人',
+            'aria-label': t("导入或导出联系人"),
             'aria-haspopup': 'menu',
             'aria-expanded': 'false',
-            title: '导入或导出联系人',
+            title: t("导入或导出联系人"),
             'data-qq-contact-pack-menu': '1',
         });
         contactPack.append(createIcon('user-plus'));
         const [header, model] = await Promise.all([
-            makeRootIdentityHeader(token, '联系人', {
+            makeRootIdentityHeader(token, t("联系人"), {
                 action: contactPack,
                 className: 'yuzi-qq-contact-root-header',
                 titleClassName: 'yuzi-qq-contact-root-title',
@@ -1802,11 +1807,11 @@ export function createQQApp({
         const search = createElement('div', 'yuzi-qq-search yuzi-qq-contact-root-search');
         search.append(createIcon('magnifying-glass', 'yuzi-qq-search-icon'));
         const searchLabel = createElement('span');
-        searchLabel.textContent = '搜索';
+        searchLabel.textContent = t("搜索");
         search.append(searchLabel);
         search.setAttribute('aria-hidden', 'true');
         const decorativeItems = createElement('div', 'yuzi-qq-contact-utilities');
-        ['新朋友', '群通知'].forEach((label) => {
+        [t("新朋友"), t("群通知")].forEach((label) => {
             const item = createElement('div', 'yuzi-qq-contact-utility');
             const labelNode = createElement('span', 'yuzi-qq-contact-utility-label');
             labelNode.textContent = label;
@@ -1834,7 +1839,7 @@ export function createQQApp({
                 const name = createElement('span', 'yuzi-qq-contact-name');
                 name.textContent = formalName;
                 const presence = createElement('span', 'yuzi-qq-contact-presence');
-                presence.textContent = conversation.kind === 'group' ? chatStatusText(conversation) : 'Wi-Fi 在线';
+                presence.textContent = conversation.kind === 'group' ? chatStatusText(conversation) : t("Wi-Fi 在线");
                 copy.append(name, presence);
                 row.append(copy);
                 rows.append(row);
@@ -1845,7 +1850,7 @@ export function createQQApp({
         return main;
     };
 
-    const currentProfileName = (context) => asText(context?.user?.name) || '\u6211';
+    const currentProfileName = (context) => asText(context?.user?.name) || t("我");
 
     const profileSummaryRow = (person) => {
         const text = [asText(person.gender), asText(person.birthday)].filter(Boolean).join(' | ');
@@ -1893,7 +1898,7 @@ export function createQQApp({
         const portrait = avatar(person, 'yuzi-qq-avatar yuzi-qq-avatar-large yuzi-qq-profile-portrait');
         const copy = createElement('div', 'yuzi-qq-profile-copy yuzi-qq-profile-hero-copy');
         const name = createElement('h2', 'yuzi-qq-profile-name yuzi-qq-profile-hero-name');
-        name.textContent = asText(person.formalName) || '\u672a\u547d\u540d';
+        name.textContent = asText(person.formalName) || t("未命名");
         const status = createElement('p', 'yuzi-qq-profile-status yuzi-qq-profile-hero-status');
         status.textContent = statusText;
         copy.append(name);
@@ -1921,24 +1926,24 @@ export function createQQApp({
         const actions = createElement('div', 'yuzi-qq-profile-actions yuzi-qq-profile-action-bar yuzi-qq-profile-footer-actions');
         actions.setAttribute('data-phone-bottom-bar', '');
         if (conversation.status === 'readonly') {
-            actions.append(createButton('\u6dfb\u52a0\u597d\u53cb', 'yuzi-qq-primary-button yuzi-qq-profile-action yuzi-qq-profile-restore-action', {
+            actions.append(createButton(t("添加好友"), 'yuzi-qq-primary-button yuzi-qq-profile-action yuzi-qq-profile-restore-action', {
                 'data-qq-restore-friend': conversation.conversationId,
             }));
         } else if (conversation.status === 'active' || conversation.status === 'contact') {
-            actions.append(createButton('\u5220\u9664\u597d\u53cb', 'yuzi-qq-danger-button yuzi-qq-profile-action yuzi-qq-profile-remove-action', {
+            actions.append(createButton(t("删除好友"), 'yuzi-qq-danger-button yuzi-qq-profile-action yuzi-qq-profile-remove-action', {
                 'data-qq-remove-friend': conversation.conversationId,
             }));
         }
-        actions.append(createButton('\u7f16\u8f91\u8d44\u6599', 'yuzi-qq-secondary-button yuzi-qq-profile-action', {
+        actions.append(createButton(t("编辑资料"), 'yuzi-qq-secondary-button yuzi-qq-profile-action', {
             'data-qq-edit-profile': conversation.conversationId,
         }));
-        actions.append(createButton(conversation.status === 'readonly' ? '\u67e5\u770b\u6d88\u606f' : '\u53d1\u6d88\u606f', 'yuzi-qq-secondary-button yuzi-qq-profile-action', {
+        actions.append(createButton(conversation.status === 'readonly' ? t("查看消息") : t("发消息"), 'yuzi-qq-secondary-button yuzi-qq-profile-action', {
             'data-qq-profile-message': conversation.conversationId,
         }));
         return renderProfileSurface({
             token,
             person: { ...conversation, formalName: contactFormalName(conversation) },
-            statusText: conversation.status === 'readonly' ? '\u5df2\u4e0d\u662f\u597d\u53cb' : '',
+            statusText: conversation.status === 'readonly' ? t("已不是好友") : '',
             backgroundAssetId: asText(conversation.profileBackgroundAssetId),
             actions,
         });
@@ -1949,12 +1954,12 @@ export function createQQApp({
         const person = asArray(conversation?.group?.members)
             .find((member) => member?.personId === page.personId);
         if (!conversation || conversation.kind !== 'group' || !person || !isActive(token)) {
-            return makeSecondaryPage('群成员资料').main;
+            return makeSecondaryPage(t("群成员资料")).main;
         }
         const actions = createElement('div', 'yuzi-qq-profile-actions yuzi-qq-profile-action-bar yuzi-qq-profile-footer-actions');
         actions.setAttribute('data-phone-bottom-bar', '');
         if (groupMemberManagementActions(conversation.group, person.personId).length > 0) {
-            actions.append(createButton('编辑资料', 'yuzi-qq-primary-button yuzi-qq-profile-action', {
+            actions.append(createButton(t("编辑资料"), 'yuzi-qq-primary-button yuzi-qq-profile-action', {
                 'data-qq-group-member-edit': person.personId,
                 'data-qq-group-conversation': conversation.conversationId,
             }));
@@ -1974,7 +1979,7 @@ export function createQQApp({
         const conversation = await getConversation(page.conversationId);
         const person = asArray(conversation?.group?.members)
             .find((member) => member?.personId === page.personId);
-        const { main, content } = makeSecondaryPage('编辑资料', {
+        const { main, content } = makeSecondaryPage(t("编辑资料"), {
             className: 'yuzi-qq-group-member-editor-view',
         });
         if (!conversation || conversation.kind !== 'group' || !person || !isActive(token)) return main;
@@ -1984,19 +1989,19 @@ export function createQQApp({
         identity.append(avatar(person, 'yuzi-qq-avatar yuzi-qq-avatar-large'));
         const copy = createElement('div', 'yuzi-qq-group-member-editor-copy');
         const name = createElement('strong', 'yuzi-qq-group-member-editor-name');
-        name.textContent = asText(person.formalName) || '未命名';
+        name.textContent = asText(person.formalName) || t("未命名");
         const role = createElement('span', 'yuzi-qq-group-member-editor-role');
-        role.textContent = groupRoleLabel(conversation.group, person.personId) || '普通成员';
+        role.textContent = groupRoleLabel(conversation.group, person.personId) || t("普通成员");
         copy.append(name, role);
         identity.append(copy);
         const list = createElement('div', 'yuzi-qq-group-member-editor-actions');
         const labels = {
-            'appoint-admin': '任命管理员',
-            'revoke-admin': '取消管理员',
-            mute: '禁言',
-            unmute: '解除禁言',
-            kick: '移出群聊',
-            'transfer-owner': '转让群主',
+            'appoint-admin': t("任命管理员"),
+            'revoke-admin': t("取消管理员"),
+            mute: t("禁言"),
+            unmute: t("解除禁言"),
+            kick: t("移出群聊"),
+            'transfer-owner': t("转让群主"),
         };
         actions.forEach((action) => {
             const button = createButton(labels[action] || action, [
@@ -2024,7 +2029,7 @@ export function createQQApp({
             const main = createElement('main', 'yuzi-qq-view yuzi-qq-profile-view yuzi-qq-profile-page yuzi-qq-current-profile-view');
             main.append(makeProfileTop());
             const status = createElement('p', 'yuzi-qq-settings-status');
-            status.textContent = profileResult?.error?.message || '\u8bfb\u53d6\u8d44\u6599\u5931\u8d25';
+            status.textContent = profileResult?.error?.message || t("读取资料失败");
             main.append(status);
             return main;
         }
@@ -2032,7 +2037,7 @@ export function createQQApp({
         const displayName = currentProfileName(context);
         const actions = createElement('div', 'yuzi-qq-profile-actions yuzi-qq-profile-action-bar yuzi-qq-current-profile-actions');
         actions.setAttribute('data-phone-bottom-bar', '');
-        actions.append(createButton('\u7f16\u8f91\u8d44\u6599', 'yuzi-qq-primary-button yuzi-qq-profile-action yuzi-qq-current-profile-edit-action', {
+        actions.append(createButton(t("编辑资料"), 'yuzi-qq-primary-button yuzi-qq-profile-action yuzi-qq-current-profile-edit-action', {
             'data-qq-current-profile-edit': '1',
         }));
         return renderProfileSurface({
@@ -2052,10 +2057,10 @@ export function createQQApp({
     };
 
     const PROFILE_FIELD_META = Object.freeze({
-        formalName: Object.freeze({ label: '\u540d\u5b57', maxLength: 120 }),
-        signature: Object.freeze({ label: '\u7b7e\u540d', maxLength: 1000 }),
-        gender: Object.freeze({ label: '\u6027\u522b', maxLength: 120 }),
-        birthday: Object.freeze({ label: '\u751f\u65e5', maxLength: 120 }),
+        formalName: Object.freeze({ label: t("名字"), maxLength: 120 }),
+        signature: Object.freeze({ label: t("签名"), maxLength: 1000 }),
+        gender: Object.freeze({ label: t("性别"), maxLength: 120 }),
+        birthday: Object.freeze({ label: t("生日"), maxLength: 120 }),
     });
 
     const profileEditRow = ({ field, value, owner, conversationId = '', readonly = false, className = '' }) => {
@@ -2088,13 +2093,13 @@ export function createQQApp({
         labelNode.textContent = label;
         const control = createElement('span', 'yuzi-qq-field-control yuzi-qq-profile-asset-control');
         const pick = createButton('', 'yuzi-qq-icon-button yuzi-qq-profile-asset-upload', {
-            'aria-label': `${label}\u4e0a\u4f20`, title: `${label}\u4e0a\u4f20`, ...pickAttributes,
+            'aria-label': t`${label}\u4e0a\u4f20`, title: t`${label}\u4e0a\u4f20`, ...pickAttributes,
         });
         pick.append(createIcon('arrow-up-from-bracket'));
         control.append(pick);
         if (value) {
             const clear = createButton('', 'yuzi-qq-icon-button yuzi-qq-profile-asset-delete', {
-                'aria-label': `${label}\u5220\u9664`, title: `${label}\u5220\u9664`, ...clearAttributes,
+                'aria-label': t`${label}\u5220\u9664`, title: t`${label}\u5220\u9664`, ...clearAttributes,
             });
             clear.append(createIcon('trash'));
             control.append(clear);
@@ -2104,7 +2109,7 @@ export function createQQApp({
     };
 
     const renderProfileEditorSurface = ({ token, profile, displayName, conversationId = '', current = false }) => {
-        const { main, content } = makeSecondaryPage('\u7f16\u8f91\u8d44\u6599', {
+        const { main, content } = makeSecondaryPage(t("编辑资料"), {
             className: `yuzi-qq-profile-view yuzi-qq-profile-page yuzi-qq-profile-editor-view yuzi-qq-profile-edit-view${current ? ' yuzi-qq-current-profile-editor-view' : ''}`,
             headerClassName: `yuzi-qq-profile-editor-header${current ? ' yuzi-qq-current-profile-editor-header' : ''}`,
             titleClassName: 'yuzi-qq-profile-editor-title',
@@ -2115,7 +2120,7 @@ export function createQQApp({
         const groups = createElement('div', 'yuzi-qq-profile-editor-groups yuzi-qq-profile-editor-list');
         groups.append(
             profileAssetRow({
-                label: '\u5934\u50cf',
+                label: t("头像"),
                 value: asText(profile.avatarAssetId),
                 pickAttributes: current
                     ? { 'data-qq-current-profile-pick-avatar': '1' }
@@ -2130,7 +2135,7 @@ export function createQQApp({
             profileEditRow({ field: 'gender', value: profile.gender, owner, conversationId }),
             profileEditRow({ field: 'birthday', value: profile.birthday, owner, conversationId }),
             profileAssetRow({
-                label: '\u8d44\u6599\u80cc\u666f',
+                label: t("资料背景"),
                 value: asText(profile.profileBackgroundAssetId),
                 pickAttributes: current
                     ? { 'data-qq-current-profile-pick-background': '1' }
@@ -2149,7 +2154,7 @@ export function createQQApp({
 
     const renderProfileEditor = async (token) => {
         const conversation = await getConversation(page.conversationId);
-        if (!conversation || !isActive(token)) return makeSecondaryPage('\u7f16\u8f91\u8d44\u6599').main;
+        if (!conversation || !isActive(token)) return makeSecondaryPage(t("编辑资料")).main;
         return renderProfileEditorSurface({
             token,
             profile: conversation,
@@ -2287,25 +2292,8 @@ export function createQQApp({
     const openMessageMediaViewer = ({ type, imagePath = '', description = '' } = {}) => {
         if (!viewport) return;
         const mediaType = type === 'video' ? 'video' : 'image';
-        const label = mediaType === 'video' ? '视频' : '图片';
-        const normalizedImagePath = mediaType === 'image'
-            ? normalizeGeneratedImagePath(imagePath)
-            : '';
-        const viewer = createElement(
-            'div',
-            `yuzi-qq-image-viewer${normalizedImagePath ? '' : ' is-description-only'}`,
-        );
-        if (normalizedImagePath) {
-            const visual = createElement('div', 'yuzi-qq-image-viewer-visual has-image');
-            const image = createElement('img', 'yuzi-qq-image-viewer-image');
-            image.src = normalizedImagePath;
-            image.alt = asText(description) || '图片消息';
-            visual.append(image);
-            viewer.append(visual);
-        }
-        const copy = createElement('p', 'yuzi-qq-image-viewer-description');
-        copy.textContent = asText(description) || `${label}消息`;
-        viewer.append(copy);
+        const normalizedImagePath = mediaType === 'image' ? normalizeGeneratedImagePath(imagePath) : '';
+        const viewer = createMediaViewerContent({imagePath:normalizedImagePath, description:asText(description), type:mediaType}, document);
         showDialog({
             title: '',
             content: viewer,
@@ -2353,15 +2341,15 @@ export function createQQApp({
                     ? {}
                     : groupChat
                         ? {
-                            'aria-label': `打开${asText(sender.formalName) || '群成员'}的用户资料`,
-                            title: '打开群成员资料',
+                            'aria-label': t`打开${asText(sender.formalName) || t("群成员")}的用户资料`,
+                            title: t("打开群成员资料"),
                             'data-qq-group-member-profile': asText(message.senderId),
                             'data-qq-group-member-mention': asText(message.senderId),
                             'data-qq-group-conversation': conversationId,
                         }
                         : {
-                            'aria-label': `打开${asText(sender.formalName) || '对方'}的用户资料`,
-                            title: '打开用户资料',
+                            'aria-label': t`打开${asText(sender.formalName) || t("对方")}的用户资料`,
+                            title: t("打开用户资料"),
                             'data-qq-profile': conversationId,
                         },
             },
@@ -2373,7 +2361,7 @@ export function createQQApp({
         if (groupChat && !own) {
             const identity = createElement('span', 'yuzi-qq-group-message-identity');
             const name = createElement('span', 'yuzi-qq-group-message-name');
-            name.textContent = asText(sender.formalName) || '群成员';
+            name.textContent = asText(sender.formalName) || t("群成员");
             identity.append(name);
             const role = groupRoleLabel(conversation.group, message.senderId);
             if (role) {
@@ -2403,7 +2391,7 @@ export function createQQApp({
         } else if (message.type === 'image') {
             const imagePath = normalizeGeneratedImagePath(message.generatedImagePath);
             const loading = imageGenerationController.isLoading(message.messageId);
-            const descriptionText = asText(message.content) || '图片消息';
+            const descriptionText = asText(message.content) || t("图片消息");
             body = createElement(
                 'div',
                 `yuzi-qq-generated-image-card${imagePath ? ' has-image' : ' is-placeholder'}${loading ? ' is-loading' : ''}`,
@@ -2413,8 +2401,8 @@ export function createQQApp({
                 '',
                 `yuzi-qq-generated-image-viewer-button${imagePath ? ' has-image' : ' is-placeholder'}`,
                 {
-                    'aria-label': imagePath ? '点击放大查看图片' : '点击查看图片详情',
-                    title: imagePath ? '点击放大查看' : '点击查看图片详情',
+                    'aria-label': imagePath ? t("点击放大查看图片") : t("点击查看图片详情"),
+                    title: imagePath ? t("点击放大查看") : t("点击查看图片详情"),
                     'data-qq-view-media': 'image',
                     'data-qq-view-media-image': imagePath,
                     'data-qq-view-media-description': descriptionText,
@@ -2441,9 +2429,9 @@ export function createQQApp({
                     '',
                     `yuzi-qq-image-generate-button${imagePath ? ' yuzi-qq-image-regenerate-button' : ''}${loading ? ' is-loading' : ''}`,
                     {
-                        'aria-label': imagePath ? '重新生成图片' : '生成图片',
+                        'aria-label': imagePath ? t("重新生成图片") : t("生成图片"),
                         'aria-busy': String(loading),
-                        title: imagePath ? '重新生成' : '生成图片',
+                        title: imagePath ? t("重新生成") : t("生成图片"),
                         'data-qq-generate-image': message.messageId,
                         'data-qq-image-conversation-id': conversationId,
                     },
@@ -2457,10 +2445,10 @@ export function createQQApp({
             }
             body.append(media);
         } else if (message.type === 'video') {
-            const descriptionText = asText(message.content) || '视频消息';
+            const descriptionText = asText(message.content) || t("视频消息");
             body = createButton('', 'yuzi-qq-narrative-card is-video yuzi-qq-media-viewer-button', {
-                'aria-label': '点击查看视频详情',
-                title: '点击查看视频详情',
+                'aria-label': t("点击查看视频详情"),
+                title: t("点击查看视频详情"),
                 'data-qq-view-media': 'video',
                 'data-qq-view-media-description': descriptionText,
                 'data-qq-media-conversation-id': conversationId,
@@ -2469,7 +2457,7 @@ export function createQQApp({
             visual.append(createIcon('video'));
             const copy = createElement('span', 'yuzi-qq-narrative-copy');
             const label = createElement('strong', 'yuzi-qq-narrative-label');
-            label.textContent = '视频';
+            label.textContent = t("视频");
             const description = createElement('span', 'yuzi-qq-narrative-description');
             description.textContent = descriptionText;
             copy.append(label, description);
@@ -2486,20 +2474,20 @@ export function createQQApp({
             const amount = createElement('strong', 'yuzi-qq-transfer-amount');
             amount.textContent = messageContent(message);
             const note = createElement('span', 'yuzi-qq-transfer-note');
-            note.textContent = asText(message.transfer?.note) || '转账';
+            note.textContent = asText(message.transfer?.note) || t("转账");
             const state = createElement('small', 'yuzi-qq-transfer-status');
             state.textContent = transferStatusLabel(message);
             copy.append(amount, note);
             const recipientName = transferRecipientName(conversation, message);
             if (conversation.kind === 'group' && recipientName) {
                 const recipient = createElement('span', 'yuzi-qq-transfer-recipient');
-                recipient.textContent = `转给：${recipientName}`;
+                recipient.textContent = t`转给：${recipientName}`;
                 copy.append(recipient);
             }
             copy.append(state);
             body.append(transferIcon, copy);
         } else if (message.type === 'sticker') {
-            body = stickerImage(message.stickerId, message.content || '[\u8868\u60c5]', 'yuzi-qq-sticker-message yuzi-qq-sticker-image');
+            body = stickerImage(message.stickerId, message.content || t("[表情]"), 'yuzi-qq-sticker-message yuzi-qq-sticker-image');
         } else {
             body = createElement('span', 'yuzi-qq-message-bubble yuzi-qq-private-message-bubble');
             body.textContent = message.content;
@@ -2509,13 +2497,13 @@ export function createQQApp({
         const lastSelf = [...allMessages].reverse().find((item) => item.senderType === 'self');
         if (conversation.request?.phase === 'failed' && own && lastSelf?.messageId === message.messageId) {
             stack.append(createButton('↻', 'yuzi-qq-retry-button', {
-                'aria-label': '重试本批消息', title: '重试', 'data-qq-retry': conversation.conversationId,
+                'aria-label': t("重试本批消息"), title: t("重试"), 'data-qq-retry': conversation.conversationId,
             }));
         }
         if (conversation.request?.phase !== 'failed'
             && shouldShowUnansweredIndicator(allMessages, allMessages.indexOf(message))) {
             const unanswered = createElement('span', 'yuzi-qq-unanswered-indicator');
-            unanswered.textContent = '已读不回';
+            unanswered.textContent = t("已读不回");
             stack.append(unanswered);
         }
         item.append(senderAvatar, stack);
@@ -2542,7 +2530,7 @@ export function createQQApp({
         });
         if (conversation.request?.phase === 'failed') {
             const error = createElement('p', 'yuzi-qq-request-error');
-            error.textContent = '错误';
+            error.textContent = t("错误");
             stream.append(error);
         }
         stream.addEventListener('scroll', () => {
@@ -2585,9 +2573,9 @@ export function createQQApp({
         input.name = 'message';
         input.rows = 1;
         input.value = drafts.get(conversation.conversationId) || '';
-        input.placeholder = conversation.canSend ? '发消息' : '该会话已只读';
+        input.placeholder = conversation.canSend ? t("发消息") : t("该会话已只读");
         input.disabled = !conversation.canSend;
-        input.setAttribute('aria-label', '消息输入框');
+        input.setAttribute('aria-label', t("消息输入框"));
         const mentionPanel = chatKind === 'group'
             ? createElement('div', 'yuzi-qq-mention-panel')
             : null;
@@ -2612,7 +2600,7 @@ export function createQQApp({
                 }));
             if (['owner', 'admin'].includes(asText(conversation.group?.selfRole))
                 && '全体成员'.includes(match[1])) {
-                options.push({ id: '', label: '全体成员', member: null, all: true });
+                options.push({ id: '', label: t("全体成员"), member: null, all: true });
             }
             mentionPanel.replaceChildren(...options.map((option) => {
                 const button = createButton('', 'yuzi-qq-mention-option');
@@ -2648,15 +2636,15 @@ export function createQQApp({
         const action = composerAction({ enabled: sendButtonEnabled, phase: conversation.request?.phase });
         if (action === 'stop') {
             const stop = createButton('', 'yuzi-qq-stop-generation-button', {
-                'aria-label': '终止 AI 生成',
-                title: '终止 AI 生成',
+                'aria-label': t("终止 AI 生成"),
+                title: t("终止 AI 生成"),
                 'data-qq-stop-generation': conversation.conversationId,
             });
             stop.append(createIcon('stop'));
             inputRow.append(stop);
         } else if (action === 'send') {
             const send = createButton('', 'yuzi-qq-send-batch-button', {
-                'aria-label': '发送并请求 AI 回复', title: '发送并请求 AI 回复',
+                'aria-label': t("发送并请求 AI 回复"), title: t("发送并请求 AI 回复"),
             });
             send.disabled = !conversation.canSend;
             send.append(createIcon('paper-plane'));
@@ -2665,7 +2653,7 @@ export function createQQApp({
                 try {
                     const result = await submitBatch(conversation.conversationId, input.value);
                     if (!result?.ok && !['draft-failed', 'stale'].includes(result?.status)) {
-                        report(new Error(result?.error?.message || '请求回复失败'));
+                        report(new Error(result?.error?.message || t("请求回复失败")));
                     }
                     if (!disposed) await render();
                 } catch (error) { report(error); }
@@ -2705,7 +2693,7 @@ export function createQQApp({
         bar.setAttribute('data-phone-bottom-bar', '');
         const primaryRow = createElement('div', 'yuzi-qq-message-selection-primary-row');
         const status = createElement('strong', 'yuzi-qq-message-selection-status');
-        status.textContent = `已选择 ${selectedCount} 条`;
+        status.textContent = t`已选择 ${selectedCount} 条`;
         const injection = createButton(
             injectionAction.label,
             'yuzi-qq-message-selection-injection-action',
@@ -2713,7 +2701,7 @@ export function createQQApp({
         );
         injection.disabled = !injectionAction.enabled;
         if (!globalWorldbookEnabled || conversation.injection?.enabled !== true) {
-            injection.title = '请先开启世界书总闸和会话开关';
+            injection.title = t("请先开启世界书总闸和会话开关");
         }
         injection.addEventListener('click', async () => {
             injection.disabled = true;
@@ -2727,7 +2715,7 @@ export function createQQApp({
             });
             if (!result?.ok) {
                 injection.disabled = !injectionAction.enabled;
-                report(new Error(result?.error?.message || '更新注入条目失败'));
+                report(new Error(result?.error?.message || t("更新注入条目失败")));
                 return;
             }
             if (await loadMessages(conversationId)) await render({ refreshMessages: false });
@@ -2743,19 +2731,19 @@ export function createQQApp({
             button.append(createIcon(iconName));
             return button;
         };
-        const exit = actionButton('退出', 'xmark');
+        const exit = actionButton(t("退出"), 'xmark');
         exit.dataset.qqExitMessageSelection = conversationId;
         exit.addEventListener('click', () => {
             exitMessageSelection(conversationId);
             void render().catch(report);
         });
-        const selectAll = actionButton('全选', 'check-double');
+        const selectAll = actionButton(t("全选"), 'check-double');
         selectAll.dataset.qqSelectAllMessages = conversationId;
         selectAll.addEventListener('click', () => {
             messageSelection.selectAll(conversationId, selectableMessages(conversationId));
             void render().catch(report);
         });
-        const remove = actionButton('删除', 'trash', 'is-danger');
+        const remove = actionButton(t("删除"), 'trash', 'is-danger');
         remove.dataset.qqDeleteSelected = conversationId;
         remove.disabled = selectedCount === 0;
         remove.addEventListener('click', () => openSelectedMessageDeletion(conversationId));
@@ -2767,12 +2755,12 @@ export function createQQApp({
     const renderEmojiPanel = async (token, chatKind) => {
         if (!emojiOpen) return null;
         const panel = createElement('section', `yuzi-qq-emoji-panel yuzi-qq-${chatKind}-emoji-panel`);
-        panel.setAttribute('aria-label', '表情面板');
+        panel.setAttribute('aria-label', t("表情面板"));
         const resources = await facade.query.sharedResources();
         if (!isActive(token)) return panel;
         const upload = createButton('', 'yuzi-qq-emoji-item yuzi-qq-emoji-upload-item', {
-            'aria-label': '上传表情',
-            title: '上传表情',
+            'aria-label': t("上传表情"),
+            title: t("上传表情"),
             'data-qq-sticker-upload': '1',
         });
         upload.append(createIcon('plus'));
@@ -2780,7 +2768,7 @@ export function createQQApp({
         asArray(resources?.stickers).forEach((sticker) => {
             const stickerId = asText(sticker.stickerId);
             if (!stickerId) return;
-            const description = asText(sticker.description) || '[\u8868\u60c5]';
+            const description = asText(sticker.description) || t("[表情]");
             const item = createButton('', 'yuzi-qq-emoji-item', {
                 'aria-label': description,
                 title: description,
@@ -2852,7 +2840,7 @@ export function createQQApp({
         const jumpCount = jumpCounts.get(conversation.conversationId) || 0;
         if (jumpCount > 0) {
             const jump = createButton('', 'yuzi-qq-jump-button yuzi-qq-jump-bubble yuzi-qq-private-chat-jump-bubble', {
-                'aria-label': `${formatUnreadBadge(jumpCount)} 条新消息，跳到最新消息`,
+                'aria-label': t`${formatUnreadBadge(jumpCount)} 条新消息，跳到最新消息`,
                 'data-qq-jump-latest': conversation.conversationId,
             });
             const jumpLabel = createElement('span', 'yuzi-qq-jump-label yuzi-qq-private-chat-jump-label');
@@ -2868,7 +2856,7 @@ export function createQQApp({
             facade.query.currentProfile(),
             getCurrentContext(),
         ]);
-        if (!isActive(token) || !profileResult?.ok) return makeSecondaryPage('\u7f16\u8f91\u8d44\u6599').main;
+        if (!isActive(token) || !profileResult?.ok) return makeSecondaryPage(t("编辑资料")).main;
         const profile = asObject(profileResult.profile);
         return renderProfileEditorSurface({
             token,
@@ -2891,7 +2879,7 @@ export function createQQApp({
             });
         const status = input.closest('.yuzi-qq-profile-editor-view')?.querySelector('[data-qq-profile-editor-status]');
         if (!result?.ok) {
-            if (status) status.textContent = result?.error?.message || '\u4fdd\u5b58\u5931\u8d25';
+            if (status) status.textContent = result?.error?.message || t("保存失败");
             return;
         }
         input.value = value;
@@ -2905,7 +2893,7 @@ export function createQQApp({
         ]);
         if (conversation?.assistantCharacterId) return assistantUI.settings(conversation);
         const isGroup = conversation?.kind === 'group';
-        const { main, content } = makeSecondaryPage(isGroup ? '群聊设置' : '\u804a\u5929\u8bbe\u7f6e', {
+        const { main, content } = makeSecondaryPage(isGroup ? t("群聊设置") : t("聊天设置"), {
             className: 'yuzi-qq-conversation-settings-view',
             headerClassName: 'yuzi-qq-conversation-settings-header',
             titleClassName: 'yuzi-qq-conversation-settings-title',
@@ -2942,11 +2930,11 @@ export function createQQApp({
                     avatarUrl: context?.user?.avatar,
                 };
                 const item = createElement('div', 'yuzi-qq-group-member-tile is-self');
-                item.append(identityAvatar(context, self, '当前用户资料', token));
+                item.append(identityAvatar(context, self, t("当前用户资料"), token));
                 const name = createElement('span', 'yuzi-qq-group-member-name');
                 name.textContent = self.formalName;
                 const role = createElement('small', 'yuzi-qq-group-member-role');
-                role.textContent = group.selfRole === 'owner' ? '群主' : group.selfRole === 'admin' ? '管理员' : '';
+                role.textContent = group.selfRole === 'owner' ? t("群主") : group.selfRole === 'admin' ? t("管理员") : '';
                 item.append(name);
                 if (role.textContent) item.append(role);
                 members.append(item);
@@ -2958,7 +2946,7 @@ export function createQQApp({
                 });
                 item.append(avatar(person, 'yuzi-qq-avatar yuzi-qq-group-member-avatar'));
                 const name = createElement('span', 'yuzi-qq-group-member-name');
-                name.textContent = asText(person.formalName) || '未命名';
+                name.textContent = asText(person.formalName) || t("未命名");
                 const role = createElement('small', 'yuzi-qq-group-member-role');
                 role.textContent = groupRoleLabel(group, person.personId);
                 item.append(name);
@@ -2975,7 +2963,7 @@ export function createQQApp({
                 });
                 add.append(createIcon('plus'));
                 const label = createElement('span', 'yuzi-qq-group-member-name');
-                label.textContent = '添加成员';
+                label.textContent = t("添加成员");
                 add.append(label);
                 members.append(add);
             }
@@ -2984,7 +2972,7 @@ export function createQQApp({
         }
         const profileCard = createElement('div', 'yuzi-qq-conversation-settings-fields yuzi-qq-conversation-settings-profile-group');
         const identityField = settingField(
-            isGroup ? '群名称' : '\u5907\u6ce8',
+            isGroup ? t("群名称") : t("备注"),
             isGroup ? 'groupName' : 'remark',
             isGroup ? conversation.group?.name : conversation.remark || '',
         );
@@ -3000,36 +2988,36 @@ export function createQQApp({
         }
         const backgroundRow = createElement('div', 'yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-conversation-background-preview');
         const backgroundLabel = createElement('span', 'yuzi-qq-field-label yuzi-qq-conversation-background-label');
-        backgroundLabel.textContent = '\u804a\u5929\u80cc\u666f';
+        backgroundLabel.textContent = t("聊天背景");
         const backgroundActions = createElement('div', 'yuzi-qq-field-control yuzi-qq-conversation-background-actions');
         const uploadBackground = createButton('', 'yuzi-qq-icon-button yuzi-qq-conversation-background-upload', {
-            'aria-label': '\u4e0a\u4f20\u804a\u5929\u80cc\u666f', title: '\u4e0a\u4f20\u804a\u5929\u80cc\u666f', 'data-qq-pick-background': conversation.conversationId,
+            'aria-label': t("上传聊天背景"), title: t("上传聊天背景"), 'data-qq-pick-background': conversation.conversationId,
         });
         uploadBackground.append(createIcon('upload'));
         backgroundActions.append(uploadBackground);
         if (conversation.backgroundAssetId) {
             const clearBackground = createButton('', 'yuzi-qq-icon-button yuzi-qq-conversation-background-delete', {
-                'aria-label': '\u5220\u9664\u804a\u5929\u80cc\u666f', title: '\u5220\u9664\u804a\u5929\u80cc\u666f', 'data-qq-clear-chat-background': conversation.conversationId,
+                'aria-label': t("删除聊天背景"), title: t("删除聊天背景"), 'data-qq-clear-chat-background': conversation.conversationId,
             });
             clearBackground.append(createIcon('trash'));
             backgroundActions.append(clearBackground);
         }
         backgroundRow.append(backgroundLabel, backgroundActions);
-        const injectionEnabled = settingField('\u542f\u7528\u4f1a\u8bdd\u4e16\u754c\u4e66\u6ce8\u5165', 'enabled', injection.enabled, 'checkbox');
+        const injectionEnabled = settingField(t("启用会话世界书注入"), 'enabled', injection.enabled, 'checkbox');
         const enabledInput = injectionEnabled.querySelector('input');
         enabledInput.disabled = globalWorldbook.enabled !== true;
         profileCard.append(identityField, backgroundRow, injectionEnabled);
 
         const injectionCard = createElement('div', 'yuzi-qq-conversation-settings-fields yuzi-qq-conversation-settings-injection-group');
-        const useConversationLight = settingField('\u4f7f\u7528\u672c\u4f1a\u8bdd\u8bbe\u7f6e\uff08\u706f\u8272\uff09', 'useConversationLight', injection.useConversationLight === true, 'checkbox');
-        const light = settingSelect('\u706f\u8272', 'light', injection.light === 'green' ? 'green' : 'blue', [
-            ['blue', '\u84dd\u706f'],
-            ['green', '\u7eff\u706f'],
+        const useConversationLight = settingField(t("使用本会话设置（灯色）"), 'useConversationLight', injection.useConversationLight === true, 'checkbox');
+        const light = settingSelect(t("灯色"), 'light', injection.light === 'green' ? 'green' : 'blue', [
+            ['blue', t("蓝灯")],
+            ['green', t("绿灯")],
         ]);
-        const useConversationDepth = settingField('\u4f7f\u7528\u672c\u4f1a\u8bdd\u8bbe\u7f6e\uff08\u6df1\u5ea6\uff09', 'useConversationDepth', injection.useConversationDepth === true, 'checkbox');
-        const depth = settingField('\u6df1\u5ea6', 'depth', injection.depth, 'number');
+        const useConversationDepth = settingField(t("使用本会话设置（深度）"), 'useConversationDepth', injection.useConversationDepth === true, 'checkbox');
+        const depth = settingField(t("深度"), 'depth', injection.depth, 'number');
         depth.querySelector('input')?.setAttribute('min', '0');
-        const keywords = settingField('\u5173\u952e\u8bcd', 'keywords', asArray(injection.keywords).join('\u3001'));
+        const keywords = settingField(t("关键词"), 'keywords', asArray(injection.keywords).join('\u3001'));
         keywords.setAttribute('data-qq-conversation-worldbook-keywords', '1');
         const status = createElement('p', 'yuzi-qq-settings-status');
         status.dataset.qqConversationSettingsStatus = conversation.conversationId;
@@ -3046,7 +3034,7 @@ export function createQQApp({
         const persist = async () => {
             const nextDepth = Number(depth.querySelector('input')?.value);
             if (!Number.isInteger(nextDepth) || nextDepth < 0) {
-                status.textContent = '\u6df1\u5ea6\u5fc5\u987b\u662f 0 \u6216\u66f4\u5927\u7684\u6574\u6570';
+                status.textContent = t("深度必须是 0 或更大的整数");
                 return;
             }
             let profileResult = { ok: true };
@@ -3054,7 +3042,7 @@ export function createQQApp({
                 const nameInput = identityField.querySelector('input');
                 const nextName = asText(nameInput?.value);
                 if (!nameInput?.disabled && !nextName) {
-                    status.textContent = '群名称不能为空';
+                    status.textContent = t("群名称不能为空");
                     return;
                 }
                 if (shouldRenameGroup(conversation.group, nextName)) {
@@ -3071,7 +3059,7 @@ export function createQQApp({
                 });
             }
             if (!profileResult?.ok) {
-                status.textContent = profileResult?.error?.message || '\u4fdd\u5b58\u5931\u8d25';
+                status.textContent = profileResult?.error?.message || t("保存失败");
                 return;
             }
             const injectionResult = await facade.intent.setConversationInjection({
@@ -3085,7 +3073,7 @@ export function createQQApp({
                     keywords: settingKeywords(keywords.querySelector('input')?.value),
                 },
             });
-            status.textContent = injectionResult?.ok ? '' : (injectionResult?.error?.message || '\u4fdd\u5b58\u5931\u8d25');
+            status.textContent = injectionResult?.ok ? '' : (injectionResult?.error?.message || t("保存失败"));
         };
         [useConversationLight, useConversationDepth, light].forEach((field) => {
             field.querySelector('input, select')?.addEventListener('change', syncInjectionFields);
@@ -3098,7 +3086,7 @@ export function createQQApp({
         const lifecycleAction = isGroup ? groupLifecycleAction(conversation.group) : '';
         if (lifecycleAction) {
             const lifecycle = createButton(
-                lifecycleAction === 'dissolve' ? '解散群聊' : '退出群聊',
+                lifecycleAction === 'dissolve' ? t("解散群聊") : t("退出群聊"),
                 'yuzi-qq-danger-button yuzi-qq-group-lifecycle',
                 {
                     'data-qq-group-lifecycle': lifecycleAction,
@@ -3112,7 +3100,7 @@ export function createQQApp({
 
     const renderSettingsRoot = (model = null) => {
         const main = createElement('main', 'yuzi-qq-view yuzi-qq-settings-view yuzi-qq-settings-root-view');
-        main.append(makeHeader('\u8bbe\u7f6e', {
+        main.append(makeHeader(t("设置"), {
             back: false,
             className: 'yuzi-qq-settings-root-header',
             titleClassName: 'yuzi-qq-settings-root-title',
@@ -3136,9 +3124,9 @@ export function createQQApp({
         const sendSetting = createElement('section', 'yuzi-qq-settings-sheet yuzi-qq-settings-root-sheet');
         const row = createElement('div', 'yuzi-qq-setting-row yuzi-qq-settings-root-row');
         const label = createElement('span', 'yuzi-qq-settings-root-label');
-        label.textContent = '发送键';
+        label.textContent = t("发送键");
         const toggle = createButton('', 'yuzi-qq-send-button-switch', {
-            role: 'switch', 'aria-label': '发送键',
+            role: 'switch', 'aria-label': t("发送键"),
             'aria-checked': String(model?.settings?.sendButtonEnabled === true),
         });
         toggle.disabled = !model?.ok;
@@ -3150,7 +3138,7 @@ export function createQQApp({
                 const result = await enqueueSettingsSave(() => facade.intent.updateGlobalSettings({
                     scopeId: model.scopeId, settings: { sendButtonEnabled: enabled },
                 }));
-                if (!result?.ok) throw new Error(result?.error?.message || '保存发送键设置失败');
+                if (!result?.ok) throw new Error(result?.error?.message || t("保存发送键设置失败"));
             } catch (error) {
                 toggle.setAttribute('aria-checked', String(!enabled));
                 report(error);
@@ -3207,12 +3195,12 @@ export function createQQApp({
             'yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-time-window-field is-control-stacked',
         );
         const labelText = createElement('span', 'yuzi-qq-field-label');
-        labelText.textContent = '时间范围';
+        labelText.textContent = t("时间范围");
         const controls = createElement('div', 'yuzi-qq-time-window-controls');
         const mode = createElement('select', 'yuzi-qq-field-control yuzi-qq-field-select');
         mode.name = 'timeWindowMode';
-        mode.setAttribute('aria-label', '时间范围模式');
-        [['relative', '最近一段时间'], ['all', '全部消息']].forEach(([value, label]) => {
+        mode.setAttribute('aria-label', t("时间范围模式"));
+        [['relative', t("最近一段时间")], ['all', t("全部消息")]].forEach(([value, label]) => {
             const option = createElement('option');
             option.value = value;
             option.textContent = label;
@@ -3224,11 +3212,11 @@ export function createQQApp({
         amount.name = 'timeWindowValue';
         amount.value = source.value ?? 1;
         amount.min = '1';
-        amount.setAttribute('aria-label', '时间范围数值');
+        amount.setAttribute('aria-label', t("时间范围数值"));
         const unit = createElement('select', 'yuzi-qq-field-control yuzi-qq-field-select');
         unit.name = 'timeWindowUnit';
-        unit.setAttribute('aria-label', '时间范围单位');
-        [['hour', '小时'], ['day', '天'], ['month', '月'], ['year', '年']].forEach(([value, label]) => {
+        unit.setAttribute('aria-label', t("时间范围单位"));
+        [['hour', t("小时")], ['day', t("天")], ['month', t("月")], ['year', t("年")]].forEach(([value, label]) => {
             const option = createElement('option');
             option.value = value;
             option.textContent = label;
@@ -3249,25 +3237,25 @@ export function createQQApp({
 
     const renderImageLibrary = async (token) => {
         const packAction = createButton('', 'yuzi-qq-icon-button yuzi-qq-image-library-pack-action', {
-            'aria-label': '导入或导出图片资料', title: '导入或导出', 'aria-haspopup': 'menu',
+            'aria-label': t("导入或导出图片资料"), title: t("导入或导出"), 'aria-haspopup': 'menu',
             'aria-expanded': 'false', 'data-qq-image-library-pack-menu': '1',
         });
         packAction.append(createIcon('arrow-right-arrow-left'));
         const deleteAction = createButton('', 'yuzi-qq-icon-button yuzi-qq-image-library-delete-action', {
-            'aria-label': '\u5220\u9664\u5df2\u9009\u8d44\u6e90', title: '\u5220\u9664', 'data-qq-image-library-delete': '1',
+            'aria-label': t("删除已选资源"), title: t("删除"), 'data-qq-image-library-delete': '1',
         });
         deleteAction.append(createIcon('trash'));
-        const { main, scroll, content } = makeSecondaryPage('\u56fe\u7247\u8d44\u6599', {
+        const { main, scroll, content } = makeSecondaryPage(t("图片资料"), {
             actions: [packAction, deleteAction],
             className: 'yuzi-qq-settings-view yuzi-qq-image-library-view',
             headerClassName: 'yuzi-qq-image-library-header',
             titleClassName: 'yuzi-qq-image-library-title',
         });
         const stores = [
-            { library: 'avatar', title: '\u5934\u50cf' },
-            { library: 'profile-background', title: '\u8d44\u6599\u80cc\u666f' },
-            { library: 'chat-background', title: '\u804a\u5929\u80cc\u666f' },
-            { library: 'sticker', title: '\u8868\u60c5\u4ed3\u5e93', sticker: true },
+            { library: 'avatar', title: t("头像") },
+            { library: 'profile-background', title: t("资料背景") },
+            { library: 'chat-background', title: t("聊天背景") },
+            { library: 'sticker', title: t("表情仓库"), sticker: true },
         ];
         const results = await Promise.all(stores.map(({ library, sticker }) => (
             sticker ? facade.query.sharedResources() : facade.query.imageLibrary({ library })
@@ -3317,7 +3305,7 @@ export function createQQApp({
         const syncSelection = () => {
             main.classList.toggle('is-selection-mode', imageLibrarySelectionMode);
             deleteAction.disabled = imageLibrarySelectionMode && selectedImageAssetIds.size + selectedStickerIds.size === 0;
-            deleteAction.setAttribute('aria-label', imageLibrarySelectionMode ? '删除已选资源' : '进入删除模式');
+            deleteAction.setAttribute('aria-label', imageLibrarySelectionMode ? t("删除已选资源") : t("进入删除模式"));
             main.querySelectorAll('[data-qq-image-library-item]').forEach((item) => {
                 item.classList.toggle('is-selected', selectedImageAssetIds.has(item.dataset.qqImageLibraryItem));
             });
@@ -3345,7 +3333,7 @@ export function createQQApp({
                 if (!resourceId) return;
                 const selectedIds = sticker ? selectedStickerIds : selectedImageAssetIds;
                 const item = createButton('', 'yuzi-qq-image-library-item', {
-                    'aria-label': sticker ? '\u9009\u62e9\u8868\u60c5' : '\u9009\u62e9\u56fe\u7247',
+                    'aria-label': sticker ? t("选择表情") : t("选择图片"),
                     [sticker ? 'data-qq-sticker-library-item' : 'data-qq-image-library-item']: resourceId,
                 });
                 let longPressed = false;
@@ -3381,7 +3369,7 @@ export function createQQApp({
                 if (sticker) {
                     const fallback = asText(asset.description);
                     const visual = createElement('span', 'yuzi-qq-image-library-sticker');
-                    visual.textContent = fallback || '[\u8868\u60c5]';
+                    visual.textContent = fallback || t("[表情]");
                     const applySticker = (render) => {
                         if (!render?.url || !isActive(token)) return;
                         const image = createElement('img');
@@ -3417,8 +3405,8 @@ export function createQQApp({
                 grid.append(item);
             });
             const upload = createButton('', 'yuzi-qq-image-library-item yuzi-qq-image-library-upload-action', sticker
-                ? { 'aria-label': '\u4e0a\u4f20\u8868\u60c5', title: '\u4e0a\u4f20\u8868\u60c5', 'data-qq-sticker-upload': '1' }
-                : { 'aria-label': '\u4e0a\u4f20\u56fe\u7247', title: '\u4e0a\u4f20\u56fe\u7247', 'data-qq-image-library-upload': library });
+                ? { 'aria-label': t("上传表情"), title: t("上传表情"), 'data-qq-sticker-upload': '1' }
+                : { 'aria-label': t("上传图片"), title: t("上传图片"), 'data-qq-image-library-upload': library });
             upload.append(createIcon('arrow-up-from-bracket'));
             grid.append(upload);
             card.append(heading, grid);
@@ -3431,7 +3419,7 @@ export function createQQApp({
         const kind = page.kind;
         if (kind === 'image-library') return renderImageLibrary(token);
         const group = qqSettingsGroup(kind);
-        const { main, content } = makeSecondaryPage(group?.title || '\u8bbe\u7f6e', {
+        const { main, content } = makeSecondaryPage(group?.title || t("设置"), {
             className: 'yuzi-qq-settings-view yuzi-qq-settings-detail-view',
             headerClassName: 'yuzi-qq-settings-detail-header',
             titleClassName: 'yuzi-qq-settings-detail-title',
@@ -3448,19 +3436,19 @@ export function createQQApp({
         if (!isActive(token)) return main;
         if (!group || !model?.ok) {
             const status = createElement('p', 'yuzi-qq-settings-status');
-            status.textContent = model?.error?.message || '\u8bfb\u53d6\u8bbe\u7f6e\u5931\u8d25';
+            status.textContent = model?.error?.message || t("读取设置失败");
             content.append(status);
             return main;
         }
         if (kind === 'reply' && !resourcesResult?.ok) {
             const status = createElement('p', 'yuzi-qq-settings-status');
-            status.textContent = resourcesResult?.error?.message || '\u8bfb\u53d6\u9884\u8bbe\u8d44\u6e90\u5931\u8d25';
+            status.textContent = resourcesResult?.error?.message || t("读取预设资源失败");
             content.append(status);
             return main;
         }
         if (kind === 'worldbook' && !worldbooksResult?.ok) {
             const status = createElement('p', 'yuzi-qq-settings-status');
-            status.textContent = worldbooksResult?.error?.message || '\u8bfb\u53d6\u4e16\u754c\u4e66\u8d44\u6e90\u5931\u8d25';
+            status.textContent = worldbooksResult?.error?.message || t("读取世界书资源失败");
             content.append(status);
             return main;
         }
@@ -3470,24 +3458,24 @@ export function createQQApp({
         form.dataset.qqSettingsScopeId = model.scopeId;
         if (kind === 'reply') {
             const resources = resourcesResult;
-            const apiOptions = [['', '\u672a\u9009\u62e9']].concat(asArray(resources.apiPresets).map((preset) => [
+            const apiOptions = [['', t("未选择")]].concat(asArray(resources.apiPresets).map((preset) => [
                 asText(preset.presetId), asText(preset.name) || asText(preset.presetId),
             ]));
             const promptOptions = asArray(resources.promptPresets).map((preset) => [
                 asText(preset.presetId), asText(preset.name) || asText(preset.presetId),
             ]);
-            const proactiveToggle = settingField('\u542f\u7528\u4e3b\u52a8\u6d88\u606f', 'enabled', settings.proactive.enabled, 'checkbox');
+            const proactiveToggle = settingField(t("启用主动消息"), 'enabled', settings.proactive.enabled, 'checkbox');
             const proactiveFields = createElement('div', 'yuzi-qq-settings-proactive-fields');
             proactiveFields.setAttribute('data-qq-settings-proactive-fields', '1');
-            const everyTurns = settingField('\u6bcf\u9694\u591a\u5c11\u8f6e', 'everyTurns', settings.proactive.everyTurns, 'number');
+            const everyTurns = settingField(t("每隔多少轮"), 'everyTurns', settings.proactive.everyTurns, 'number');
             everyTurns.querySelector('input')?.setAttribute('min', '1');
             proactiveFields.append(
                 everyTurns,
-                settingSelect('\u79c1\u804a\u4e3b\u52a8\u9884\u8bbe', 'privateProactivePresetId', settings.privateProactivePresetId, promptOptions),
-                settingSelect('群聊主动预设', 'groupProactivePresetId', settings.groupProactivePresetId, promptOptions),
+                settingSelect(t("私聊主动预设"), 'privateProactivePresetId', settings.privateProactivePresetId, promptOptions),
+                settingSelect(t("群聊主动预设"), 'groupProactivePresetId', settings.groupProactivePresetId, promptOptions),
             );
             const privateWeight = settingField(
-                `主动类型占比：私聊 ${settings.proactive.privateWeight}% / 群聊 ${100 - settings.proactive.privateWeight}%`,
+                t`主动类型占比：私聊 ${settings.proactive.privateWeight}% / 群聊 ${100 - settings.proactive.privateWeight}%`,
                 'privateWeight',
                 settings.proactive.privateWeight,
                 'range',
@@ -3499,7 +3487,7 @@ export function createQQApp({
             privateWeightInput?.addEventListener('input', () => {
                 const value = Math.max(0, Math.min(100, asInteger(privateWeightInput.value, 50)));
                 const label = privateWeight.querySelector('.yuzi-qq-field-label');
-                if (label) label.textContent = `主动类型占比：私聊 ${value}% / 群聊 ${100 - value}%`;
+                if (label) label.textContent = t`主动类型占比：私聊 ${value}% / 群聊 ${100 - value}%`;
             });
             proactiveFields.append(privateWeight);
             const syncProactiveFields = () => {
@@ -3508,43 +3496,43 @@ export function createQQApp({
             proactiveToggle.querySelector('input')?.addEventListener('change', syncProactiveFields);
             syncProactiveFields();
             form.append(
-                settingSelect('API \u9884\u8bbe', 'activeApiPresetId', settings.activeApiPresetId, apiOptions),
-                settingSelect('陪聊提示词预设', 'assistantReplyPresetId', settings.assistantReplyPresetId, promptOptions),
-                settingSelect('\u79c1\u804a\u56de\u590d\u9884\u8bbe', 'privateReplyPresetId', settings.privateReplyPresetId, promptOptions),
-                settingSelect('群聊回复预设', 'groupReplyPresetId', settings.groupReplyPresetId, promptOptions),
+                settingSelect(t("API 预设"), 'activeApiPresetId', settings.activeApiPresetId, apiOptions),
+                settingSelect(t("陪聊提示词预设"), 'assistantReplyPresetId', settings.assistantReplyPresetId, promptOptions),
+                settingSelect(t("私聊回复预设"), 'privateReplyPresetId', settings.privateReplyPresetId, promptOptions),
+                settingSelect(t("群聊回复预设"), 'groupReplyPresetId', settings.groupReplyPresetId, promptOptions),
                 proactiveToggle,
                 proactiveFields,
             );
         } else if (kind === 'context') {
-            const hostContext = settingField('\u5bbf\u4e3b\u4e0a\u4e0b\u6587\u6761\u6570', 'hostContextTurns', settings.hostContextTurns, 'number');
-            const extractTag = settingField('\u6807\u7b7e\u63d0\u53d6', 'hostContextExtractTag', settings.hostContextExtractTag, 'text');
+            const hostContext = settingField(t("宿主上下文条数"), 'hostContextTurns', settings.hostContextTurns, 'number');
+            const extractTag = settingField(t("标签提取"), 'hostContextExtractTag', settings.hostContextExtractTag, 'text');
             const excludeTags = settingField(
-                '\u6807\u7b7e\u6392\u9664',
+                t("标签排除"),
                 'hostContextExcludeTags',
                 settings.hostContextExcludeTags.join('\u3001'),
                 'text',
             );
-            const privateHistory = settingField('聊天历史条数', 'conversationHistoryLimit', settings.conversationHistoryLimit, 'number');
+            const privateHistory = settingField(t("聊天历史条数"), 'conversationHistoryLimit', settings.conversationHistoryLimit, 'number');
             hostContext.querySelector('input')?.setAttribute('min', '0');
             privateHistory.querySelector('input')?.setAttribute('min', '0');
             extractTag.querySelector('input')?.setAttribute('placeholder', 'content');
-            extractTag.querySelector('input')?.setAttribute('title', '\u8f93\u5165\u6807\u7b7e\u540d\u3001\u4e0d\u9700\u8981\u5c16\u62ec\u53f7');
-            excludeTags.querySelector('input')?.setAttribute('placeholder', '\u4f8b\u5982\uff1astatus\u3001table');
-            excludeTags.querySelector('input')?.setAttribute('title', '\u591a\u4e2a\u6807\u7b7e\u53ef\u7528\u987f\u53f7\u3001\u9017\u53f7\u6216\u7a7a\u683c\u5206\u9694\u3001\u4e0d\u9700\u8981\u5c16\u62ec\u53f7');
+            extractTag.querySelector('input')?.setAttribute('title', t("输入标签名、不需要尖括号"));
+            excludeTags.querySelector('input')?.setAttribute('placeholder', t("例如：status、table"));
+            excludeTags.querySelector('input')?.setAttribute('title', t("多个标签可用顿号、逗号或空格分隔、不需要尖括号"));
             form.append(hostContext, extractTag, excludeTags, privateHistory);
         } else if (kind === 'worldbook') {
             const timeWindow = settings.worldbook.timeWindow;
-            const worldbookOptions = [['', '\u672a\u9009\u62e9']].concat(asArray(worldbooksResult?.worldbooks).map((worldbook) => [
+            const worldbookOptions = [['', t("未选择")]].concat(asArray(worldbooksResult?.worldbooks).map((worldbook) => [
                 asText(worldbook.bookName), asText(worldbook.bookName),
             ]));
-            const lightField = settingSelect('\u706f\u8272', 'light', settings.worldbook.light, [
-                ['blue', '\u84dd\u706f'],
-                ['green', '\u7eff\u706f'],
+            const lightField = settingSelect(t("灯色"), 'light', settings.worldbook.light, [
+                ['blue', t("蓝灯")],
+                ['green', t("绿灯")],
             ]);
-            const keywordField = settingField('\u5173\u952e\u8bcd', 'keywords', settings.worldbook.keywords.join('\u3001'));
+            const keywordField = settingField(t("关键词"), 'keywords', settings.worldbook.keywords.join('\u3001'));
             keywordField.setAttribute('data-qq-worldbook-keywords', '1');
             const injectionCount = settingField(
-                '\u6ce8\u5165\u6761\u6570',
+                t("注入条数"),
                 'injectionCount',
                 settings.worldbook.injectionCount,
                 'number',
@@ -3558,12 +3546,12 @@ export function createQQApp({
             lightField.querySelector('select')?.addEventListener('change', syncWorldbookKeywords);
             syncWorldbookKeywords();
             form.append(
-                settingField('\u542f\u7528\u4e16\u754c\u4e66\u6ce8\u5165', 'enabled', settings.worldbook.enabled, 'checkbox'),
-                settingSelect('\u6ce8\u5165\u4e16\u754c\u4e66', 'bookName', settings.worldbook.bookName, worldbookOptions),
+                settingField(t("启用世界书注入"), 'enabled', settings.worldbook.enabled, 'checkbox'),
+                settingSelect(t("注入世界书"), 'bookName', settings.worldbook.bookName, worldbookOptions),
                 settingTimeWindow(timeWindow),
                 injectionCount,
                 lightField,
-                settingField('\u6df1\u5ea6', 'depth', settings.worldbook.depth, 'number'),
+                settingField(t("深度"), 'depth', settings.worldbook.depth, 'number'),
                 keywordField,
             );
         }
@@ -3611,11 +3599,11 @@ export function createQQApp({
             const main = createElement('main', 'yuzi-qq-view yuzi-qq-chat-view yuzi-qq-private-chat-view');
             main.append(conversation
                 ? makeChatHeader(conversation)
-                : makeHeader('\u804a\u5929', { back: true, className: 'yuzi-qq-chat-header yuzi-qq-private-chat-header' }));
+                : makeHeader(t("聊天"), { back: true, className: 'yuzi-qq-chat-header yuzi-qq-private-chat-header' }));
             return main;
         }
         if (page?.type === 'conversation-settings') {
-            return makeSecondaryPage('\u804a\u5929\u8bbe\u7f6e', {
+            return makeSecondaryPage(t("聊天设置"), {
                 className: 'yuzi-qq-conversation-settings-view',
                 headerClassName: 'yuzi-qq-conversation-settings-header',
                 titleClassName: 'yuzi-qq-conversation-settings-title',
@@ -3628,10 +3616,10 @@ export function createQQApp({
         }
         if (page) {
             const group = page.type === 'settings' ? qqSettingsGroup(page.kind) : null;
-            return makeSecondaryPage(group?.title || '\u8bbe\u7f6e').main;
+            return makeSecondaryPage(group?.title || t("设置")).main;
         }
         if (tab === 'settings') return renderSettingsRoot();
-        const title = TABS.find(([id]) => id === tab)?.[1] || '\u6d88\u606f';
+        const title = t(TABS.find(([id]) => id === tab)?.[1]) || t("消息");
         const rootName = tab === 'messages' ? 'message' : tab === 'contacts' ? 'contact' : tab;
         const main = createElement('main', `yuzi-qq-view yuzi-qq-list-view yuzi-qq-${rootName}-root-view`);
         main.append(makeHeader(title));
@@ -3769,7 +3757,7 @@ export function createQQApp({
                 message: { type: 'text', content: submission.content },
             });
         if (!result?.ok) {
-            report(new Error(result?.error?.message || '发送失败'));
+            report(new Error(result?.error?.message || t("发送失败")));
             return false;
         }
         drafts.delete(conversationId);
@@ -3785,13 +3773,13 @@ export function createQQApp({
     const openAddContactForm = () => {
         const content = createElement('div', 'yuzi-qq-dialog-form yuzi-qq-add-contact-form');
         const input = createElement('input', 'yuzi-qq-add-contact-name-input');
-        input.placeholder = '联系人名字';
+        input.placeholder = t("联系人名字");
         input.maxLength = 128;
-        input.setAttribute('aria-label', '联系人名字');
+        input.setAttribute('aria-label', t("联系人名字"));
         const error = createElement('p', 'yuzi-qq-form-error yuzi-qq-add-contact-error');
-        const confirm = createButton('创建联系人', 'yuzi-qq-primary-button');
+        const confirm = createButton(t("创建联系人"), 'yuzi-qq-primary-button');
         confirm.disabled = true;
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         const syncEnabled = () => {
             confirm.disabled = input.value.trim().length === 0;
         };
@@ -3806,7 +3794,7 @@ export function createQQApp({
         confirm.addEventListener('click', async () => {
             const result = await facade.intent.createPrivateConversation({ name: input.value });
             if (!result?.ok) {
-                error.textContent = result?.error?.message || '创建失败，请检查名字';
+                error.textContent = result?.error?.message || t("创建失败，请检查名字");
                 return;
             }
             clearOverlay();
@@ -3818,7 +3806,7 @@ export function createQQApp({
             await render();
         });
         content.append(input, error);
-        showDialog({ title: '添加联系人', content, actions: [cancel, confirm], className: 'yuzi-qq-add-contact-dialog' });
+        showDialog({ title: t("添加联系人"), content, actions: [cancel, confirm], className: 'yuzi-qq-add-contact-dialog' });
         input.focus();
     };
 
@@ -3827,9 +3815,9 @@ export function createQQApp({
         const candidates = groupFriendCandidates(result?.ok ? result.conversations : []);
         const content = createElement('div', 'yuzi-qq-dialog-form yuzi-qq-create-group-form');
         const name = createElement('input', 'yuzi-qq-create-group-name');
-        name.placeholder = '群名称';
+        name.placeholder = t("群名称");
         name.maxLength = 120;
-        name.setAttribute('aria-label', '群名称');
+        name.setAttribute('aria-label', t("群名称"));
         const members = createElement('div', 'yuzi-qq-group-picker-list');
         candidates.forEach((conversation) => {
             const row = createElement('label', 'yuzi-qq-group-picker-row');
@@ -3843,9 +3831,9 @@ export function createQQApp({
             members.append(row);
         });
         const error = createElement('p', 'yuzi-qq-form-error');
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton('创建群聊', 'yuzi-qq-primary-button');
+        const confirm = createButton(t("创建群聊"), 'yuzi-qq-primary-button');
         const selectedIds = () => [...members.querySelectorAll('input:checked')].map((input) => input.value);
         const toggle = () => {
             confirm.disabled = !canCreateUserGroup(name.value, selectedIds());
@@ -3859,7 +3847,7 @@ export function createQQApp({
                 memberIds: selectedIds(),
             });
             if (!created?.ok) {
-                error.textContent = created?.error?.message || '创建群聊失败';
+                error.textContent = created?.error?.message || t("创建群聊失败");
                 toggle();
                 return;
             }
@@ -3868,9 +3856,9 @@ export function createQQApp({
             page = null;
             await openChat(created.result.conversation);
         });
-        if (candidates.length < 2) error.textContent = '至少需要两名已有 QQ 好友';
+        if (candidates.length < 2) error.textContent = t("至少需要两名已有 QQ 好友");
         content.append(name, members, error);
-        showDialog({ title: '创建群聊', content, actions: [cancel, confirm], className: 'yuzi-qq-create-group-dialog' });
+        showDialog({ title: t("创建群聊"), content, actions: [cancel, confirm], className: 'yuzi-qq-create-group-dialog' });
         toggle();
         name.focus();
     };
@@ -3887,10 +3875,10 @@ export function createQQApp({
         );
         const content = createElement('div', 'yuzi-qq-dialog-form yuzi-qq-add-group-member-form');
         const select = createElement('select', 'yuzi-qq-add-group-member-select');
-        select.setAttribute('aria-label', '选择群成员');
+        select.setAttribute('aria-label', t("选择群成员"));
         const placeholder = createElement('option');
         placeholder.value = '';
-        placeholder.textContent = '选择已有 QQ 好友';
+        placeholder.textContent = t("选择已有 QQ 好友");
         select.append(placeholder, ...candidates.map((candidate) => {
             const option = createElement('option');
             option.value = candidate.personId;
@@ -3898,9 +3886,9 @@ export function createQQApp({
             return option;
         }));
         const error = createElement('p', 'yuzi-qq-form-error');
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton('添加成员', 'yuzi-qq-primary-button');
+        const confirm = createButton(t("添加成员"), 'yuzi-qq-primary-button');
         confirm.disabled = true;
         select.addEventListener('change', () => { confirm.disabled = !asText(select.value); });
         confirm.addEventListener('click', async () => {
@@ -3911,31 +3899,31 @@ export function createQQApp({
                 targetPersonId: select.value,
             });
             if (!added?.ok) {
-                error.textContent = added?.error?.message || '添加成员失败';
+                error.textContent = added?.error?.message || t("添加成员失败");
                 confirm.disabled = !asText(select.value);
                 return;
             }
             clearOverlay();
             await render();
         });
-        if (candidates.length === 0) error.textContent = '没有可添加的现有 QQ 好友';
+        if (candidates.length === 0) error.textContent = t("没有可添加的现有 QQ 好友");
         content.append(select, error);
-        showDialog({ title: '添加成员', content, actions: [cancel, confirm], className: 'yuzi-qq-add-group-member-dialog' });
+        showDialog({ title: t("添加成员"), content, actions: [cancel, confirm], className: 'yuzi-qq-add-group-member-dialog' });
         select.focus();
     };
 
     const confirmGroupLifecycle = async (conversationId, action) => {
         const conversation = await getConversation(conversationId);
         if (!conversation || conversation.kind !== 'group') return;
-        const label = action === 'dissolve' ? '解散群聊' : '退出群聊';
+        const label = action === 'dissolve' ? t("解散群聊") : t("退出群聊");
         const content = createElement('div', 'yuzi-qq-confirm-copy');
         const text = createElement('p');
         text.textContent = action === 'dissolve'
-            ? '解散后所有成员都不能继续发言，历史消息会保留。'
-            : '退出后你不能继续发言，但仍可旁观群内后续消息。';
+            ? t("解散后所有成员都不能继续发言，历史消息会保留。")
+            : t("退出后你不能继续发言，但仍可旁观群内后续消息。");
         const error = createElement('p', 'yuzi-qq-form-error');
         content.append(text, error);
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
         const confirm = createButton(label, 'yuzi-qq-danger-button');
         confirm.addEventListener('click', async () => {
@@ -3945,7 +3933,7 @@ export function createQQApp({
                 action,
             });
             if (!result?.ok) {
-                error.textContent = result?.error?.message || `${label}失败`;
+                error.textContent = result?.error?.message || t`${label}失败`;
                 confirm.disabled = false;
                 return;
             }
@@ -3962,25 +3950,25 @@ export function createQQApp({
         const person = asArray(conversation?.group?.members).find((member) => member.personId === personId);
         if (!conversation || conversation.kind !== 'group' || !person) return;
         const labels = {
-            'appoint-admin': '任命管理员',
-            'revoke-admin': '取消管理员',
-            mute: '禁言',
-            unmute: '解除禁言',
-            kick: '移出群聊',
-            'transfer-owner': '转让群主',
+            'appoint-admin': t("任命管理员"),
+            'revoke-admin': t("取消管理员"),
+            mute: t("禁言"),
+            unmute: t("解除禁言"),
+            kick: t("移出群聊"),
+            'transfer-owner': t("转让群主"),
         };
         const label = labels[action] || action;
         const content = createElement('div', 'yuzi-qq-dialog-form');
         const text = createElement('p');
-        text.textContent = `${label}：${asText(person.formalName) || '未命名'}`;
+        text.textContent = `${label}：${asText(person.formalName) || t("未命名")}`;
         let duration = null;
         if (action === 'mute') {
             duration = createElement('select', 'yuzi-qq-group-mute-duration');
-            duration.setAttribute('aria-label', '禁言时长');
+            duration.setAttribute('aria-label', t("禁言时长"));
             ['10 分钟', '1 小时', '1 天', '7 天', '永久'].forEach((value) => {
                 const option = createElement('option');
                 option.value = value;
-                option.textContent = value;
+                option.textContent = t(value);
                 duration.append(option);
             });
         }
@@ -3988,7 +3976,7 @@ export function createQQApp({
         content.append(text);
         if (duration) content.append(duration);
         content.append(error);
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
         const confirm = createButton(label, action === 'kick' || action === 'transfer-owner'
             ? 'yuzi-qq-danger-button'
@@ -4002,7 +3990,7 @@ export function createQQApp({
                 ...(duration ? { duration: duration.value } : {}),
             });
             if (!result?.ok) {
-                error.textContent = result?.error?.message || `${label}失败`;
+                error.textContent = result?.error?.message || t`${label}失败`;
                 confirm.disabled = false;
                 return;
             }
@@ -4023,9 +4011,9 @@ export function createQQApp({
     const openAddContact = (anchor) => {
         const menu = createElement('div', 'yuzi-qq-dialog-menu yuzi-qq-message-add-menu');
         const rows = [
-            ['创建群聊', 'message'],
-            ['创建频道', 'hashtag'],
-            ['加好友/群', 'user-plus'],
+            [t("创建群聊"), 'message'],
+            [t("创建频道"), 'hashtag'],
+            [t("加好友/群"), 'user-plus'],
         ];
         rows.forEach(([label, iconName], index) => {
             const isGroupAction = index === 0;
@@ -4052,17 +4040,17 @@ export function createQQApp({
         const illustration = createElement('span', 'yuzi-qq-dialog-illustration');
         illustration.textContent = '!';
         const copy = createElement('p');
-        copy.textContent = '删除后将从联系人中移除，对话记录会保留为只读。';
+        copy.textContent = t("删除后将从联系人中移除，对话记录会保留为只读。");
         content.append(illustration, copy);
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton('删除好友', 'yuzi-qq-danger-button');
+        const confirm = createButton(t("删除好友"), 'yuzi-qq-danger-button');
         confirm.addEventListener('click', async () => {
             confirm.disabled = true;
             const result = await facade.intent.removePrivateFriend({ conversationId });
             if (!result?.ok) {
                 confirm.disabled = false;
-                copy.textContent = '删除失败，请重试';
+                copy.textContent = t("删除失败，请重试");
                 return;
             }
             clearOverlay();
@@ -4070,7 +4058,7 @@ export function createQQApp({
             page = null;
             await render();
         });
-        showDialog({ title: '删除好友', content, actions: [cancel, confirm], className: 'yuzi-qq-confirm-dialog yuzi-qq-remove-friend-dialog' });
+        showDialog({ title: t("删除好友"), content, actions: [cancel, confirm], className: 'yuzi-qq-confirm-dialog yuzi-qq-remove-friend-dialog' });
     };
 
     const confirmConversationDeletion = async (conversationId) => {
@@ -4083,7 +4071,7 @@ export function createQQApp({
         const copy = createElement('p');
         copy.textContent = dialogCopy.message;
         content.append(illustration, copy);
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
         const confirm = createButton(dialogCopy.confirmLabel, 'yuzi-qq-danger-button');
         let deleting = false;
@@ -4092,14 +4080,14 @@ export function createQQApp({
             deleting = true;
             cancel.disabled = true;
             confirm.disabled = true;
-            confirm.textContent = '删除中…';
+            confirm.textContent = t("删除中…");
             const result = await facade.intent.deleteConversation({ conversationId });
             if (!result?.ok || result.result?.deleted !== true) {
                 deleting = false;
                 cancel.disabled = false;
                 confirm.disabled = false;
                 confirm.textContent = dialogCopy.confirmLabel;
-                copy.textContent = '删除失败，请重试';
+                copy.textContent = t("删除失败，请重试");
                 return;
             }
             clearOverlay();
@@ -4115,7 +4103,7 @@ export function createQQApp({
 
     const sendNarrativeMessage = async (conversationId, type, content) => {
         const result = await submitNarrativeMessage({ facade, conversationId, type, content });
-        if (!result?.ok) throw new Error(result?.error?.message || '发送失败');
+        if (!result?.ok) throw new Error(result?.error?.message || t("发送失败"));
         return loadMessages(conversationId);
     };
 
@@ -4124,12 +4112,12 @@ export function createQQApp({
         const content = createElement('div', 'yuzi-qq-dialog-form');
         const input = createElement('textarea');
         input.rows = 4;
-        input.placeholder = type === 'voice' ? '输入要说的话' : `描述${meta.label}内容`;
+        input.placeholder = type === 'voice' ? t("输入要说的话") : t`描述${meta.label}内容`;
         input.setAttribute('aria-label', meta.label);
         const error = createElement('p', 'yuzi-qq-form-error');
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton('发送', 'yuzi-qq-primary-button');
+        const confirm = createButton(t("发送"), 'yuzi-qq-primary-button');
         confirm.disabled = true;
         const toggle = () => { confirm.disabled = !asText(input.value); };
         input.addEventListener('input', toggle);
@@ -4145,7 +4133,7 @@ export function createQQApp({
                 const updated = await sendNarrativeMessage(conversationId, type, input.value);
                 if (updated) { clearOverlay(); await render({ refreshMessages: false }); }
             } catch (errorValue) {
-                error.textContent = errorValue.message || '发送失败，请重试';
+                error.textContent = errorValue.message || t("发送失败，请重试");
                 toggle();
             }
         });
@@ -4163,10 +4151,10 @@ export function createQQApp({
         if (conversation.kind === 'group') {
             recipient = createElement('select', 'yuzi-qq-transfer-recipient-select');
             recipient.dataset.qqTransferRecipient = '1';
-            recipient.setAttribute('aria-label', '收款人');
+            recipient.setAttribute('aria-label', t("收款人"));
             const placeholder = createElement('option');
             placeholder.value = '';
-            placeholder.textContent = '选择收款人';
+            placeholder.textContent = t("选择收款人");
             recipient.append(placeholder, ...groupTransferRecipients(conversation).map((member) => {
                 const option = createElement('option');
                 option.value = member.personId;
@@ -4175,27 +4163,27 @@ export function createQQApp({
             }));
         }
         const amount = createElement('input');
-        amount.placeholder = '金额';
-        amount.setAttribute('aria-label', '金额');
+        amount.placeholder = t("金额");
+        amount.setAttribute('aria-label', t("金额"));
         const currency = createElement('select');
-        currency.setAttribute('aria-label', '货币');
+        currency.setAttribute('aria-label', t("货币"));
         currency.append(
-            new Option('人民币', '人民币'),
-            new Option('自定义', 'custom'),
+            new Option(t("人民币"), '人民币'),
+            new Option(t("自定义"), 'custom'),
         );
         const customCurrency = createElement('input');
-        customCurrency.placeholder = '自定义货币';
-        customCurrency.setAttribute('aria-label', '自定义货币');
+        customCurrency.placeholder = t("自定义货币");
+        customCurrency.setAttribute('aria-label', t("自定义货币"));
         customCurrency.hidden = true;
         const selectedCurrency = () => currency.value === 'custom' ? customCurrency.value : currency.value;
         const note = createElement('textarea');
         note.rows = 2;
-        note.placeholder = '备注';
-        note.setAttribute('aria-label', '备注');
+        note.placeholder = t("备注");
+        note.setAttribute('aria-label', t("备注"));
         const error = createElement('p', 'yuzi-qq-form-error');
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton('转账', 'yuzi-qq-primary-button');
+        const confirm = createButton(t("转账"), 'yuzi-qq-primary-button');
         confirm.disabled = true;
         const toggle = () => {
             confirm.disabled = !asText(amount.value)
@@ -4221,7 +4209,7 @@ export function createQQApp({
                 recipientId: recipient?.value,
             });
             if (!result?.ok) {
-                error.textContent = result?.error?.message || '转账发送失败，请重试';
+                error.textContent = result?.error?.message || t("转账发送失败，请重试");
                 toggle();
                 return;
             }
@@ -4230,7 +4218,7 @@ export function createQQApp({
         });
         if (recipient) content.append(recipient);
         content.append(amount, currency, customCurrency, note, error);
-        showDialog({ title: '转账', content, actions: [cancel, confirm] });
+        showDialog({ title: t("转账"), content, actions: [cancel, confirm] });
         amount.focus();
     };
 
@@ -4239,17 +4227,17 @@ export function createQQApp({
         if (selectedIds.length === 0) return;
         const content = createElement('div', 'yuzi-qq-confirm-copy yuzi-qq-delete-message-copy');
         const text = createElement('p');
-        text.textContent = `确定删除 ${selectedIds.length} 条消息吗？`;
+        text.textContent = t`确定删除 ${selectedIds.length} 条消息吗？`;
         const error = createElement('p', 'yuzi-qq-form-error');
         content.append(text, error);
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton('删除', 'yuzi-qq-danger-button', { 'data-qq-delete-selected': conversationId });
+        const confirm = createButton(t("删除"), 'yuzi-qq-danger-button', { 'data-qq-delete-selected': conversationId });
         confirm.addEventListener('click', async () => {
             confirm.disabled = true;
             const result = await deleteSelectedMessages({ facade, conversationId, selection: messageSelection });
             if (!result?.ok) {
-                error.textContent = result?.error?.message || '删除失败';
+                error.textContent = result?.error?.message || t("删除失败");
                 confirm.disabled = false;
                 return;
             }
@@ -4257,14 +4245,14 @@ export function createQQApp({
             clearOverlay();
             if (await loadMessages(conversationId)) await render({ refreshMessages: false });
         });
-        showDialog({ title: '删除消息', content, actions: [cancel, confirm], className: 'yuzi-qq-delete-message-dialog' });
+        showDialog({ title: t("删除消息"), content, actions: [cancel, confirm], className: 'yuzi-qq-delete-message-dialog' });
     };
 
     const openMessageMenu = (conversationId, messageId) => {
         const message = getMessageState(conversationId).items.find((item) => item.messageId === messageId);
         if (!message) return;
         const menu = createElement('div', 'yuzi-qq-dialog-menu yuzi-qq-message-action-menu');
-        const copy = createButton('复制', 'yuzi-qq-dialog-menu-item');
+        const copy = createButton(t("复制"), 'yuzi-qq-dialog-menu-item');
         copy.addEventListener('click', async () => {
             try {
                 await copyMessageText(message);
@@ -4274,7 +4262,7 @@ export function createQQApp({
             clearOverlay();
         });
         const selectForDeletion = createButton(
-            '多选管理',
+            t("多选管理"),
             'yuzi-qq-dialog-menu-item',
             { 'data-qq-select-message': message.messageId },
         );
@@ -4283,7 +4271,7 @@ export function createQQApp({
         });
         menu.append(copy);
         if (conversationSnapshots.get(asText(conversationId))?.kind === 'group') {
-            const quote = createButton('引用', 'yuzi-qq-dialog-menu-item');
+            const quote = createButton(t("引用"), 'yuzi-qq-dialog-menu-item');
             quote.addEventListener('click', () => {
                 quoteDrafts.select(conversationId, message);
                 clearOverlay();
@@ -4292,7 +4280,7 @@ export function createQQApp({
             menu.append(quote);
         }
         menu.append(selectForDeletion);
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
         showDialog({ title: '', content: menu, actions: [cancel], className: 'yuzi-qq-message-action-menu-dialog' });
     };
@@ -4303,11 +4291,11 @@ export function createQQApp({
         const input = createElement('textarea');
         input.rows = 4;
         input.value = transfer ? String(message.transfer?.note ?? '') : message.content;
-        input.setAttribute('aria-label', transfer ? '转账备注' : '消息内容');
+        input.setAttribute('aria-label', transfer ? t("转账备注") : t("消息内容"));
         const error = createElement('p', 'yuzi-qq-form-error');
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const save = createButton('保存', 'yuzi-qq-primary-button');
+        const save = createButton(t("保存"), 'yuzi-qq-primary-button');
         const sync = () => { save.disabled = !transfer && !input.value.trim(); };
         input.addEventListener('input', sync);
         save.addEventListener('click', async () => {
@@ -4315,11 +4303,11 @@ export function createQQApp({
             input.disabled = true;
             try {
                 const result = await facade.intent.editMessage({ conversationId, messageId: message.messageId, content: input.value });
-                if (!result?.ok) throw new Error(result?.error?.message || '保存失败');
+                if (!result?.ok) throw new Error(result?.error?.message || t("保存失败"));
                 clearOverlay();
                 if (await loadMessages(conversationId)) await render({ refreshMessages: false });
             } catch (failure) {
-                error.textContent = failure.message || '保存失败';
+                error.textContent = failure.message || t("保存失败");
                 input.disabled = false;
                 sync();
             }
@@ -4331,14 +4319,14 @@ export function createQQApp({
         });
         content.append(input, error);
         sync();
-        showDialog({ title: transfer ? '编辑转账备注' : '编辑消息', content, actions: [cancel, save] });
+        showDialog({ title: transfer ? t("编辑转账备注") : t("编辑消息"), content, actions: [cancel, save] });
         input.focus();
     };
 
     const recallMessage = async (conversationId, messageId) => {
         const scopeKey = currentScopeKey();
         const result = await facade.intent.recallMessage({ conversationId, messageId });
-        if (!result?.ok) throw new Error(result?.error?.message || '撤回失败');
+        if (!result?.ok) throw new Error(result?.error?.message || t("撤回失败"));
         if (disposed || currentScopeKey() !== scopeKey) return;
         const original = result.result?.recalledMessage;
         if (original?.type === 'text') {
@@ -4355,9 +4343,9 @@ export function createQQApp({
         if (!anchor) return;
         const menu = createElement('div', 'yuzi-qq-message-quick-menu');
         const remove = createButton('', 'yuzi-qq-message-quick-action', { role: 'menuitem' });
-        remove.append(createIcon('trash'), document.createTextNode('删除'));
+        remove.append(createIcon('trash'), document.createTextNode(t("删除")));
         const select = createButton('', 'yuzi-qq-message-quick-action', { role: 'menuitem' });
-        select.append(createIcon('circle-check'), document.createTextNode('多选'));
+        select.append(createIcon('circle-check'), document.createTextNode(t("多选")));
         remove.addEventListener('click', async () => {
             menu.querySelectorAll('button').forEach((button) => { button.disabled = true; });
             try {
@@ -4365,7 +4353,7 @@ export function createQQApp({
                     conversationId,
                     messageIds: [message.messageId],
                 });
-                if (!result?.ok) throw new Error(result?.error?.message || '删除失败');
+                if (!result?.ok) throw new Error(result?.error?.message || t("删除失败"));
                 if (overlay === layer) clearOverlay();
                 if (await loadMessages(conversationId)) await render({ refreshMessages: false });
             } catch (error) {
@@ -4377,13 +4365,13 @@ export function createQQApp({
         menu.append(remove, select);
         if (message.senderType !== 'system' && ['text', 'voice', 'image', 'video', 'sticker', 'transfer'].includes(message.type)) {
             const edit = createButton('', 'yuzi-qq-message-quick-action', { role: 'menuitem' });
-            edit.append(createIcon('pen-to-square'), document.createTextNode('编辑'));
+            edit.append(createIcon('pen-to-square'), document.createTextNode(t("编辑")));
             edit.addEventListener('click', () => openMessageEditor(conversationId, message));
             menu.append(edit);
         }
         if (message.senderType === 'self' && message.type !== 'system') {
             const recall = createButton('', 'yuzi-qq-message-quick-action', { role: 'menuitem' });
-            recall.append(createIcon('rotate-left'), document.createTextNode('撤回'));
+            recall.append(createIcon('rotate-left'), document.createTextNode(t("撤回")));
             recall.addEventListener('click', async () => {
                 menu.querySelectorAll('button').forEach((button) => { button.disabled = true; });
                 try { await recallMessage(conversationId, message.messageId); }
@@ -4395,7 +4383,7 @@ export function createQQApp({
             menu.append(recall);
         }
         const { layer } = showAnchoredMenu(anchor, menu);
-        menu.setAttribute('aria-label', '消息操作');
+        menu.setAttribute('aria-label', t("消息操作"));
         const bounds = layer.getBoundingClientRect();
         const target = (anchor.querySelector('[data-qq-message-body], .yuzi-qq-system-message') || anchor).getBoundingClientRect();
         const scaleX = bounds.width / layer.offsetWidth || 1;
@@ -4421,13 +4409,13 @@ export function createQQApp({
         if (!message?.transfer || message.senderType === 'self' || message.transfer.status !== 'pending') return;
         const content = createElement('p');
         content.textContent = messageContent(message);
-        const reject = createButton('退还', 'yuzi-qq-secondary-button');
-        const accept = createButton('收下', 'yuzi-qq-primary-button');
+        const reject = createButton(t("退还"), 'yuzi-qq-secondary-button');
+        const accept = createButton(t("收下"), 'yuzi-qq-primary-button');
         [reject, accept].forEach((button) => button.addEventListener('click', () => {
-            report(new Error('转账状态将由下一次 AI 正常触发读取'));
+            report(new Error(t("转账状态将由下一次 AI 正常触发读取")));
             clearOverlay();
         }));
-        showDialog({ title: '处理转账', content, actions: [reject, accept] });
+        showDialog({ title: t("处理转账"), content, actions: [reject, accept] });
     };
 
     const openTransferAction = (conversationId, messageId) => {
@@ -4436,14 +4424,14 @@ export function createQQApp({
         if (!message?.transfer || !canCurrentUserHandleTransfer(conversation, message)) return;
         const content = createElement('p');
         content.textContent = messageContent(message);
-        const returnButton = createButton('退还', 'yuzi-qq-secondary-button');
-        const accept = createButton('收下', 'yuzi-qq-primary-button');
+        const returnButton = createButton(t("退还"), 'yuzi-qq-secondary-button');
+        const accept = createButton(t("收下"), 'yuzi-qq-primary-button');
         const handle = async (action, button) => {
             button.disabled = true;
             const result = await handleIncomingTransfer({ facade, conversationId, messageId, action });
             if (!result?.ok) {
                 button.disabled = false;
-                content.textContent = result?.error?.message || '转账处理失败';
+                content.textContent = result?.error?.message || t("转账处理失败");
                 return;
             }
             clearOverlay();
@@ -4451,7 +4439,7 @@ export function createQQApp({
         };
         returnButton.addEventListener('click', () => void handle('return', returnButton));
         accept.addEventListener('click', () => void handle('accept', accept));
-        showDialog({ title: '处理转账', content, actions: [returnButton, accept] });
+        showDialog({ title: t("处理转账"), content, actions: [returnButton, accept] });
     };
     void openTransferActionLegacy;
 
@@ -4466,12 +4454,12 @@ export function createQQApp({
                     blob,
                 },
             });
-            if (!saved?.ok) throw new Error(saved?.error?.message || '图片保存失败');
+            if (!saved?.ok) throw new Error(saved?.error?.message || t("图片保存失败"));
             const updated = await facade.intent.updatePrivateProfile({
                 conversationId,
                 profile: { [fieldName]: saved.media.assetId },
             });
-            if (!updated?.ok) throw new Error(updated?.error?.message || '资料更新失败');
+            if (!updated?.ok) throw new Error(updated?.error?.message || t("资料更新失败"));
             await render();
         }, {
             multiple: false,
@@ -4482,7 +4470,7 @@ export function createQQApp({
 
     const clearPrivateProfileAsset = async (conversationId, fieldName) => {
         const result = await facade.intent.updatePrivateProfile({ conversationId, profile: { [fieldName]: '' } });
-        if (!result?.ok) throw new Error(result?.error?.message || '\u8d44\u6599\u66f4\u65b0\u5931\u8d25');
+        if (!result?.ok) throw new Error(result?.error?.message || t("资料更新失败"));
         await render();
     };
 
@@ -4497,7 +4485,7 @@ export function createQQApp({
                     blob,
                 },
             });
-            if (!saved?.ok) throw new Error(saved?.error?.message || '图片保存失败');
+            if (!saved?.ok) throw new Error(saved?.error?.message || t("图片保存失败"));
             const conversation = await getConversation(conversationId);
             const update = conversation?.kind === 'group'
                 ? facade.intent.updateGroupProfile
@@ -4506,7 +4494,7 @@ export function createQQApp({
                 conversationId,
                 profile: { backgroundAssetId: saved.media.assetId },
             });
-            if (!updated?.ok) throw new Error(updated?.error?.message || '聊天背景更新失败');
+            if (!updated?.ok) throw new Error(updated?.error?.message || t("聊天背景更新失败"));
             await render();
         }, {
             multiple: false,
@@ -4521,7 +4509,7 @@ export function createQQApp({
             ? facade.intent.updateGroupProfile
             : facade.intent.updatePrivateProfile;
         const result = await update({ conversationId, profile: { backgroundAssetId: '' } });
-        if (!result?.ok) throw new Error(result?.error?.message || '聊天背景更新失败');
+        if (!result?.ok) throw new Error(result?.error?.message || t("聊天背景更新失败"));
         await render();
     };
 
@@ -4535,11 +4523,11 @@ export function createQQApp({
                     mimeType: blob.type || 'image/png',
                 },
             });
-            if (!saved?.ok) throw new Error(saved?.error?.message || '\u56fe\u7247\u4fdd\u5b58\u5931\u8d25');
+            if (!saved?.ok) throw new Error(saved?.error?.message || t("图片保存失败"));
             const updated = await facade.intent.updateCurrentProfile({
                 profile: { [fieldName]: asText(saved.media?.assetId) },
             });
-            if (!updated?.ok) throw new Error(updated?.error?.message || '\u8d44\u6599\u66f4\u65b0\u5931\u8d25');
+            if (!updated?.ok) throw new Error(updated?.error?.message || t("资料更新失败"));
             await render();
         }, {
             multiple: false,
@@ -4550,7 +4538,7 @@ export function createQQApp({
 
     const clearCurrentProfileAsset = async (fieldName) => {
         const result = await facade.intent.updateCurrentProfile({ profile: { [fieldName]: '' } });
-        if (!result?.ok) throw new Error(result?.error?.message || '\u8d44\u6599\u66f4\u65b0\u5931\u8d25');
+        if (!result?.ok) throw new Error(result?.error?.message || t("资料更新失败"));
         await render();
     };
 
@@ -4563,7 +4551,7 @@ export function createQQApp({
                     mimeType: file.type,
                 })),
             });
-            if (!saved?.ok) throw new Error(saved?.error?.message || '\u56fe\u7247\u4fdd\u5b58\u5931\u8d25');
+            if (!saved?.ok) throw new Error(saved?.error?.message || t("图片保存失败"));
             await render();
         }, {
             maxSizeMB: 8,
@@ -4583,7 +4571,7 @@ export function createQQApp({
             },
         });
         showDialog({
-            title: files.length === 1 ? '添加表情' : `添加 ${files.length} 个表情`,
+            title: files.length === 1 ? t("添加表情") : t`添加 ${files.length} 个表情`,
             content: dialog.content,
             actions: dialog.actions,
             className: 'yuzi-qq-sticker-upload-dialog',
@@ -4602,7 +4590,7 @@ export function createQQApp({
     };
 
     const showContactPackError = () => {
-        shell.showToast?.('文件错误', true);
+        shell.showToast?.(t("文件错误"), true);
     };
 
     const exportContactPack = async (button) => {
@@ -4610,24 +4598,24 @@ export function createQQApp({
         const result = await facade.query.contactPack();
         button.disabled = false;
         if (!result?.ok || !result.pack) {
-            shell.showToast?.('联系人导出失败', true);
+            shell.showToast?.(t("联系人导出失败"), true);
             return;
         }
         downloadJsonPack(QQ_CONTACT_PACK_FILENAME, result.pack);
-        shell.showToast?.(`已导出 ${asInteger(result.pack.contacts?.length)} 位联系人`, false);
+        shell.showToast?.(t`已导出 ${asInteger(result.pack.contacts?.length)} 位联系人`, false);
     };
 
     const confirmContactPackImport = (source, contactCount) => {
         const content = createElement('div', 'yuzi-qq-confirm-copy');
         const copy = createElement('p');
-        copy.textContent = `将新增 ${asInteger(contactCount)} 位联系人；重名也会新增，不导入聊天记录。`;
+        copy.textContent = t`将新增 ${asInteger(contactCount)} 位联系人；重名也会新增，不导入聊天记录。`;
         content.append(copy);
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton('导入', 'yuzi-qq-primary-button');
+        const confirm = createButton(t("导入"), 'yuzi-qq-primary-button');
         confirm.addEventListener('click', async () => {
             confirm.disabled = true;
-            confirm.textContent = '导入中…';
+            confirm.textContent = t("导入中…");
             const result = await facade.intent.importContactPack({ source });
             if (!result?.ok) {
                 clearOverlay();
@@ -4635,11 +4623,11 @@ export function createQQApp({
                 return;
             }
             clearOverlay();
-            shell.showToast?.(`已导入 ${asInteger(result.imported?.contacts)} 位联系人`, false);
+            shell.showToast?.(t`已导入 ${asInteger(result.imported?.contacts)} 位联系人`, false);
             await render();
         });
         showDialog({
-            title: '导入联系人',
+            title: t("导入联系人"),
             content,
             actions: [cancel, confirm],
             className: 'yuzi-qq-confirm-dialog yuzi-qq-contact-pack-import-dialog',
@@ -4662,13 +4650,13 @@ export function createQQApp({
     const openContactPackMenu = (anchor) => {
         const menu = createElement('div', 'yuzi-qq-dialog-menu yuzi-qq-contact-pack-menu');
         const importAction = createButton('', 'yuzi-qq-dialog-menu-item yuzi-qq-contact-pack-menu-item');
-        importAction.append(createIcon('file-import'), document.createTextNode('导入联系人'));
+        importAction.append(createIcon('file-import'), document.createTextNode(t("导入联系人")));
         importAction.addEventListener('click', () => {
             clearOverlay();
             importContactPack();
         });
         const exportAction = createButton('', 'yuzi-qq-dialog-menu-item yuzi-qq-contact-pack-menu-item');
-        exportAction.append(createIcon('file-export'), document.createTextNode('导出联系人'));
+        exportAction.append(createIcon('file-export'), document.createTextNode(t("导出联系人")));
         exportAction.addEventListener('click', () => {
             clearOverlay();
             void exportContactPack(anchor);
@@ -4682,40 +4670,40 @@ export function createQQApp({
         const result = await facade.query.imageLibraryPack();
         button.disabled = false;
         if (!result?.ok || !result.pack) {
-            shell.showToast?.(result?.error?.message || '图片资料导出失败', true);
+            shell.showToast?.(result?.error?.message || t("图片资料导出失败"), true);
             return;
         }
         downloadImageLibraryPack(result.pack);
-        shell.showToast?.('已导出 QQ 图片资料', false);
+        shell.showToast?.(t("已导出 QQ 图片资料"), false);
     };
 
     const confirmImageLibraryPackImport = (source) => {
         const content = createElement('div', 'yuzi-qq-confirm-copy');
         const copy = createElement('p');
-        copy.textContent = '导入会追加头像、资料背景、聊天背景和表情；相同资源 ID 会自动添加 (1)、(2)。';
+        copy.textContent = t("导入会追加头像、资料背景、聊天背景和表情；相同资源 ID 会自动添加 (1)、(2)。");
         const status = createElement('p', 'yuzi-qq-form-error');
         content.append(copy, status);
-        const cancel = createButton('取消', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton('导入', 'yuzi-qq-primary-button');
+        const confirm = createButton(t("导入"), 'yuzi-qq-primary-button');
         confirm.addEventListener('click', async () => {
             confirm.disabled = true;
-            confirm.textContent = '导入中…';
+            confirm.textContent = t("导入中…");
             const result = await facade.intent.importImageLibraryPack({ source });
             if (!result?.ok) {
                 confirm.disabled = false;
-                confirm.textContent = '导入';
-                status.textContent = result?.error?.message || '图片资料导入失败';
+                confirm.textContent = t("导入");
+                status.textContent = result?.error?.message || t("图片资料导入失败");
                 return;
             }
             clearImageLibrarySelection();
             clearOverlay();
             const imported = asObject(result.imported);
-            shell.showToast?.(`已导入：头像 ${asInteger(imported.avatars)}，资料背景 ${asInteger(imported.profileBackgrounds)}，聊天背景 ${asInteger(imported.chatBackgrounds)}，表情 ${asInteger(imported.stickers)}`, false);
+            shell.showToast?.(t`已导入：头像 ${asInteger(imported.avatars)}，资料背景 ${asInteger(imported.profileBackgrounds)}，聊天背景 ${asInteger(imported.chatBackgrounds)}，表情 ${asInteger(imported.stickers)}`, false);
             await render();
         });
         showDialog({
-            title: '导入图片资料',
+            title: t("导入图片资料"),
             content,
             actions: [cancel, confirm],
             className: 'yuzi-qq-confirm-dialog yuzi-qq-image-library-import-dialog',
@@ -4731,13 +4719,13 @@ export function createQQApp({
     const openImageLibraryPackMenu = (anchor) => {
         const menu = createElement('div', 'yuzi-qq-dialog-menu yuzi-qq-image-library-pack-menu');
         const importAction = createButton('', 'yuzi-qq-dialog-menu-item yuzi-qq-image-library-pack-menu-item');
-        importAction.append(createIcon('file-import'), document.createTextNode('导入图片资料'));
+        importAction.append(createIcon('file-import'), document.createTextNode(t("导入图片资料")));
         importAction.addEventListener('click', () => {
             clearOverlay();
             importImageLibraryPack();
         });
         const exportAction = createButton('', 'yuzi-qq-dialog-menu-item yuzi-qq-image-library-pack-menu-item');
-        exportAction.append(createIcon('file-export'), document.createTextNode('导出图片资料'));
+        exportAction.append(createIcon('file-export'), document.createTextNode(t("导出图片资料")));
         exportAction.addEventListener('click', () => {
             clearOverlay();
             void exportImageLibraryPack(anchor);
@@ -4752,12 +4740,12 @@ export function createQQApp({
         const total = assetIds.length + stickerIds.length;
         if (!imageLibrarySelectionMode || total === 0) return;
         const status = createElement('p', 'yuzi-qq-form-error');
-        const cancel = createButton('\u53d6\u6d88', 'yuzi-qq-secondary-button');
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton('\u5220\u9664', 'yuzi-qq-danger-button');
+        const confirm = createButton(t("删除"), 'yuzi-qq-danger-button');
         confirm.addEventListener('click', async () => {
             confirm.disabled = true;
-            confirm.textContent = '\u5220\u9664\u4e2d\u2026';
+            confirm.textContent = t("删除中…");
             const [imageResult, stickerResult] = await Promise.all([
                 assetIds.length > 0
                     ? facade.intent.deleteImageLibraryAssets({ assetIds })
@@ -4768,10 +4756,10 @@ export function createQQApp({
             ]);
             if (!imageResult?.ok || !stickerResult?.ok) {
                 confirm.disabled = false;
-                confirm.textContent = '\u5220\u9664';
+                confirm.textContent = t("删除");
                 status.textContent = imageResult?.error?.message
                     || stickerResult?.error?.message
-                    || '\u5220\u9664\u5931\u8d25';
+                    || t("删除失败");
                 return;
             }
             const deletedAssetIds = imageResult.result?.deletedAssetIds || assetIds;
@@ -4784,7 +4772,7 @@ export function createQQApp({
             await render();
         });
         showDialog({
-            title: `\u5220\u9664 ${total} \u9879\u8d44\u6e90`,
+            title: t`\u5220\u9664 ${total} \u9879\u8d44\u6e90`,
             content: status,
             actions: [cancel, confirm],
             className: 'yuzi-qq-confirm-dialog yuzi-qq-image-library-delete-dialog',
@@ -4830,16 +4818,16 @@ export function createQQApp({
         if (kind === 'reply') {
             if (field === 'everyTurns') {
                 const everyTurns = positiveInteger('everyTurns');
-                if (everyTurns === null) return reject('\u4e3b\u52a8\u6d88\u606f\u95f4\u9694\u5fc5\u987b\u662f\u6b63\u6574\u6570');
+                if (everyTurns === null) return reject(t("主动消息间隔必须是正整数"));
                 values.everyTurns = everyTurns;
             } else if (!field) {
                 const everyTurns = positiveInteger('everyTurns');
-                if (values.enabled && everyTurns === null) return reject('\u4e3b\u52a8\u6d88\u606f\u95f4\u9694\u5fc5\u987b\u662f\u6b63\u6574\u6570');
+                if (values.enabled && everyTurns === null) return reject(t("主动消息间隔必须是正整数"));
                 values.everyTurns = everyTurns ?? 5;
             }
             if (!field || field === 'privateWeight') {
                 const privateWeight = nonNegativeInteger('privateWeight');
-                if (privateWeight === null || privateWeight > 100) return reject('主动类型占比必须是 0 到 100 的整数');
+                if (privateWeight === null || privateWeight > 100) return reject(t("主动类型占比必须是 0 到 100 的整数"));
                 values.privateWeight = privateWeight;
             }
         }
@@ -4847,25 +4835,25 @@ export function createQQApp({
             if (!field || field === 'hostContextTurns') {
                 const hostContextTurns = nonNegativeInteger('hostContextTurns');
                 if (hostContextTurns === null) {
-                    return reject('\u4e0a\u4e0b\u6587\u6761\u6570\u5fc5\u987b\u662f 0 \u6216\u66f4\u5927\u7684\u6574\u6570');
+                    return reject(t("上下文条数必须是 0 或更大的整数"));
                 }
                 values.hostContextTurns = hostContextTurns;
             }
             const rawExtractTag = value('hostContextExtractTag');
             const extractTag = normalizeQQV2TagName(rawExtractTag);
             if (rawExtractTag && !extractTag) {
-                return reject('\u6807\u7b7e\u63d0\u53d6\u5fc5\u987b\u662f\u6709\u6548\u7684\u6807\u7b7e\u540d');
+                return reject(t("标签提取必须是有效的标签名"));
             }
             const excludedTags = parseQQV2TagInput(value('hostContextExcludeTags'));
             if (excludedTags.invalid.length > 0) {
-                return reject(`\u6807\u7b7e\u6392\u9664\u5305\u542b\u65e0\u6548\u6807\u7b7e\uff1a${excludedTags.invalid.join('\u3001')}`);
+                return reject(t`\u6807\u7b7e\u6392\u9664\u5305\u542b\u65e0\u6548\u6807\u7b7e\uff1a${excludedTags.invalid.join('\u3001')}`);
             }
             values.hostContextExtractTag = extractTag;
             values.hostContextExcludeTags = [...excludedTags.tags];
             if (!field || field === 'conversationHistoryLimit') {
                 const conversationHistoryLimit = nonNegativeInteger('conversationHistoryLimit');
                 if (conversationHistoryLimit === null) {
-                    return reject('\u4e0a\u4e0b\u6587\u6761\u6570\u5fc5\u987b\u662f 0 \u6216\u66f4\u5927\u7684\u6574\u6570');
+                    return reject(t("上下文条数必须是 0 或更大的整数"));
                 }
                 values.conversationHistoryLimit = conversationHistoryLimit;
             }
@@ -4873,20 +4861,20 @@ export function createQQApp({
         if (kind === 'worldbook') {
             if (!field || field === 'depth') {
                 const depth = nonNegativeInteger('depth');
-                if (depth === null) return reject('\u6df1\u5ea6\u5fc5\u987b\u662f 0 \u6216\u66f4\u5927\u7684\u6574\u6570');
+                if (depth === null) return reject(t("深度必须是 0 或更大的整数"));
                 values.depth = depth;
             }
             if (!field || ['timeWindowMode', 'timeWindowValue', 'timeWindowUnit'].includes(field)) {
                 const timeWindowValue = positiveInteger('timeWindowValue');
                 if (values.timeWindowMode !== 'all' && timeWindowValue === null) {
-                    return reject('\u65f6\u95f4\u8303\u56f4\u5fc5\u987b\u662f\u6b63\u6574\u6570');
+                    return reject(t("时间范围必须是正整数"));
                 }
                 values.timeWindowValue = timeWindowValue ?? values.timeWindowValue;
             }
             if (!field || field === 'injectionCount') {
                 const injectionCount = nonNegativeInteger('injectionCount');
                 if (injectionCount === null) {
-                    return reject('\u6ce8\u5165\u6761\u6570\u5fc5\u987b\u662f 0 \u6216\u66f4\u5927\u7684\u6574\u6570');
+                    return reject(t("注入条数必须是 0 或更大的整数"));
                 }
                 values.injectionCount = injectionCount;
             }
@@ -4905,7 +4893,7 @@ export function createQQApp({
             if (excludeInput) excludeInput.value = asArray(saved.hostContextExcludeTags).join('\u3001');
         }
         if (status) status.textContent = result?.ok ? '' : (result?.error?.message
-            || (result?.reason === 'scope-changed' ? '\u5f53\u524d\u804a\u5929\u5df2\u5207\u6362\uff0c\u672a\u4fdd\u5b58' : '\u4fdd\u5b58\u5931\u8d25'));
+            || (result?.reason === 'scope-changed' ? t("当前聊天已切换，未保存") : t("保存失败")));
     };
 
     const persistConversationDetail = async (form) => {
@@ -4916,7 +4904,7 @@ export function createQQApp({
             profile: { remark: asText(form.elements.remark?.value) },
         });
         if (!remarkResult?.ok) {
-            if (status) status.textContent = remarkResult?.error?.message || '保存失败';
+            if (status) status.textContent = remarkResult?.error?.message || t("保存失败");
             return;
         }
         const injectionResult = await facade.intent.setConversationInjection({
@@ -4928,7 +4916,7 @@ export function createQQApp({
                 depth: Number(form.elements.depth?.value) || 0,
             },
         });
-        if (status) status.textContent = injectionResult?.ok ? '' : (injectionResult?.error?.message || '保存失败');
+        if (status) status.textContent = injectionResult?.ok ? '' : (injectionResult?.error?.message || t("保存失败"));
     };
 
     const handleConversationListScroll = () => {
@@ -5051,7 +5039,7 @@ export function createQQApp({
         if (target.dataset.qqRestoreFriend) {
             const conversation = await getConversation(target.dataset.qqRestoreFriend);
             const result = await facade.intent.createPrivateConversation({ name: contactFormalName(conversation) });
-            if (!result?.ok) report(new Error(result?.error?.message || '添加好友失败'));
+            if (!result?.ok) report(new Error(result?.error?.message || t("添加好友失败")));
             else go({ type: 'profile', conversationId: result.result.conversation.conversationId });
             return;
         }
@@ -5072,17 +5060,17 @@ export function createQQApp({
                 conversationId: target.dataset.qqConversationInjection,
                 injection: { enabled: conversation?.injection?.enabled !== true },
             });
-            if (!result?.ok) report(new Error(result?.error?.message || '更新失败'));
+            if (!result?.ok) report(new Error(result?.error?.message || t("更新失败")));
             return render();
         }
         if (target.dataset.qqRetry) {
             const result = await facade.intent.retryRequest({ conversationId: target.dataset.qqRetry });
-            if (!result?.ok) report(new Error(result?.error?.message || '重试失败'));
+            if (!result?.ok) report(new Error(result?.error?.message || t("重试失败")));
             return render();
         }
         if (target.dataset.qqStopGeneration) {
             const result = await facade.intent.cancelManualRequest({ conversationId: target.dataset.qqStopGeneration });
-            if (!result?.ok) report(new Error(result?.error?.message || '终止生成失败'));
+            if (!result?.ok) report(new Error(result?.error?.message || t("终止生成失败")));
             return render();
         }
         if (target.dataset.qqJumpLatest) {
@@ -5113,7 +5101,7 @@ export function createQQApp({
                 conversationId,
                 message: { type: 'sticker', content: target.dataset.qqStickerText || target.dataset.qqSticker, stickerId: target.dataset.qqSticker },
             });
-            if (!result?.ok) report(new Error(result?.error?.message || '发送失败'));
+            if (!result?.ok) report(new Error(result?.error?.message || t("发送失败")));
             else {
                 if (await loadMessages(conversationId)) await render({ preserveEmoji: true, refreshMessages: false });
             }
@@ -5153,7 +5141,7 @@ export function createQQApp({
             });
             const error = form.querySelector('[data-qq-profile-error]');
             if (!result?.ok) {
-                if (error) error.textContent = result?.error?.message || '保存失败，名字可能已存在';
+                if (error) error.textContent = result?.error?.message || t("保存失败，名字可能已存在");
                 return;
             }
             go({ type: 'profile', conversationId });

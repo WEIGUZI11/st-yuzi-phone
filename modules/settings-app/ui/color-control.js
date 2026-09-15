@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { escapeHtmlAttr } from '../../utils/dom-escape.js';
 
 export const MAX_FULLSCREEN_OVERLAY_PALETTE_SIZE = 16;
@@ -86,11 +87,11 @@ export function buildFullscreenOverlayColorRowsHtml(palette, options = {}) {
     return colors.map((color, index) => `
         <div class="phone-fullscreen-overlay-color-row" data-fullscreen-overlay-color-row="${index}">
             <span class="phone-fullscreen-overlay-color-index">${index + 1}</span>
-            <label class="phone-fullscreen-overlay-color-swatch" title="选择颜色">
+            <label class="phone-fullscreen-overlay-color-swatch" title="${t`选择颜色`}">
                 <input type="color"
                     value="${escapeHtmlAttr(color)}"
                     data-fullscreen-overlay-color-input="${index}"
-                    aria-label="选择第 ${index + 1} 种弹幕颜色">
+                    aria-label="${t`选择第 ${index + 1} 种弹幕颜色`}">
                 <span style="--yuzi-phone-fullscreen-overlay-swatch:${escapeHtmlAttr(color)}"></span>
             </label>
             <input type="text"
@@ -100,17 +101,17 @@ export function buildFullscreenOverlayColorRowsHtml(palette, options = {}) {
                 spellcheck="false"
                 inputmode="text"
                 data-fullscreen-overlay-color-hex="${index}"
-                aria-label="第 ${index + 1} 种弹幕颜色 HEX">
+                aria-label="${t`第 ${index + 1} 种弹幕颜色 HEX`}">
             <button type="button"
                 class="phone-settings-btn phone-fullscreen-overlay-icon-btn"
                 data-fullscreen-overlay-eyedropper="${index}"
-                title="${eyeDropperSupported ? '吸取界面颜色' : '当前浏览器不支持吸管取色'}"
-                aria-label="吸取第 ${index + 1} 种弹幕颜色"
+                title="${eyeDropperSupported ? t("吸取界面颜色") : t("当前浏览器不支持吸管取色")}"
+                aria-label="${t`吸取第 ${index + 1} 种弹幕颜色`}"
                 ${eyeDropperSupported ? '' : 'disabled'}>◉</button>
             <button type="button"
                 class="phone-settings-btn phone-settings-btn-danger phone-fullscreen-overlay-icon-btn"
                 data-fullscreen-overlay-color-delete="${index}"
-                aria-label="删除第 ${index + 1} 种弹幕颜色"
+                aria-label="${t`删除第 ${index + 1} 种弹幕颜色`}"
                 ${colors.length <= 1 ? 'disabled' : ''}>×</button>
         </div>
     `).join('');
@@ -121,11 +122,11 @@ export function buildFullscreenOverlaySingleColorHtml(value, options = {}) {
     const eyeDropperSupported = options.eyeDropperSupported === true;
     return `
         <div class="phone-fullscreen-overlay-color-row phone-fullscreen-overlay-single-color-row">
-            <label class="phone-fullscreen-overlay-color-swatch" title="选择背景色">
+            <label class="phone-fullscreen-overlay-color-swatch" title="${t`选择背景色`}">
                 <input type="color"
                     value="${escapeHtmlAttr(color)}"
                     data-fullscreen-overlay-single-color-input
-                    aria-label="选择弹窗背景色">
+                    aria-label="${t`选择弹窗背景色`}">
                 <span style="--yuzi-phone-fullscreen-overlay-swatch:${escapeHtmlAttr(color)}"></span>
             </label>
             <input type="text"
@@ -135,12 +136,12 @@ export function buildFullscreenOverlaySingleColorHtml(value, options = {}) {
                 spellcheck="false"
                 inputmode="text"
                 data-fullscreen-overlay-single-color-hex
-                aria-label="弹窗背景色 HEX">
+                aria-label="${t`弹窗背景色 HEX`}">
             <button type="button"
                 class="phone-settings-btn phone-fullscreen-overlay-icon-btn"
                 data-fullscreen-overlay-single-eyedropper
-                title="${eyeDropperSupported ? '吸取界面颜色' : '当前浏览器不支持吸管取色'}"
-                aria-label="吸取弹窗背景色"
+                title="${eyeDropperSupported ? t("吸取界面颜色") : t("当前浏览器不支持吸管取色")}"
+                aria-label="${t`吸取弹窗背景色`}"
                 ${eyeDropperSupported ? '' : 'disabled'}>◉</button>
         </div>
     `;
@@ -182,7 +183,7 @@ export function createFullscreenOverlayColorControl(options = {}) {
         const color = normalizeHexColor(value);
         if (index < 0 || index >= palette.length || !color) {
             if (input) input.value = palette[index] || DEFAULT_FULLSCREEN_OVERLAY_PALETTE[0];
-            showToast('请输入有效的 HEX 颜色，例如 #FFFFFF。', true);
+            showToast(t("请输入有效的 HEX 颜色，例如 #FFFFFF。"), true);
             return;
         }
         palette[index] = color;
@@ -211,8 +212,8 @@ export function createFullscreenOverlayColorControl(options = {}) {
             if (index < 0 || index >= palette.length) return;
             const result = await requestEyeDropperColor(palette[index], scope);
             if (disposed || result.changed !== true) {
-                if (result.reason === 'unsupported') showToast('当前浏览器不支持吸管取色。', true);
-                else if (result.reason === 'failed') showToast('吸管取色失败，请重试。', true);
+                if (result.reason === 'unsupported') showToast(t("当前浏览器不支持吸管取色。"), true);
+                else if (result.reason === 'failed') showToast(t("吸管取色失败，请重试。"), true);
                 return;
             }
             palette[index] = result.color;
@@ -235,7 +236,7 @@ export function createFullscreenOverlayColorControl(options = {}) {
     cleanupFns.push(bindEvent(addButton, 'click', () => {
         const palette = currentPalette();
         if (palette.length >= MAX_FULLSCREEN_OVERLAY_PALETTE_SIZE) {
-            showToast(`最多可以添加 ${MAX_FULLSCREEN_OVERLAY_PALETTE_SIZE} 种颜色。`, true);
+            showToast(t`最多可以添加 ${MAX_FULLSCREEN_OVERLAY_PALETTE_SIZE} 种颜色。`, true);
             return;
         }
         emitPalette([...palette, DEFAULT_FULLSCREEN_OVERLAY_PALETTE[0]]);
@@ -276,7 +277,7 @@ export function createFullscreenOverlaySingleColorControl(options = {}) {
         const color = normalizeHexColor(value);
         if (!color) {
             if (input) input.value = currentColor();
-            showToast('请输入有效的 HEX 颜色，例如 #FFFFFF。', true);
+            showToast(t("请输入有效的 HEX 颜色，例如 #FFFFFF。"), true);
             return;
         }
         if (!disposed) onColorChange(color);
@@ -298,8 +299,8 @@ export function createFullscreenOverlaySingleColorControl(options = {}) {
     cleanupFns.push(bindEvent(eyeDropperButton, 'click', async () => {
         const result = await requestEyeDropperColor(currentColor(), scope);
         if (disposed || result.changed !== true) {
-            if (result.reason === 'unsupported') showToast('当前浏览器不支持吸管取色。', true);
-            else if (result.reason === 'failed') showToast('吸管取色失败，请重试。', true);
+            if (result.reason === 'unsupported') showToast(t("当前浏览器不支持吸管取色。"), true);
+            else if (result.reason === 'failed') showToast(t("吸管取色失败，请重试。"), true);
             return;
         }
         onColorChange(result.color);

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { getQQV2Facade } from '../../qq-v2/runtime/default-runtime.js';
 
 function asObject(value) {
@@ -44,7 +45,7 @@ function failed(error) {
         status: 'failed',
         error: Object.freeze({
             code: String(error?.code || 'settings-facade-failed'),
-            message: String(error?.message || 'QQ v2 设置请求失败'),
+            message: String(error?.message || t("QQ v2 设置请求失败")),
         }),
     });
 }

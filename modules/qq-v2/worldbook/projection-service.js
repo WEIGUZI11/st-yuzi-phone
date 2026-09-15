@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { formatQQV2MessageSemantic } from '../domain/message-semantics.js';
 import { qqV2WorldbookPlacement } from './placement.js';
 
@@ -258,7 +259,7 @@ function restoreOwnedEntries(book, scopeId, snapshot, conversationId = '') {
     const entries = ensureEntries(book);
     for (const [key, entry] of snapshot) {
         if (entries[key] && !isOwnedEntry(entries[key], scopeId, conversationId)) {
-            throw new Error(`QQ 世界书条目 ${key} 已被占用`);
+            throw new Error(t`QQ 世界书条目 ${key} 已被占用`);
         }
         entries[key] = clone(entry);
     }
@@ -271,7 +272,7 @@ function restoreConversationEntries(book, scopeId, conversationIds, snapshot) {
     for (const [key, entry] of snapshot) {
         const replaceable = ids.has(currentProjectionConversationId(entries[key]));
         if (entries[key] && !replaceable) {
-            throw new Error(`QQ 世界书条目 ${key} 已被占用`);
+            throw new Error(t`QQ 世界书条目 ${key} 已被占用`);
         }
         entries[key] = clone(entry);
     }
@@ -412,13 +413,13 @@ function targetError(message) {
 }
 
 function disabledError() {
-    const error = new Error('请先开启 QQ 世界书总闸和当前会话注入');
+    const error = new Error(t("请先开启 QQ 世界书总闸和当前会话注入"));
     error.code = 'worldbook_injection_disabled';
     return error;
 }
 
 function duplicateProjectionError(conversationId) {
-    const error = new Error(`QQ 世界书会话 ${conversationId} 存在重复新版投影，请手工删除到只剩一条后重试`);
+    const error = new Error(t`QQ 世界书会话 ${conversationId} 存在重复新版投影，请手工删除到只剩一条后重试`);
     error.code = 'worldbook_projection_conflict';
     return error;
 }
@@ -436,7 +437,7 @@ function pendingResult(error) {
 }
 
 function inactiveScopeError() {
-    const error = new Error('QQ 作用域已切换，当前世界书操作已取消');
+    const error = new Error(t("QQ 作用域已切换，当前世界书操作已取消"));
     error.code = 'worldbook_scope_inactive';
     return error;
 }
@@ -450,15 +451,15 @@ export function createQQV2WorldbookProjectionService(options = {}) {
     const repository = options.repository;
     const worldbookGateway = options.worldbookGateway;
     if (!repository || typeof repository.getWorldbookProjectionData !== 'function') {
-        throw new TypeError('QQ v2 worldbook projection service 需要 repository');
+        throw new TypeError(t("QQ v2 worldbook projection service 需要 repository"));
     }
     if (typeof repository.clearAllSelectedMessagesForInjection !== 'function'
         || typeof repository.clearSelectedMessagesForInjection !== 'function'
         || typeof repository.setMessagesSelectedForInjection !== 'function') {
-        throw new TypeError('QQ v2 worldbook projection service 需要批量手选消息仓储接口');
+        throw new TypeError(t("QQ v2 worldbook projection service 需要批量手选消息仓储接口"));
     }
     if (!worldbookGateway || typeof worldbookGateway.loadBook !== 'function' || typeof worldbookGateway.saveBook !== 'function') {
-        throw new TypeError('QQ v2 worldbook projection service 需要 worldbookGateway');
+        throw new TypeError(t("QQ v2 worldbook projection service 需要 worldbookGateway"));
     }
 
     const worldbookSettings = options.worldbookSettings || {
@@ -471,7 +472,7 @@ export function createQQV2WorldbookProjectionService(options = {}) {
     };
     if (options.worldbookSettings
         && (typeof worldbookSettings.get !== 'function' || typeof worldbookSettings.update !== 'function')) {
-        throw new TypeError('QQ v2 worldbook projection service 需要有效的 worldbookSettings');
+        throw new TypeError(t("QQ v2 worldbook projection service 需要有效的 worldbookSettings"));
     }
 
     const assertScopeSessionCurrent = (scopeSession, allowInactiveScope = false) => {

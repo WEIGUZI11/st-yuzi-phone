@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 const subscribers = new Set();
 
 const EMPTY_REVIEW_STATE = Object.freeze({
@@ -153,7 +154,7 @@ export function mergeReviewState(nextState = {}) {
     return setReviewState({
         ...source,
         status: tables.length > 0 ? 'ready' : 'empty',
-        message: tables.length > 0 ? `本楼累计检测到 ${tables.reduce((sum, table) => sum + table.changeCount, 0)} 处表格更新` : source.message,
+        message: tables.length > 0 ? t`本楼累计检测到 ${tables.reduce((sum, table) => sum + table.changeCount, 0)} 处表格更新` : source.message,
         tables,
         tableCount: tables.length,
         changeCount: tables.reduce((sum, table) => sum + table.changeCount, 0),
@@ -174,7 +175,7 @@ export function setReviewState(nextState = {}) {
     return getReviewState();
 }
 
-export function resetReviewState(message = '暂无本楼更新', overrides = {}) {
+export function resetReviewState(message = t("暂无本楼更新"), overrides = {}) {
     const source = overrides && typeof overrides === 'object' ? overrides : {};
     return setReviewState({
         ...EMPTY_REVIEW_STATE,

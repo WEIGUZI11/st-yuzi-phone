@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 const DB_NAME = 'yuzi-phone-qq-v2';
 const DB_VERSION = 2;
 const STORE_NAME = 'state';
@@ -188,15 +189,15 @@ export function createMemoryQQV2StateStore(initialState = undefined) {
 function requestResult(request, label) {
     return new Promise((resolve, reject) => {
         request.addEventListener('success', () => resolve(request.result), { once: true });
-        request.addEventListener('error', () => reject(new Error(`${label}失败`)), { once: true });
+        request.addEventListener('error', () => reject(new Error(t`${label}失败`)), { once: true });
     });
 }
 
 function transactionDone(transaction, label) {
     return new Promise((resolve, reject) => {
         transaction.addEventListener('complete', resolve, { once: true });
-        transaction.addEventListener('abort', () => reject(new Error(`${label}已中止`)), { once: true });
-        transaction.addEventListener('error', () => reject(new Error(`${label}失败`)), { once: true });
+        transaction.addEventListener('abort', () => reject(new Error(t`${label}已中止`)), { once: true });
+        transaction.addEventListener('error', () => reject(new Error(t`${label}失败`)), { once: true });
     });
 }
 
@@ -224,7 +225,7 @@ function openDatabase(indexedDb) {
             }
         });
         request.addEventListener('success', () => resolve(request.result), { once: true });
-        request.addEventListener('error', () => reject(new Error('打开 QQ v2 本地数据库失败')), { once: true });
+        request.addEventListener('error', () => reject(new Error(t("打开 QQ v2 本地数据库失败"))), { once: true });
     });
 }
 
@@ -235,7 +236,7 @@ function openDatabase(indexedDb) {
 export function createIndexedDbQQV2StateStore(options = {}) {
     const indexedDb = options.indexedDB || globalThis.indexedDB;
     if (!indexedDb || typeof indexedDb.open !== 'function') {
-        throw new Error('当前环境不支持 IndexedDB');
+        throw new Error(t("当前环境不支持 IndexedDB"));
     }
     let databasePromise = null;
     let pending = Promise.resolve();

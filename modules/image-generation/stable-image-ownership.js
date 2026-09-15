@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 /**
  * Stable generated-image ownership for table content.
  *
@@ -128,7 +129,7 @@ function invalidTargetResult(reason) {
 export function createStableImageOwnershipTarget(input = {}) {
     const resolved = resolveTarget(input);
     if (!resolved.ok) {
-        throw new TypeError(`无法建立稳定图片归属：${resolved.reason}`);
+        throw new TypeError(t`无法建立稳定图片归属：${resolved.reason}`);
     }
     return resolved.target;
 }
@@ -157,7 +158,7 @@ export function validateStableImageOwnershipTarget(input = {}) {
 export function createStableImageOwnershipService(options = {}) {
     const store = options.store;
     if (!store || typeof store.read !== 'function' || typeof store.write !== 'function') {
-        throw new TypeError('稳定图片归属服务需要具备 read(key) 与 write(record) 的 store');
+        throw new TypeError(t("稳定图片归属服务需要具备 read(key) 与 write(record) 的 store"));
     }
 
     const now = typeof options.now === 'function' ? options.now : Date.now;

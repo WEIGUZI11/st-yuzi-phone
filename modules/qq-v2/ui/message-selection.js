@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 function asText(value) {
     return String(value ?? '').trim();
 }
@@ -91,7 +92,7 @@ export function selectedMessagesInjectionAction({
     return Object.freeze({
         messageIds: Object.freeze([...selectedIds]),
         selected,
-        label: selected ? '加入注入条目' : '移出注入条目',
+        label: selected ? t("加入注入条目") : t("移出注入条目"),
         enabled: selectedIds.length > 0 && globalEnabled === true && conversationEnabled === true,
     });
 }

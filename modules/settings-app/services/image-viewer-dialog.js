@@ -1,3 +1,5 @@
+import { t } from '../../i18n/index.js';
+import { createMediaViewerContent } from '../../ui-runtime/media-viewer-content.js';
 import {
     clearPhoneTemporaryLayers,
     getPhoneTemporaryLayerHost,
@@ -24,26 +26,29 @@ function createElement(tagName, className = '') {
     return element;
 }
 
-export function showImageViewerDialog({ imagePath, altText = '图片预览', runtime = null } = {}) {
+export function showImageViewerDialog({ imagePath, altText = t("图片预览"), runtime = null, frameless = false } = {}) {
     const src = asText(imagePath);
     if (!src || typeof document === 'undefined' || !getPhoneTemporaryLayerHost()) return null;
 
     clearPhoneTemporaryLayers();
 
     const titleId = `phone-image-viewer-title-${++viewerSequence}`;
-    const overlay = createElement('div', 'phone-image-viewer-overlay');
+    const previousFocus = document.activeElement;
+    const overlay = createElement('div', 'phone-image-viewer-overlay' + (frameless ? ' yuzi-phone-frameless-preview' : ''));
     const dialog = createElement('section', 'phone-image-viewer-dialog');
     dialog.setAttribute('role', 'dialog');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('aria-labelledby', titleId);
+    dialog.tabIndex = -1;
+    if(frameless) { dialog.removeAttribute('aria-labelledby'); dialog.setAttribute('aria-label',t("查看图片")); }
 
     const header = createElement('header', 'phone-image-viewer-header');
     const title = createElement('h2', 'phone-image-viewer-title');
     title.id = titleId;
-    title.textContent = '查看图片';
+    title.textContent = t("查看图片");
     const closeButton = createElement('button', 'phone-image-viewer-close');
     closeButton.type = 'button';
-    closeButton.setAttribute('aria-label', '关闭图片查看');
+    closeButton.setAttribute('aria-label', t("关闭图片查看"));
     closeButton.textContent = '×';
     header.appendChild(title);
     header.appendChild(closeButton);
@@ -51,10 +56,10 @@ export function showImageViewerDialog({ imagePath, altText = '图片预览', run
     const stage = createElement('div', 'phone-image-viewer-stage');
     const image = createElement('img', 'phone-image-viewer-image');
     image.src = src;
-    image.alt = asText(altText) || '图片预览';
+    image.alt = asText(altText) || t("图片预览");
     stage.appendChild(image);
-    dialog.appendChild(header);
-    dialog.appendChild(stage);
+    if(frameless) dialog.append(createMediaViewerContent({imagePath:src,description:asText(altText)}));
+    else { dialog.appendChild(header); dialog.appendChild(stage); }
     overlay.appendChild(dialog);
 
     const cleanups = [];
@@ -75,6 +80,7 @@ export function showImageViewerDialog({ imagePath, altText = '图片预览', run
         closed = true;
         cleanup();
         disposeLayer();
+        if(previousFocus?.isConnected) previousFocus.focus?.();
     };
 
     disposeLayer = mountPhoneTemporaryLayer(overlay, () => {
@@ -87,6 +93,7 @@ export function showImageViewerDialog({ imagePath, altText = '图片预览', run
         if (event.target === overlay) close();
     });
     bind(document, 'keydown', (event) => {
+        if(frameless && event.key === 'Tab') { event.preventDefault(); dialog.focus(); return; }
         if (event.key !== 'Escape') return;
         event.preventDefault();
         close();
@@ -96,7 +103,7 @@ export function showImageViewerDialog({ imagePath, altText = '图片预览', run
     scheduleNextFrame(() => {
         if (closed) return;
         overlay.classList.add('is-visible');
-        closeButton.focus?.();
+        (frameless ? dialog : closeButton).focus?.();
     });
 
     return close;

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { createTablePopupCard } from './table-popup-card.js';
 import {
     FULLSCREEN_OVERLAY_DEFAULTS,
@@ -44,7 +45,7 @@ function normalizeItems(batch) {
                 text: String(source.text || '').trim(),
                 cells: (Array.isArray(source.cells) ? source.cells : [])
                     .map((cell, index) => ({
-                        label: String(cell?.label ?? '').trim() || `字段 ${index + 1}`,
+                        label: String(cell?.label ?? '').trim() || t`字段 ${index + 1}`,
                         value: String(cell?.value ?? ''),
                     })),
             };

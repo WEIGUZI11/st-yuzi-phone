@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import {
     clearPhoneTemporaryLayers,
     getPhoneTemporaryLayerHost,
@@ -63,19 +64,19 @@ export function showAppearanceIconSourceMenu({ packName, onLocalUpload, onPackSe
         <section class="phone-appearance-icon-dialog phone-appearance-icon-source-dialog" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
             <header class="phone-appearance-icon-dialog-header">
                 <div>
-                    <h2 id="${titleId}">选择图标来源</h2>
-                    <p>${escapeHtml(packName || '当前美化包')}</p>
+                    <h2 id="${titleId}">${t`选择图标来源`}</h2>
+                    <p>${escapeHtml(packName || t("当前美化包"))}</p>
                 </div>
-                <button type="button" class="phone-appearance-icon-dialog-close" aria-label="关闭">×</button>
+                <button type="button" class="phone-appearance-icon-dialog-close" aria-label="${t`关闭`}">×</button>
             </header>
             <div class="phone-appearance-icon-source-actions">
                 <button type="button" class="phone-appearance-icon-source-action" data-icon-source="local">
-                    <span>从本地上传</span>
-                    <small>继续使用现有选图与裁剪</small>
+                    <span>${t`从本地上传`}</span>
+                    <small>${t`继续使用现有选图与裁剪`}</small>
                 </button>
                 <button type="button" class="phone-appearance-icon-source-action" data-icon-source="pack">
-                    <span>从当前美化包选择</span>
-                    <small>${escapeHtml(packName || '当前美化包')}</small>
+                    <span>${t`从当前美化包选择`}</span>
+                    <small>${escapeHtml(packName || t("当前美化包"))}</small>
                 </button>
             </div>
         </section>
@@ -106,14 +107,14 @@ export function showAppearancePackIconPicker({ packName, icons, onSelect, runtim
         <section class="phone-appearance-icon-dialog phone-appearance-pack-icon-dialog" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
             <header class="phone-appearance-icon-dialog-header">
                 <div>
-                    <h2 id="${titleId}">选择图标</h2>
-                    <p>${escapeHtml(packName || '当前美化包')}</p>
+                    <h2 id="${titleId}">${t`选择图标`}</h2>
+                    <p>${escapeHtml(packName || t("当前美化包"))}</p>
                 </div>
-                <button type="button" class="phone-appearance-icon-dialog-close" aria-label="关闭">×</button>
+                <button type="button" class="phone-appearance-icon-dialog-close" aria-label="${t`关闭`}">×</button>
             </header>
-            <div class="phone-appearance-pack-icon-grid" role="listbox" aria-label="美化包图标">
+            <div class="phone-appearance-pack-icon-grid" role="listbox" aria-label="${t`美化包图标`}">
                 ${items.map((icon, index) => `
-                    <button type="button" class="phone-appearance-pack-icon-option" role="option" data-pack-icon-index="${index}" aria-label="使用 ${escapeHtmlAttr(icon.name)}">
+                    <button type="button" class="phone-appearance-pack-icon-option" role="option" data-pack-icon-index="${index}" aria-label="${t`使用 ${escapeHtmlAttr(icon.name)}`}">
                         <img src="${escapeHtmlAttr(icon.dataUrl)}" alt="">
                         <span>${escapeHtml(icon.name)}</span>
                     </button>

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 const NARRATIVE_TYPES = new Set(['voice', 'image', 'video', 'sticker']);
 
 function asText(value) {
@@ -42,12 +43,12 @@ export function createTransferMessage({ amount, currency, note, recipientId } = 
 
 export function transferStatusLabel(message) {
     const status = asText(message?.transfer?.status) || 'pending';
-    if (status === 'accepted') return '已收款';
-    if (status === 'rejected') return '已拒收';
-    if (status === 'returned') return '已退还';
-    if (message?.senderType === 'self') return '待对方收款';
+    if (status === 'accepted') return t("已收款");
+    if (status === 'rejected') return t("已拒收");
+    if (status === 'returned') return t("已退还");
+    if (message?.senderType === 'self') return t("待对方收款");
     const recipientId = asText(message?.transfer?.recipientId);
-    return recipientId && recipientId !== '__self__' ? '待收款' : '待你收款';
+    return recipientId && recipientId !== '__self__' ? t("待收款") : t("待你收款");
 }
 
 export async function submitNarrativeMessage({ facade, conversationId, type, content } = {}) {

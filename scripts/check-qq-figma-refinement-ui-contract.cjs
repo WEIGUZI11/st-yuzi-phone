@@ -65,7 +65,7 @@ function main() {
         'settings root must not render a back button',
     );
     requireContract(
-        /makeHeader\('\\u8bbe\\u7f6e',[\s\S]{0,180}back:\s*false/.test(settingsRoot)
+        /makeHeader\(t\("设置"\),[\s\S]{0,180}back:\s*false/.test(settingsRoot)
             && /QQ_SETTINGS_GROUPS\.slice\(0, 2\)/.test(settingsRoot)
             && /QQ_SETTINGS_GROUPS\.slice\(2\)/.test(settingsRoot)
             && /yuzi-qq-settings-root-groups/.test(settingsRoot)

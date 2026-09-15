@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 // modules/phone-home/render.js
 /**
  * 玉子的手机 - 主屏渲染入口
@@ -122,7 +123,7 @@ export function patchHomeGrid(grid, apps = []) {
             const badge = document.createElement('div');
             badge.className = 'phone-table-count-badge';
             badge.textContent = item.badgeText;
-            badge.setAttribute('aria-label', `总条目数 ${item.totalCount}`);
+            badge.setAttribute('aria-label', t`总条目数 ${item.totalCount}`);
             const iconWrap = app.querySelector('.phone-app-icon');
             if (iconWrap) iconWrap.appendChild(badge);
         }
@@ -177,7 +178,7 @@ export function patchQQHomeUnreadBadge(grid, unreadTotal = 0) {
         iconWrap.appendChild(badge);
     }
     badge.textContent = badgeText;
-    badge.setAttribute('aria-label', `未读消息 ${normalizedTotal}`);
+    badge.setAttribute('aria-label', t`未读消息 ${normalizedTotal}`);
     return true;
 }
 

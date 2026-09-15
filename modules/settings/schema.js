@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { normalizeInputShortcutsSettings } from '../input-shortcuts/config.js';
 import { normalizeFullscreenOverlaySettings } from '../fullscreen-overlay/settings.js';
 import { Logger } from '../error-handler.js';
@@ -54,6 +55,8 @@ export const IMAGE_GENERATION_LIMITS = Object.freeze({
 
 export const IMAGE_GENERATION_DEFAULTS = Object.freeze({
     enabled: false,
+    qqEnabled: true,
+    theaterEnabled: Object.freeze({ square:false, forum:false, live:false }),
     timeoutMs: 300_000,
     roleMappings: Object.freeze([]),
     tableDisplayEnabledBySheetKey: Object.freeze({}),
@@ -138,6 +141,7 @@ export const defaultSettings = {
     hideTableCountBadge: false,
     homeAppLabelColorMode: 'white',
     phoneThemeMode: 'light',
+    phoneLanguage: 'zh-CN',
     hiddenTableApps: {},
     beautifyTemplateSourceModeGeneric: 'builtin',
     beautifyActiveTemplateIdGeneric: 'builtin.generic.table.v1',
@@ -155,10 +159,13 @@ export const defaultSettings = {
         userFonts: [],
     },
     phoneReadableTextScalePercent: 100,
+    theaterProfiles: {},
     worldbookReadingSelection: {},
     worldbookReadingBlockedKeywords: [...WORLDBOOK_READING_BLOCKED_KEYWORDS_DEFAULTS],
     imageGeneration: {
         enabled: IMAGE_GENERATION_DEFAULTS.enabled,
+        qqEnabled: true,
+        theaterEnabled: { square:false, forum:false, live:false },
         timeoutMs: IMAGE_GENERATION_DEFAULTS.timeoutMs,
         roleMappings: [],
         tableDisplayEnabledBySheetKey: {},
@@ -195,6 +202,7 @@ const validationRules = {
     hideTableCountBadge: { type: 'boolean' },
     homeAppLabelColorMode: { type: 'string', enum: ['white', 'black'] },
     phoneThemeMode: { type: 'string', enum: ['light', 'dark'] },
+    phoneLanguage: { type: 'string', enum: ['zh-CN', 'en'] },
     backgroundImage: { type: 'string', nullable: true },
     phoneToggleCoverImage: { type: 'string', nullable: true },
     appearanceActivePackId: { type: 'string', maxLength: 160 },
@@ -347,6 +355,8 @@ export function normalizeImageGenerationSettings(raw) {
 
     return {
         enabled: normalizeImageGenerationBoolean(source.enabled, IMAGE_GENERATION_DEFAULTS.enabled),
+        qqEnabled: source.qqEnabled === undefined ? true : normalizeImageGenerationBoolean(source.qqEnabled, true),
+        theaterEnabled: Object.fromEntries(['square', 'forum', 'live'].map(id => [id, source.theaterEnabled?.[id] === true])),
         timeoutMs,
         roleMappings: normalizeImageGenerationRoleMappings(source.roleMappings),
         tableDisplayEnabledBySheetKey: normalizeImageGenerationTableDisplayEnabledBySheetKey(
@@ -705,7 +715,7 @@ export function validateSetting(key, value) {
                 return {
                     valid: false,
                     value: defaultSettings[key],
-                    error: `${key} 必须是有效数字`,
+                    error: t`${key} 必须是有效数字`,
                 };
             }
             const min = rule.min ?? -Infinity;
@@ -720,7 +730,7 @@ export function validateSetting(key, value) {
                 return {
                     valid: false,
                     value: defaultSettings[key],
-                    error: `${key} 必须是 ${rule.enum.join(' | ')} 之一`,
+                    error: t`${key} 必须是 ${rule.enum.join(' | ')} 之一`,
                 };
             }
             const maxLength = Number.isFinite(Number(rule.maxLength)) ? Math.max(0, Math.floor(Number(rule.maxLength))) : 0;
@@ -741,7 +751,7 @@ export function validateSetting(key, value) {
                 return {
                     valid: false,
                     value: cloneSettingsValue(defaultSettings[key] || {}),
-                    error: `${key} 必须是对象`,
+                    error: t`${key} 必须是对象`,
                 };
             }
 

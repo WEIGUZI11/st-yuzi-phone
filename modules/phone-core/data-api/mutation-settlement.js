@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 function buildMutationFailure(code, message, extra = {}) {
     return {
         ok: false,
@@ -29,19 +30,19 @@ function readFailureMessage(result, fallbackMessage) {
  */
 export function normalizeSqlMutationSettlement(result) {
     if (result === null) {
-        return buildMutationFailure('mutation_result_null', 'SQL 写入 API 返回 null');
+        return buildMutationFailure('mutation_result_null', t("SQL 写入 API 返回 null"));
     }
     if (result === undefined) {
-        return buildMutationFailure('mutation_result_invalid', 'SQL 写入返回 undefined');
+        return buildMutationFailure('mutation_result_invalid', t("SQL 写入返回 undefined"));
     }
     if (!result || typeof result !== 'object' || Array.isArray(result)) {
-        return buildMutationFailure('mutation_result_invalid', 'SQL 写入返回值不是对象', { rawResult: result });
+        return buildMutationFailure('mutation_result_invalid', t("SQL 写入返回值不是对象"), { rawResult: result });
     }
     if (!('errors' in result) || !Array.isArray(result.errors)) {
-        return buildMutationFailure('mutation_result_invalid', 'SQL 写入缺少合法的 errors 数组', { result });
+        return buildMutationFailure('mutation_result_invalid', t("SQL 写入缺少合法的 errors 数组"), { result });
     }
     if (!Number.isInteger(result.changes) || result.changes < 0) {
-        return buildMutationFailure('mutation_result_invalid', 'SQL 写入缺少合法的非负整数 changes', {
+        return buildMutationFailure('mutation_result_invalid', t("SQL 写入缺少合法的非负整数 changes"), {
             result,
             errors: result.errors,
         });
@@ -49,13 +50,13 @@ export function normalizeSqlMutationSettlement(result) {
 
     const errors = result.errors;
     if (errors.length > 0) {
-        return buildMutationFailure('mutation_failed', readFailureMessage(result, 'SQL 写入返回错误'), {
+        return buildMutationFailure('mutation_failed', readFailureMessage(result, t("SQL 写入返回错误")), {
             result,
             errors,
         });
     }
     if (result.saved === false) {
-        return buildMutationFailure('save_failed', readFailureMessage(result, 'SQL 写入未确认保存成功'), {
+        return buildMutationFailure('save_failed', readFailureMessage(result, t("SQL 写入未确认保存成功")), {
             result,
             errors,
         });
@@ -63,14 +64,14 @@ export function normalizeSqlMutationSettlement(result) {
     if ('ok' in result && result.ok === false) {
         return buildMutationFailure(
             readFailureCode(result),
-            readFailureMessage(result, 'SQL 写入未确认成功'),
+            readFailureMessage(result, t("SQL 写入未确认成功")),
             { result, errors },
         );
     }
     if ('success' in result && result.success === false) {
         return buildMutationFailure(
             readFailureCode(result),
-            readFailureMessage(result, 'SQL 写入未确认成功'),
+            readFailureMessage(result, t("SQL 写入未确认成功")),
             { result, errors },
         );
     }
@@ -80,7 +81,7 @@ export function normalizeSqlMutationSettlement(result) {
         code: 'ok',
         message: typeof result.message === 'string' && result.message.trim()
             ? result.message.trim()
-            : 'SQL 写入成功',
+            : t("SQL 写入成功"),
         result,
         changes: result.changes,
         saved: result.saved,

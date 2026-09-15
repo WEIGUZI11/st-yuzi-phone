@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 /**
  * 变量管理器 - 交互逻辑
  * 处理编辑、删除、折叠、长按等交互
@@ -386,7 +387,7 @@ async function handleSaveEdit(editCard, page, deps, runtime = createRuntimeAdapt
     const newValue = parseInputValue(newInputValue, valueType);
     const messageId = typeof deps.getMessageId === 'function' ? deps.getMessageId() : -1;
     if (messageId < 0) {
-        showToast(page, '无法获取楼层号', true, runtime);
+        showToast(page, t("无法获取楼层号"), true, runtime);
         return;
     }
 
@@ -399,17 +400,17 @@ function showEditConfirmDialog(page, path, newValueStr, onConfirm, runtime) {
     const bodyHtml = `
         <div class="vm-confirm-detail">
             <div class="vm-confirm-row vm-confirm-row-block">
-                <span class="vm-confirm-label">路径</span>
+                <span class="vm-confirm-label">${t`路径`}</span>
                 <span class="vm-confirm-value">${escapeHtml(path)}</span>
             </div>
             <div class="vm-confirm-row vm-confirm-row-block">
-                <span class="vm-confirm-label">新值</span>
+                <span class="vm-confirm-label">${t`新值`}</span>
                 <span class="vm-confirm-value">${escapeHtml(newValueStr)}</span>
             </div>
         </div>
     `;
 
-    showDialog(page, '确认修改变量？', bodyHtml, '确认', '', onConfirm, runtime);
+    showDialog(page, t("确认修改变量？"), bodyHtml, t("确认"), '', onConfirm, runtime);
 }
 
 async function doSaveEdit(messageId, path, newValue, page, deps, runtime) {
@@ -420,14 +421,14 @@ async function doSaveEdit(messageId, path, newValue, page, deps, runtime) {
         if (!isVariableManagerPageAlive(page, deps, messageId, runtime)) return;
 
         if (success) {
-            showToastIfAlive(page, deps, messageId, '变量已更新', false, runtime);
+            showToastIfAlive(page, deps, messageId, t("变量已更新"), false, runtime);
             refreshViewIfAlive(page, deps, messageId, runtime);
         } else {
-            showToastIfAlive(page, deps, messageId, '更新失败', true, runtime);
+            showToastIfAlive(page, deps, messageId, t("更新失败"), true, runtime);
         }
     } catch (error) {
         logger.error?.({ action: 'doSaveEdit', message: '保存变量失败', error });
-        showToastIfAlive(page, deps, messageId, `保存失败: ${error?.message || '未知错误'}`, true, runtime);
+        showToastIfAlive(page, deps, messageId, t`保存失败: ${error?.message || t("未知错误")}`, true, runtime);
     }
 }
 
@@ -605,11 +606,11 @@ function showDeleteConfirmDialog(page, targets, deps, runtime) {
     const bodyHtml = `
         <div class="vm-confirm-detail">
             <div class="vm-confirm-delete-list">${listHtml}</div>
-            <div class="vm-confirm-warning">⚠️ 此操作不可撤销</div>
+            <div class="vm-confirm-warning">${t`⚠️ 此操作不可撤销`}</div>
         </div>
     `;
 
-    showDialog(page, buildDeleteConfirmTitle(normalizedTargets), bodyHtml, '删除', 'vm-dialog-confirm-danger', () => {
+    showDialog(page, buildDeleteConfirmTitle(normalizedTargets), bodyHtml, t("删除"), 'vm-dialog-confirm-danger', () => {
         void doDeleteVariables(page, normalizedTargets, deps, runtime);
     }, runtime);
 }
@@ -618,9 +619,9 @@ function buildDeleteConfirmTitle(targets) {
     const normalizedTargets = normalizeDeleteTargets(targets);
     if (normalizedTargets.length === 1) {
         const target = normalizedTargets[0];
-        return `确认删除${getDeleteTargetKindLabel(target.kind)}「${target.label}」？`;
+        return t`确认删除${getDeleteTargetKindLabel(target.kind)}「${target.label}」？`;
     }
-    return `确认删除以下 ${normalizedTargets.length} 个变量目标？`;
+    return t`确认删除以下 ${normalizedTargets.length} 个变量目标？`;
 }
 
 function renderDeleteTargetSummaryHtml(target) {
@@ -635,21 +636,21 @@ function renderDeleteTargetSummaryHtml(target) {
 }
 
 function getDeleteTargetKindLabel(kind) {
-    if (kind === 'group') return '分组';
-    if (kind === 'object') return '对象';
-    return '字段';
+    if (kind === 'group') return t("分组");
+    if (kind === 'object') return t("对象");
+    return t("字段");
 }
 
 function getDeleteTargetMetaText(target) {
-    if (target.kind === 'leaf') return '仅删除该字段';
-    if (target.leafCount > 0) return `将删除 ${target.leafCount} 个子字段`;
-    return '空对象';
+    if (target.kind === 'leaf') return t("仅删除该字段");
+    if (target.leafCount > 0) return t`将删除 ${target.leafCount} 个子字段`;
+    return t("空对象");
 }
 
 async function doDeleteVariables(page, targets, deps, runtime) {
     const messageId = typeof deps.getMessageId === 'function' ? deps.getMessageId() : -1;
     if (messageId < 0) {
-        showToastIfAlive(page, deps, null, '无法获取楼层号', true, runtime);
+        showToastIfAlive(page, deps, null, t("无法获取楼层号"), true, runtime);
         return;
     }
     if (!isVariableManagerPageAlive(page, deps, messageId, runtime)) return;
@@ -668,10 +669,10 @@ async function doDeleteVariables(page, targets, deps, runtime) {
     exitDeleteMode(page);
 
     if (successCount > 0) {
-        showToastIfAlive(page, deps, messageId, `已删除 ${successCount} 项`, false, runtime);
+        showToastIfAlive(page, deps, messageId, t`已删除 ${successCount} 项`, false, runtime);
         refreshViewIfAlive(page, deps, messageId, runtime);
     } else {
-        showToastIfAlive(page, deps, messageId, '删除失败', true, runtime);
+        showToastIfAlive(page, deps, messageId, t("删除失败"), true, runtime);
     }
 }
 
@@ -703,7 +704,7 @@ async function confirmAddVariableDialog(overlay, page, deps, runtime) {
 
     const messageId = typeof deps.getMessageId === 'function' ? deps.getMessageId() : -1;
     if (messageId < 0) {
-        showToastIfAlive(page, deps, null, '无法获取楼层号', true, runtime);
+        showToastIfAlive(page, deps, null, t("无法获取楼层号"), true, runtime);
         closeDialogIfAlive(overlay, page, deps, null, runtime);
         return;
     }
@@ -716,16 +717,16 @@ async function confirmAddVariableDialog(overlay, page, deps, runtime) {
 
         closeDialogIfAlive(overlay, page, deps, messageId, runtime);
         if (ok) {
-            showToastIfAlive(page, deps, messageId, '变量已添加', false, runtime);
+            showToastIfAlive(page, deps, messageId, t("变量已添加"), false, runtime);
             refreshViewIfAlive(page, deps, messageId, runtime);
         } else {
-            showToastIfAlive(page, deps, messageId, '添加失败', true, runtime);
+            showToastIfAlive(page, deps, messageId, t("添加失败"), true, runtime);
         }
     } catch (error) {
         if (!isVariableManagerPageAlive(page, deps, messageId, runtime)) return;
 
         closeDialogIfAlive(overlay, page, deps, messageId, runtime);
-        showToastIfAlive(page, deps, messageId, `添加失败: ${error?.message || '未知错误'}`, true, runtime);
+        showToastIfAlive(page, deps, messageId, t`添加失败: ${error?.message || t("未知错误")}`, true, runtime);
     }
 }
 

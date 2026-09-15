@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { getTableData } from '../phone-core/data-api.js';
 import { getCurrentRoute, getRouteHistory, navigateTo, navigateToReplacingHistoryTop } from '../phone-core/routing.js';
 import { showConfirmDialog } from '../settings-app/ui/confirm-dialog.js';
@@ -123,11 +124,11 @@ async function executeConfirmedDelete(container, options) {
 
     if (state.deleting) return;
     if (!sceneId) {
-        showToastIfActive(container, options, '删除失败：缺少小剧场场景标识', true);
+        showToastIfActive(container, options, t("删除失败：缺少小剧场场景标识"), true);
         return;
     }
     if (selectedKeys.length <= 0) {
-        showToastIfActive(container, options, '请先选择要删除的内容', true);
+        showToastIfActive(container, options, t("请先选择要删除的内容"), true);
         return;
     }
 
@@ -143,19 +144,19 @@ async function executeConfirmedDelete(container, options) {
             state.deleteManageMode = false;
             state.selectedKeys.clear();
             requestRenderIfActive(container, options);
-            showToastIfActive(container, options, result.message || '删除完成', result.refreshed === false);
+            showToastIfActive(container, options, result.message || t("删除完成"), result.refreshed === false);
             return;
         }
 
         requestRenderIfActive(container, options);
-        showToastIfActive(container, options, result?.message || '删除失败', true);
+        showToastIfActive(container, options, result?.message || t("删除失败"), true);
     } catch (error) {
         console.error('[YuziPhone] Theater delete failed:', error);
         if (!isTheaterInteractionActive(container, options)) return;
 
         state.deleting = false;
         requestRenderIfActive(container, options);
-        showToastIfActive(container, options, '删除失败：执行过程中发生异常', true);
+        showToastIfActive(container, options, t("删除失败：执行过程中发生异常"), true);
     }
 }
 
@@ -166,17 +167,17 @@ function confirmDelete(container, options) {
     if (!state.deleteManageMode || state.deleting) return;
     const selectedCount = state.selectedKeys.size;
     if (selectedCount <= 0) {
-        showToastIfActive(container, options, '请先选择要删除的内容', true);
+        showToastIfActive(container, options, t("请先选择要删除的内容"), true);
         return;
     }
 
     showConfirmDialog(
         container,
-        '确认删除',
-        `将删除已选 ${selectedCount} 项，并同步清理该场景关联数据。此操作不可撤销。`,
+        t("确认删除"),
+        t`将删除已选 ${selectedCount} 项，并同步清理该场景关联数据。此操作不可撤销。`,
         () => executeConfirmedDelete(container, options),
-        '删除',
-        '取消'
+        t("删除"),
+        t("取消")
     );
 }
 
@@ -192,7 +193,7 @@ function isTableBrowsingRoute(route) {
         || normalizedRoute.startsWith('app:');
 }
 
-function navigateToEditableTable(entry, deps = {}) {
+export function navigateToEditableTable(entry, deps = {}) {
     const sheetKey = normalizeText(entry?.sheetKey);
     if (!sheetKey) return false;
     const route = `table-generic:${sheetKey}`;
@@ -220,7 +221,7 @@ function toggleEditMenu(container, options) {
 
     const entries = getAvailableEditableTables(options);
     if (entries.length <= 0) {
-        showToastIfActive(container, options, '没有可编辑的原始表', true);
+        showToastIfActive(container, options, t("没有可编辑的原始表"), true);
         return;
     }
     if (entries.length === 1) {
@@ -239,7 +240,7 @@ function openEditableTable(actionNode, container, options) {
     const role = normalizeText(actionNode?.dataset?.editRole);
     const entry = getAvailableEditableTables(options).find(item => normalizeText(item.role) === role);
     if (!entry) {
-        showToastIfActive(container, options, '编辑失败：原始表不可用', true);
+        showToastIfActive(container, options, t("编辑失败：原始表不可用"), true);
         return;
     }
 
@@ -265,10 +266,10 @@ function switchTheaterTable(direction, container, options) {
 function openDetailDialog(actionNode, container, options) {
     if (!isTheaterInteractionActive(container, options)) return;
 
-    const title = normalizeText(actionNode?.dataset?.detailTitle) || '详情';
+    const title = normalizeText(actionNode?.dataset?.detailTitle) || t("详情");
     const content = normalizeText(actionNode?.dataset?.detailContent);
     if (!content) {
-        showToastIfActive(container, options, '暂无可查看的详情', true);
+        showToastIfActive(container, options, t("暂无可查看的详情"), true);
         return;
     }
 
@@ -277,8 +278,8 @@ function openDetailDialog(actionNode, container, options) {
         title,
         content,
         () => {},
-        '知道了',
-        '关闭',
+        t("知道了"),
+        t("关闭"),
         options?.lifecycle?.runtime || options?.lifecycle?.phoneRuntime || null
     );
 }

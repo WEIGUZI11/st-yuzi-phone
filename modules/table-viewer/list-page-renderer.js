@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { createGenericTemplateStylePayload } from './generic-style-payload.js';
 import {
@@ -220,17 +221,17 @@ function buildGenericListPageViewModel(options = {}) {
     const selectableDeleteCount = selectableDeleteRowIndexes.length;
     const allVisibleDeleteRowsSelected = selectableDeleteCount > 0
         && selectableDeleteRowIndexes.every((rowIndex) => selectedDeleteRows.has(rowIndex));
-    let emptyStateTitle = '没有匹配到相关条目';
-    let emptyStateDesc = `试试缩短关键词，或清空当前搜索“${searchQuery}”。`;
+    let emptyStateTitle = t("没有匹配到相关条目");
+    let emptyStateDesc = t`试试缩短关键词，或清空当前搜索“${searchQuery}”。`;
     if (totalRowCount === 0) {
-        emptyStateTitle = '还没有任何条目';
-        emptyStateDesc = '你可以先创建第一条记录，后续会在这里以结构化列表形式展示。';
+        emptyStateTitle = t("还没有任何条目");
+        emptyStateDesc = t("你可以先创建第一条记录，后续会在这里以结构化列表形式展示。");
     } else if (onlyShowReviewUpdates && reviewUpdatedRowCount === 0) {
-        emptyStateTitle = '本楼没有可审核更新';
-        emptyStateDesc = '审核结果中没有命中这张表的新增或修改行。';
+        emptyStateTitle = t("本楼没有可审核更新");
+        emptyStateDesc = t("审核结果中没有命中这张表的新增或修改行。");
     } else if (onlyShowReviewUpdates && searchQuery) {
-        emptyStateTitle = '本楼更新中没有匹配项';
-        emptyStateDesc = `当前只显示本楼更新，且没有更新行匹配“${searchQuery}”。`;
+        emptyStateTitle = t("本楼更新中没有匹配项");
+        emptyStateDesc = t`当前只显示本楼更新，且没有更新行匹配“${searchQuery}”。`;
     }
 
     return {

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { buildSettingsPageFrame, buildSettingsSectionHtml } from '../layout/primitives.js';
 import { showConfirmDialog } from '../ui/confirm-dialog.js';
@@ -42,11 +43,11 @@ function getErrorMessage(result, fallback) {
 function buildPresetOptions(presets, selectedPresetId) {
     const selectedId = asText(selectedPresetId);
     return [
-        `<option value="" ${selectedId ? '' : 'selected'}>请选择 API 预设</option>`,
+        `<option value="" ${selectedId ? '' : 'selected'}>${t`请选择 API 预设`}</option>`,
         ...(Array.isArray(presets) ? presets : []).map((preset) => {
             const presetId = asText(preset?.presetId);
             const readOnly = isReadOnlyPreset(preset);
-            const label = `${preset?.name || '未命名预设'}${readOnly ? '（只读）' : ''}`;
+            const label = `${preset?.name || t("未命名预设")}${readOnly ? t("（只读）") : ''}`;
             return `<option value="${escapeHtmlAttr(presetId)}" ${presetId === selectedId ? 'selected' : ''} ${readOnly ? 'disabled' : ''}>${escapeHtml(label)}</option>`;
         }),
     ].join('');
@@ -57,7 +58,7 @@ function buildModelOptions(models, selectedModel) {
     const selected = asText(selectedModel);
     const hasSelectedModel = availableModels.includes(selected);
     return [
-        `<option value="" ${hasSelectedModel ? '' : 'selected'}>请选择模型</option>`,
+        `<option value="" ${hasSelectedModel ? '' : 'selected'}>${t`请选择模型`}</option>`,
         ...availableModels.map(model => `<option value="${escapeHtmlAttr(model)}" ${model === selected ? 'selected' : ''}>${escapeHtml(model)}</option>`),
     ].join('');
 }
@@ -71,50 +72,50 @@ function buildApiPresetsPageHtml(pageState) {
     const status = pageState.error
         ? `<div class="phone-settings-inline-status is-danger"><span class="phone-settings-inline-status-text">${escapeHtml(pageState.error)}</span></div>`
         : pageState.loading
-            ? '<div class="phone-settings-note">正在读取 API 预设...</div>'
+            ? `<div class="phone-settings-note">${t("正在读取 API 预设...")}</div>`
             : '';
     const modelStatus = pageState.modelError
         ? `<div class="phone-settings-inline-status is-danger"><span class="phone-settings-inline-status-text">${escapeHtml(pageState.modelError)}</span></div>`
         : pageState.modelLoading
-            ? '<div class="phone-settings-note">正在加载模型...</div>'
+            ? `<div class="phone-settings-note">${t("正在加载模型...")}</div>`
             : pageState.modelsLoaded
-                ? `<div class="phone-settings-note">${models.length ? `已加载 ${models.length} 个模型` : '未识别到可用模型'}</div>`
+                ? `<div class="phone-settings-note">${models.length ? t`已加载 ${models.length} 个模型` : t("未识别到可用模型")}</div>`
                 : '';
     const presetSection = buildSettingsSectionHtml({
-        title: 'API 预设',
+        title: t("API 预设"),
         bodyHtml: `
             ${status}
             <label class="phone-ai-preset-segment-field">
-                <span>选择预设</span>
+                <span>${t`选择预设`}</span>
                 <select id="phone-api-preset-select" class="phone-settings-select" ${disabled}>${buildPresetOptions(pageState.presets, pageState.selectedPresetId)}</select>
             </label>
             <div class="phone-settings-action-row">
-                <button type="button" class="phone-settings-btn" id="phone-api-preset-new-btn" ${disabled}>新建 API 预设</button>
+                <button type="button" class="phone-settings-btn" id="phone-api-preset-new-btn" ${disabled}>${t`新建 API 预设`}</button>
             </div>
         `,
     });
     const editorSection = buildSettingsSectionHtml({
-        title: draft.presetId ? '编辑 API 预设' : '新建 API 预设',
+        title: draft.presetId ? t("编辑 API 预设") : t("新建 API 预设"),
         bodyHtml: `
             <div class="phone-ai-preset-toolbar">
-                <label class="phone-ai-preset-segment-field"><span>名称</span><input id="phone-api-preset-name" class="phone-settings-input" maxlength="120" value="${escapeHtmlAttr(draft.name)}" ${editorDisabled}></label>
-                <label class="phone-ai-preset-segment-field"><span>API 地址</span><input id="phone-api-preset-endpoint" class="phone-settings-input" maxlength="2048" value="${escapeHtmlAttr(draft.endpoint)}" placeholder="https://api.example.com/v1" ${editorDisabled}></label>
-                <label class="phone-ai-preset-segment-field"><span>API 密钥${draft.hasApiKey ? '（留空保持已有密钥）' : ''}</span><input id="phone-api-preset-key" type="password" class="phone-settings-input" autocomplete="off" ${editorDisabled}></label>
-                <label class="phone-ai-preset-segment-field"><span>手写模型</span><input id="phone-api-preset-model" class="phone-settings-input" maxlength="256" value="${escapeHtmlAttr(draft.model)}" ${editorDisabled}></label>
-                ${models.length ? `<label class="phone-ai-preset-segment-field"><span>模型列表</span><select id="phone-api-preset-model-list" class="phone-settings-select" ${editorDisabled}>${buildModelOptions(models, draft.model)}</select></label>` : ''}
+                <label class="phone-ai-preset-segment-field"><span>${t`名称`}</span><input id="phone-api-preset-name" class="phone-settings-input" maxlength="120" value="${escapeHtmlAttr(draft.name)}" ${editorDisabled}></label>
+                <label class="phone-ai-preset-segment-field"><span>${t`API 地址`}</span><input id="phone-api-preset-endpoint" class="phone-settings-input" maxlength="2048" value="${escapeHtmlAttr(draft.endpoint)}" placeholder="https://api.example.com/v1" ${editorDisabled}></label>
+                <label class="phone-ai-preset-segment-field"><span>${t`API 密钥${draft.hasApiKey ? t("（留空保持已有密钥）") : ''}`}</span><input id="phone-api-preset-key" type="password" class="phone-settings-input" autocomplete="off" ${editorDisabled}></label>
+                <label class="phone-ai-preset-segment-field"><span>${t`手写模型`}</span><input id="phone-api-preset-model" class="phone-settings-input" maxlength="256" value="${escapeHtmlAttr(draft.model)}" ${editorDisabled}></label>
+                ${models.length ? `<label class="phone-ai-preset-segment-field"><span>${t`模型列表`}</span><select id="phone-api-preset-model-list" class="phone-settings-select" ${editorDisabled}>${buildModelOptions(models, draft.model)}</select></label>` : ''}
                 ${modelStatus}
-                <label class="phone-ai-preset-segment-field"><span>温度</span><input id="phone-api-preset-temperature" type="number" class="phone-settings-input" min="0" max="2" step="0.01" value="${escapeHtmlAttr(draft.temperature)}" ${editorDisabled}></label>
-                <label class="phone-ai-preset-segment-field"><span>最大输出</span><input id="phone-api-preset-max-output" type="number" class="phone-settings-input" min="1" step="1" value="${escapeHtmlAttr(draft.maxOutput)}" ${editorDisabled}></label>
+                <label class="phone-ai-preset-segment-field"><span>${t`温度`}</span><input id="phone-api-preset-temperature" type="number" class="phone-settings-input" min="0" max="2" step="0.01" value="${escapeHtmlAttr(draft.temperature)}" ${editorDisabled}></label>
+                <label class="phone-ai-preset-segment-field"><span>${t`最大输出`}</span><input id="phone-api-preset-max-output" type="number" class="phone-settings-input" min="1" step="1" value="${escapeHtmlAttr(draft.maxOutput)}" ${editorDisabled}></label>
             </div>
             <div class="phone-settings-action-row">
-                <button type="button" class="phone-settings-btn" id="phone-api-preset-load-models-btn" ${editorDisabled}>加载模型</button>
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary" id="phone-api-preset-save-btn" ${editorDisabled}>保存预设</button>
-                <button type="button" class="phone-settings-btn phone-settings-btn-danger" id="phone-api-preset-delete-btn" ${draft.presetId && canEditDraft ? '' : 'disabled'}>删除预设</button>
+                <button type="button" class="phone-settings-btn" id="phone-api-preset-load-models-btn" ${editorDisabled}>${t`加载模型`}</button>
+                <button type="button" class="phone-settings-btn phone-settings-btn-primary" id="phone-api-preset-save-btn" ${editorDisabled}>${t`保存预设`}</button>
+                <button type="button" class="phone-settings-btn phone-settings-btn-danger" id="phone-api-preset-delete-btn" ${draft.presetId && canEditDraft ? '' : 'disabled'}>${t`删除预设`}</button>
             </div>
         `,
     });
     return buildSettingsPageFrame({
-        title: 'API 预设',
+        title: t("API 预设"),
         bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open',
         bodyHtml: `${presetSection}${editorSection}`,
     });
@@ -160,7 +161,7 @@ function createApiPresetSession(ctx) {
         if (!isCurrent(token)) return false;
         state.loading = false;
         if (result?.ok !== true) {
-            state.error = getErrorMessage(result, '读取 API 预设失败');
+            state.error = getErrorMessage(result, t("读取 API 预设失败"));
             repaint();
             return false;
         }
@@ -203,11 +204,11 @@ function createApiPresetSession(ctx) {
         if (!active) return false;
         state.busy = false;
         if (result?.ok !== true) {
-            notify(getErrorMessage(result, '保存 API 预设失败'), true);
+            notify(getErrorMessage(result, t("保存 API 预设失败")), true);
             repaint();
             return false;
         }
-        notify('API 预设已保存');
+        notify(t("API 预设已保存"));
         return load(result.apiPreset?.presetId, false);
     };
 
@@ -218,11 +219,11 @@ function createApiPresetSession(ctx) {
         if (!active) return false;
         state.busy = false;
         if (result?.ok !== true) {
-            notify(getErrorMessage(result, '删除 API 预设失败'), true);
+            notify(getErrorMessage(result, t("删除 API 预设失败")), true);
             repaint();
             return false;
         }
-        notify('API 预设已删除');
+        notify(t("API 预设已删除"));
         return load('', false);
     };
 
@@ -243,7 +244,7 @@ function createApiPresetSession(ctx) {
         state.busy = false;
         state.modelLoading = false;
         if (result?.ok !== true || result.modelState?.ok !== true) {
-            state.modelError = getErrorMessage(result?.modelState, getErrorMessage(result, '加载模型失败'));
+            state.modelError = getErrorMessage(result?.modelState, getErrorMessage(result, t("加载模型失败")));
             notify(state.modelError, true);
             repaint();
             return false;
@@ -253,7 +254,7 @@ function createApiPresetSession(ctx) {
             .filter(Boolean))];
         if (!state.draft.model && result.modelState.manualModel) state.draft.model = result.modelState.manualModel;
         state.modelsLoaded = true;
-        notify(state.models.length ? `已加载 ${state.models.length} 个模型` : '未识别到可用模型');
+        notify(state.models.length ? t`已加载 ${state.models.length} 个模型` : t("未识别到可用模型"));
         repaint();
         return true;
     };
@@ -309,8 +310,8 @@ function bindApiPresetInteractions(ctx, session) {
         session.state.draft.model = model;
     });
     addListener(container.querySelector('#phone-api-preset-delete-btn'), 'click', () => {
-        const name = asText(session.state.draft.name) || '当前 API 预设';
-        showConfirmDialog(container, '删除 API 预设', `确定删除「${name}」吗？`, () => { void session.remove(); }, '删除', '取消', pageRuntime);
+        const name = asText(session.state.draft.name) || t("当前 API 预设");
+        showConfirmDialog(container, t("删除 API 预设"), t`确定删除「${name}」吗？`, () => { void session.remove(); }, t("删除"), t("取消"), pageRuntime);
     });
 }
 

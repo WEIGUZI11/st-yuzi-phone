@@ -1,23 +1,24 @@
+import { t } from '../i18n/index.js';
 import { getTextIcon, PHONE_ICONS } from './icons.js';
 
 export function getHomeDockApps() {
     return [
-        { id: 'settings', name: '设置', icon: PHONE_ICONS.gear, route: 'settings' },
+        { id: 'settings', name: t("设置"), icon: PHONE_ICONS.gear, route: 'settings' },
         {
             id: 'visualizer',
-            name: '可视化',
-            icon: getTextIcon('可', '#4DB6AC', '#009688'),
+            name: t("可视化"),
+            icon: getTextIcon(t("可"), '#4DB6AC', '#009688'),
             action: 'invoke',
-            pendingMessage: '正在打开可视化编辑器...',
+            pendingMessage: t("正在打开可视化编辑器..."),
         },
         {
             id: 'db_settings',
-            name: '数据库',
-            icon: getTextIcon('数', '#5AC8FA', '#007AFF'),
+            name: t("数据库"),
+            icon: getTextIcon(t("数"), '#5AC8FA', '#007AFF'),
             action: 'invoke',
-            pendingMessage: '正在打开数据库界面...',
+            pendingMessage: t("正在打开数据库界面..."),
         },
-        { id: 'fusion', name: '缝合', icon: PHONE_ICONS.puzzle, route: 'fusion' },
+        { id: 'fusion', name: t("缝合"), icon: PHONE_ICONS.puzzle, route: 'fusion' },
     ];
 }
 

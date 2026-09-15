@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { showConfirmDialog } from '../settings-app/ui/confirm-dialog.js';
 import { requestTableNavigationSwitch } from '../table-navigation/controls.js';
@@ -191,7 +192,7 @@ function handleToggleRowLock(container, el) {
 
     const nextLocked = context.toggleTableRowLock(context.sheetKey, idx);
     context.state.syncLockState(context.getTableLockState(context.sheetKey));
-    context.showInlineToast(container, nextLocked ? '条目已锁定' : '条目已解锁');
+    context.showInlineToast(container, nextLocked ? t("条目已锁定") : t("条目已解锁"));
 }
 
 function normalizeRowIndexes(rowIndexes = []) {
@@ -239,7 +240,7 @@ function normalizeDeleteOutcome(result) {
     return {
         ok: !!result,
         deleted: !!result,
-        message: result ? '删除成功' : '',
+        message: result ? t("删除成功") : '',
         refreshed: null,
         viewSynced: null,
         deletedCount: result ? 1 : 0,
@@ -300,13 +301,13 @@ function handleToggleDeleteSelection(container, el) {
 
     const visibleRows = new Set(getVisibleDeleteRowIndexesFromContext(context));
     if (!visibleRows.has(idx)) {
-        context.showInlineToast(container, '该条目当前不可删除', true);
+        context.showInlineToast(container, t("该条目当前不可删除"), true);
         syncDeleteSelectionToVisibleRows(context);
         return;
     }
 
     if (context.isTableRowLocked(context.sheetKey, idx)) {
-        context.showInlineToast(container, '删除失败：条目已锁定', true);
+        context.showInlineToast(container, t("删除失败：条目已锁定"), true);
         syncDeleteSelectionToVisibleRows(context);
         return;
     }
@@ -327,7 +328,7 @@ function handleSelectAllDeleteRows(container) {
 
     const visibleRows = getVisibleDeleteRowIndexesFromContext(context);
     if (visibleRows.length === 0) {
-        context.showInlineToast(container, '当前没有可选择的条目', true);
+        context.showInlineToast(container, t("当前没有可选择的条目"), true);
         context.state.clearDeleteSelection();
         return;
     }
@@ -353,7 +354,7 @@ async function executeDeleteSelectedRows(container, requestedRowIndexes) {
     const rowIndexes = normalizeRowIndexes(requestedRowIndexes).filter((rowIndex) => visibleRows.has(rowIndex));
     if (rowIndexes.length === 0) {
         context.state.clearDeleteSelection();
-        context.showInlineToast(container, '未选择可删除的条目', true);
+        context.showInlineToast(container, t("未选择可删除的条目"), true);
         return;
     }
 
@@ -367,13 +368,13 @@ async function executeDeleteSelectedRows(container, requestedRowIndexes) {
     try {
         deleteOutcome = normalizeDeleteOutcome(await context.deleteRowsFromList(rowIndexes));
         if (deleteOutcome.deleted && isGenericListContextActive(context)) {
-            const toastMessage = deleteOutcome.message || `已删除 ${deleteOutcome.deletedCount || rowIndexes.length} 条记录`;
+            const toastMessage = deleteOutcome.message || t`已删除 ${deleteOutcome.deletedCount || rowIndexes.length} 条记录`;
             const toastIsError = deleteOutcome.refreshed === false
                 || deleteOutcome.viewSynced === false
                 || deleteOutcome.notDeletedViewRowIndexes.length > 0;
             context.showInlineToast(container, toastMessage, toastIsError);
         } else if (!deleteOutcome.deleted && isGenericListContextActive(context)) {
-            context.showInlineToast(container, deleteOutcome.message || '删除失败', true);
+            context.showInlineToast(container, deleteOutcome.message || t("删除失败"), true);
         }
     } catch (err) {
         logger.warn({
@@ -387,7 +388,7 @@ async function executeDeleteSelectedRows(container, requestedRowIndexes) {
             error: err,
         });
         if (isGenericListContextActive(context)) {
-            context.showInlineToast(container, `删除异常: ${err?.message || '未知错误'}`, true);
+            context.showInlineToast(container, t`删除异常: ${err?.message || t("未知错误")}`, true);
         }
     } finally {
         const nextContext = getGenericListControllerContext(container);
@@ -417,19 +418,19 @@ function confirmDeleteSelectedRows(container) {
     syncDeleteSelectionToVisibleRows(context);
     const selectedRows = getVisibleSelectedDeleteRowIndexes(context);
     if (selectedRows.length === 0) {
-        context.showInlineToast(container, '未选择可删除的条目', true);
+        context.showInlineToast(container, t("未选择可删除的条目"), true);
         return;
     }
 
     showConfirmDialog(
         container,
-        '批量删除条目',
-        `确认删除当前选中的 ${selectedRows.length} 条记录吗？此操作无法撤销。`,
+        t("批量删除条目"),
+        t`确认删除当前选中的 ${selectedRows.length} 条记录吗？此操作无法撤销。`,
         () => {
             executeDeleteSelectedRows(container, selectedRows);
         },
-        '删除',
-        '取消',
+        t("删除"),
+        t("取消"),
         context.runtime,
         { overlayClassName: 'phone-generic-delete-confirm' },
     );

@@ -1,7 +1,8 @@
+import { t } from '../../i18n/index.js';
 import { createIconUploadService } from './appearance-settings/icon-upload-service.js';
 import { getAppearancePack as getAppearancePackImpl, deleteAppearancePack as deleteAppearancePackImpl } from './appearance-settings/appearance-pack-repository.js';
 import { applyAppearanceResourcePack as applyAppearanceResourcePackImpl } from './appearance-settings/resource-pack-service.js';
-import { flushPhoneSettingsSave, getPhoneSettings, savePhoneSettingsPatch, waitForPhoneSettingsSave } from '../../settings.js';
+import { flushPhoneSettingsSave, getPhoneSettings, savePhoneSetting, savePhoneSettingsPatch, waitForPhoneSettingsSave } from '../../settings.js';
 import { buildPackIconOriginCleanup } from './appearance-settings/icon-selection-state.js';
 
 export { setupBgUpload } from './appearance-settings/background-service.js';
@@ -99,7 +100,7 @@ export async function deleteAppearancePackFromRepository(id) {
             flushPhoneSettingsSave();
             return {
                 success: false,
-                message: '删除失败：相关图标设置无法持久化，仓库包未删除；当前外观未被清空',
+                message: t("删除失败：相关图标设置无法持久化，仓库包未删除；当前外观未被清空"),
                 deletedId: '',
                 activeCleared: false,
             };
@@ -113,8 +114,12 @@ export async function deleteAppearancePackFromRepository(id) {
         const restored = savePhoneSettingsPatch(settingsBackup) && flushPhoneSettingsSave() && await waitForPhoneSettingsSave();
         return restored
             ? { ...deleteResult, activeCleared: false }
-            : { ...deleteResult, message: `${deleteResult.message || '删除失败'}；相关图标设置恢复保存失败`, activeCleared: false };
+            : { ...deleteResult, message: t`${deleteResult.message || t("删除失败")}；相关图标设置恢复保存失败`, activeCleared: false };
     }
 
     return { ...deleteResult, activeCleared };
+}
+
+export function savePhoneLanguage(value) {
+    return savePhoneSetting('phoneLanguage', value);
 }

@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { CONTENT_PRESET_API_VERSION, CONTENT_PRESET_FORMAT, CONTENT_PRESET_FORMAT_VERSION } from './constants.js';
 import { parseContentPresetBundle } from './format.js';
 import { normalizeContentPresetBundle } from './normalize.js';
@@ -35,4 +36,4 @@ export function exportContentPreset(record) {
     return { format: CONTENT_PRESET_FORMAT, formatVersion: record.formatVersion, apiVersion: record.apiVersion, manifest, files: Object.fromEntries(Object.entries(sortedObject(record.files)).map(([path, file]) => [path, exportFile(file)])) };
 }
 export function serializeContentPreset(record) { return `${JSON.stringify(exportContentPreset(record), null, 2)}\n`; }
-export function readbackContentPreset(record) { const serialized = serializeContentPreset(record); const restored = importContentPreset(serialized); if (restored.id !== record.id || restored.items.length !== record.items.length || (restored.displays?.length || 0) !== (record.displays?.length || 0)) throw new Error('玉子美化预设回读不一致'); return Object.freeze({ serialized, record: restored }); }
+export function readbackContentPreset(record) { const serialized = serializeContentPreset(record); const restored = importContentPreset(serialized); if (restored.id !== record.id || restored.items.length !== record.items.length || (restored.displays?.length || 0) !== (record.displays?.length || 0)) throw new Error(t("玉子美化预设回读不一致")); return Object.freeze({ serialized, record: restored }); }

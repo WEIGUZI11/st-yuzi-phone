@@ -1,3 +1,4 @@
+import { mount as mountBuiltin } from '../builtin/forum.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { buildTheaterDeleteKey } from '../core/delete-key.js';
 import { getCellByHeader, mapTheaterRows, normalizeText, resolveRowIdentity, splitSemicolonText } from '../core/table-index.js';
@@ -157,6 +158,7 @@ function deleteEntities(context) {
 
 export const forumScene = Object.freeze({
     id: 'forum',
+    mountBuiltin,
     appKey: '__theater_forum',
     name: '论坛',
     iconText: '坛',

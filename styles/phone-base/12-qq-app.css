@@ -4335,3 +4335,7 @@
 @media (prefers-reduced-motion: reduce) {
     .yuzi-qq-app .yuzi-qq-send-button-switch::before { transition: none; }
 }
+
+#yuzi-phone-standalone[lang="en"] .yuzi-qq-image-library-heading::after {
+    content: 'Library';
+}

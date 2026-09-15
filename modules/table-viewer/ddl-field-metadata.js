@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 const CHECK_IN_PATTERN = /CHECK\s*\(\s*([A-Za-z_][\w$]*|"[^"]+"|`[^`]+`|\[[^\]]+\])\s+IN\s*\(/gi;
 
 function toSafeString(value) {
@@ -328,14 +329,14 @@ export function validateEnumFieldValue(fieldMetadata, value) {
     if (rawValue.trim() === '') return null;
     if (fieldMetadata.options.includes(rawValue)) return null;
 
-    const fieldLabel = fieldMetadata.label || fieldMetadata.header || fieldMetadata.rawHeader || fieldMetadata.columnName || '该字段';
+    const fieldLabel = fieldMetadata.label || fieldMetadata.header || fieldMetadata.rawHeader || fieldMetadata.columnName || t("该字段");
     return {
         field: fieldLabel,
         rawColIndex: fieldMetadata.rawColIndex,
         columnName: fieldMetadata.columnName,
         value: rawValue,
         allowedValues: [...fieldMetadata.options],
-        message: `${fieldLabel} 只能选择：${fieldMetadata.options.join('、')}`,
+        message: t`${fieldLabel} 只能选择：${fieldMetadata.options.join('、')}`,
     };
 }
 

@@ -1,9 +1,10 @@
+import { t } from './i18n/index.js';
 // modules/settings-panel.js
 /**
  * 玉子手机 - 扩展设置面板（最小版）
  */
 
-import { getPhoneSettings, savePhoneSetting } from './settings.js';
+import { getPhoneSettings, savePhoneSetting, subscribePhoneSettingsUpdates } from './settings.js';
 
 const PANEL_ID = 'yuzi-phone-settings';
 const CHECKBOX_ID = 'yuzi-phone-enabled';
@@ -43,6 +44,7 @@ export function createPhoneSettingsPanel(onToggleEnabled) {
         bindEnabledToggle(onToggleEnabled);
         bindFloatingToggle();
         bindResetPositionButton();
+        bindPanelLanguage();
         return true;
     }
 
@@ -57,21 +59,21 @@ export function createPhoneSettingsPanel(onToggleEnabled) {
         <div id="${PANEL_ID}" class="extension_settings">
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>玉子手机</b>
+                    <b>${t`玉子手机`}</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down"></div>
                 </div>
                 <div class="inline-drawer-content" style="display:none;">
                     <div style="padding: 10px;">
                         <label class="checkbox_label">
                             <input type="checkbox" id="${CHECKBOX_ID}" ${isEnabled ? 'checked' : ''}>
-                            <span>启用玉子手机</span>
+                            <span>${t`启用玉子手机`}</span>
                         </label>
                         <label class="checkbox_label" style="margin-top: 8px; display:flex; align-items:center; gap:8px;">
                             <input type="checkbox" id="${FLOATING_TOGGLE_CHECKBOX_ID}" ${isFloatingToggleEnabled ? 'checked' : ''}>
-                            <span>悬浮窗开关</span>
+                            <span>${t`悬浮窗开关`}</span>
                         </label>
                         <div style="margin-top: 10px;">
-                            <button type="button" id="${RESET_POSITION_BTN_ID}" class="menu_button" style="display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:0;max-width:100%;white-space:nowrap;word-break:keep-all;writing-mode:horizontal-tb;text-orientation:mixed;">重置悬浮按钮位置</button>
+                            <button type="button" id="${RESET_POSITION_BTN_ID}" class="menu_button" style="display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:0;max-width:100%;white-space:nowrap;word-break:keep-all;writing-mode:horizontal-tb;text-orientation:mixed;">${t`重置悬浮按钮位置`}</button>
                         </div>
                     </div>
                 </div>
@@ -85,6 +87,7 @@ export function createPhoneSettingsPanel(onToggleEnabled) {
     bindEnabledToggle(onToggleEnabled);
     bindFloatingToggle();
     bindResetPositionButton();
+    bindPanelLanguage();
     return true;
 }
 
@@ -151,4 +154,25 @@ function bindResetPositionButton() {
 
     button.addEventListener('click', handleClick);
     registerPanelCleanup(() => button.removeEventListener('click', handleClick));
+}
+
+function bindPanelLanguage() {
+    const sync = () => {
+        const panel = document.getElementById(PANEL_ID);
+        if (!panel) return;
+        const labels = [
+            ['.inline-drawer-header b', '玉子手机'],
+            ['#' + CHECKBOX_ID + ' + span', '启用玉子手机'],
+            ['#' + FLOATING_TOGGLE_CHECKBOX_ID + ' + span', '悬浮窗开关'],
+            ['#' + RESET_POSITION_BTN_ID, '重置悬浮按钮位置'],
+        ];
+        for (const [selector, label] of labels) {
+            const node = panel.querySelector(selector);
+            if (node) node.textContent = t(label);
+        }
+    };
+    sync();
+    registerPanelCleanup(subscribePhoneSettingsUpdates(({ key }) => {
+        if (!key || key === 'phoneLanguage') sync();
+    }));
 }

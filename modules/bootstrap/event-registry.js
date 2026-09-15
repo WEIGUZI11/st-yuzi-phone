@@ -1,3 +1,4 @@
+import { PHONE_SETTINGS_UPDATED_EVENT } from '../settings.js';
 import {
     onChatChanged,
     onChatDeleted,
@@ -137,6 +138,9 @@ export function bindPhoneBootstrapWindowEvents(eventManager) {
         applyPhoneTogglePosition(btn, { persistIfAdjusted: true });
     };
 
+    eventManager.add(window, PHONE_SETTINGS_UPDATED_EVENT, (event) => {
+        if (!event.detail?.key || event.detail.key === 'phoneLanguage') syncPhoneToggleVisualStyle();
+    });
     eventManager.add(window, 'yuzi-phone-toggle-style-updated', handleToggleStyleUpdated);
     eventManager.add(window, 'yuzi-phone-toggle-position-reset', handleTogglePositionReset);
     eventManager.add(window, 'resize', handleViewportResize);

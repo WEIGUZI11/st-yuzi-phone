@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 const IMAGE_LIBRARY_KEY = 'imageLibraryAssets';
 const STICKERS_KEY = 'qq-v2.resources.stickers';
 const INSTALLATION_KEY = 'qq-v2.resources.default-image-library-installed';
@@ -42,15 +43,15 @@ function responseMimeType(response, blob) {
 async function downloadResource(definition, fetchImpl) {
     const response = await fetchImpl(definition.url);
     if (!response?.ok || typeof response.blob !== 'function') {
-        throw new Error(`默认图片下载失败：${definition.id}`);
+        throw new Error(t`默认图片下载失败：${definition.id}`);
     }
     const blob = await response.blob();
     const mimeType = responseMimeType(response, blob);
     if (!(blob instanceof Blob) || !/^image\/[a-z0-9.+-]+$/u.test(mimeType)) {
-        throw new Error(`默认图片格式无效：${definition.id}`);
+        throw new Error(t`默认图片格式无效：${definition.id}`);
     }
     if (blob.size <= 0 || blob.size > MAX_RESOURCE_BYTES) {
-        throw new Error(`默认图片大小无效：${definition.id}`);
+        throw new Error(t`默认图片大小无效：${definition.id}`);
     }
     return {
         definition,
@@ -105,14 +106,14 @@ function installResources(state, downloads, installedAt) {
 export function createQQDefaultImageLibraryInstaller(options = {}) {
     const stateStore = options.stateStore;
     if (!stateStore || typeof stateStore.read !== 'function' || typeof stateStore.transact !== 'function') {
-        throw new TypeError('QQ 默认图片资料需要有效的 state store');
+        throw new TypeError(t("QQ 默认图片资料需要有效的 state store"));
     }
     const fetchImpl = options.fetchImpl;
     let pending = null;
 
     const install = async () => {
         if (isInstalled(await stateStore.read())) return { installed: false };
-        if (typeof fetchImpl !== 'function') throw new Error('当前环境不支持下载 QQ 默认图片资料');
+        if (typeof fetchImpl !== 'function') throw new Error(t("当前环境不支持下载 QQ 默认图片资料"));
 
         const [images, stickers] = await Promise.all([
             Promise.all(QQ_DEFAULT_IMAGE_LIBRARY.images.map((entry) => downloadResource(entry, fetchImpl))),

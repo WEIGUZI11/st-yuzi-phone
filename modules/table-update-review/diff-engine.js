@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 function normalizeSheetList(snapshot = {}) {
     return Array.isArray(snapshot?.sheets) ? snapshot.sheets : [];
 }
@@ -40,7 +41,7 @@ function createInsertChange(sheet, row, capturedAt) {
         rowIndex: row.rowIndex,
         rowId: normalizeText(row.rowId).trim(),
         rowKey: row.rowKey,
-        rowTitle: normalizeText(row.rowTitle || '未命名'),
+        rowTitle: normalizeText(row.rowTitle || t("未命名")),
         fields: Object.entries(row.cells && typeof row.cells === 'object' ? row.cells : {})
             .map(([field, value]) => ({ field, before: '', after: normalizeText(value) }))
             .filter((entry) => entry.after !== ''),
@@ -56,7 +57,7 @@ function createUpdateChange(sheet, beforeRow, afterRow, fields, capturedAt) {
         rowIndex: afterRow.rowIndex,
         rowId: normalizeText(afterRow.rowId || beforeRow.rowId).trim(),
         rowKey: afterRow.rowKey,
-        rowTitle: normalizeText(afterRow.rowTitle || beforeRow.rowTitle || '未命名'),
+        rowTitle: normalizeText(afterRow.rowTitle || beforeRow.rowTitle || t("未命名")),
         fields,
         createdAt: capturedAt,
     };
@@ -70,7 +71,7 @@ function createDeleteChange(sheet, row, capturedAt) {
         rowIndex: row.rowIndex,
         rowId: normalizeText(row.rowId).trim(),
         rowKey: row.rowKey,
-        rowTitle: normalizeText(row.rowTitle || '未命名'),
+        rowTitle: normalizeText(row.rowTitle || t("未命名")),
         fields: Object.entries(row.cells && typeof row.cells === 'object' ? row.cells : {})
             .map(([field, value]) => ({ field, before: normalizeText(value), after: '' }))
             .filter((entry) => entry.before !== ''),
@@ -155,7 +156,7 @@ export function diffSnapshots(before, after, options = {}) {
         createdAt: capturedAt,
         tableCount: tables.length,
         changeCount,
-        message: changeCount > 0 ? `本楼检测到 ${changeCount} 处表格更新` : '暂无本楼更新',
+        message: changeCount > 0 ? t`本楼检测到 ${changeCount} 处表格更新` : t("暂无本楼更新"),
         tables,
         error: null,
     };

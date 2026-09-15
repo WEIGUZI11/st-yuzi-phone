@@ -1,3 +1,5 @@
+import { getAppearanceIconDisplayName } from './icon-slots.js';
+import { t } from '../../../i18n/index.js';
 import { getTableData } from '../../../phone-core/data-api.js';
 import {
     getPhoneSettings,
@@ -28,7 +30,7 @@ export function setupAppearanceToggles(container) {
 
     const onChange = () => {
         savePhoneSetting('hideTableCountBadge', !!badgeToggle.checked);
-        showToast(container, badgeToggle.checked ? '已隐藏数量徽标' : '已显示数量徽标');
+        showToast(container, badgeToggle.checked ? t("已隐藏数量徽标") : t("已显示数量徽标"));
     };
 
     badgeToggle.addEventListener('change', onChange);
@@ -54,7 +56,7 @@ export function renderHiddenTableAppsList(listEl, options = {}) {
         .filter(item => item.type !== 'dock');
 
     if (allItems.length === 0) {
-        listEl.innerHTML = '<div class="phone-empty-msg">暂无表格可配置</div>';
+        listEl.innerHTML = `<div class="phone-empty-msg">${t("暂无表格可配置")}</div>`;
         return () => {};
     }
 
@@ -62,7 +64,7 @@ export function renderHiddenTableAppsList(listEl, options = {}) {
         const checked = !!hiddenMap[item.key];
         return `
             <label class="phone-appearance-check-item" data-sheet-key="${escapeHtmlAttr(item.key)}">
-                <span class="phone-appearance-check-main">${escapeHtml(item.name)}</span>
+                <span class="phone-appearance-check-main">${escapeHtml(getAppearanceIconDisplayName(item))}</span>
                 <input type="checkbox" class="phone-settings-switch" ${checked ? 'checked' : ''}>
             </label>
         `;
@@ -81,7 +83,7 @@ export function renderHiddenTableAppsList(listEl, options = {}) {
                 delete current[sheetKey];
             }
             savePhoneSetting('hiddenTableApps', current);
-            showToast(listEl, checkbox.checked ? '已屏蔽图标' : '已恢复图标');
+            showToast(listEl, checkbox.checked ? t("已屏蔽图标") : t("已恢复图标"));
         };
 
         checkbox.addEventListener('change', onChange);

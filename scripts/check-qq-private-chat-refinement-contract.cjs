@@ -49,7 +49,7 @@ function main() {
     assert.match(stickerUpload, /pickImageFiles\(/, 'sticker upload must preserve each original selected file');
     assert.doesNotMatch(stickerUpload, /skipCrop|cropPreset|compress\s*:/,
         'sticker upload must not enter a crop or compression path');
-    assert.match(app, /title:\s*'\\u8868\\u60c5\\u4ed3\\u5e93'/, 'QQ image resources must include the global sticker repository');
+    assert.match(app, /title:\s*t\("表情仓库"\)/, 'QQ image resources must include the global sticker repository');
     assert.match(rawPicker, /callback\(Object\.freeze\(files\.map\(imageFileRecord\)\)\)/,
         'the raw picker must expose ordered original files and filename metadata for sticker descriptions');
 

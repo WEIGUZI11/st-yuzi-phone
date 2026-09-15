@@ -69,7 +69,7 @@ function main() {
         results,
         'settingsPanel',
         '扩展设置页显示“悬浮窗开关”文案',
-        has(contents.settingsPanel, '<span>悬浮窗开关</span>')
+        has(contents.settingsPanel, '<span>${t`悬浮窗开关`}</span>')
     );
     check(
         results,

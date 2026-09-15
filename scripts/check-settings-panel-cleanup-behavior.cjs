@@ -7,6 +7,9 @@ function createElement(id) {
         id,
         checked: true,
         removed: false,
+        querySelector() { return null; },
+        getAttribute(name) { return this[name] ?? null; },
+        setAttribute(name, value) { this[name] = value; },
         listeners: new Map(),
         addEventListener(type, handler) {
             const list = this.listeners.get(type) || [];
@@ -50,6 +53,8 @@ function jqueryStub() {
 
 global.window = {
     dispatchEvent() {},
+    addEventListener() {},
+    removeEventListener() {},
     setTimeout,
     clearTimeout,
     getContext: () => ({

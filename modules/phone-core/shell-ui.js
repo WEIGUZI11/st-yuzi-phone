@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { PHONE_ICONS } from '../phone-home/icons.js';
 
 export function buildPhoneShellHtml() {
@@ -14,7 +15,7 @@ export function buildPhoneShellHtml() {
             </div>
             <div class="yuzi-phone-screen"></div>
             <div class="yuzi-phone-temporary-layer-host" data-yuzi-phone-temporary-layer-host></div>
-            <button class="yuzi-phone-home-indicator" data-yuzi-phone-home-indicator type="button" aria-label="返回手机主页" hidden>
+            <button class="yuzi-phone-home-indicator" data-yuzi-phone-home-indicator type="button" aria-label="${t("返回手机主页")}" hidden>
                 <span aria-hidden="true"></span>
             </button>
         </div>

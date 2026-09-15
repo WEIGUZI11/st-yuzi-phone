@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { generateUniqueId } from '../../utils/object.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { formatShortcut, shortcutFromEvent } from '../../input-shortcuts/config.js';
@@ -11,42 +12,42 @@ function buildTextField(field, label, value, rows = 2) {
 
 export function buildInputShortcutsPageHtml({ enabled, rules, recordingId = '', dirtyIds = [] }) {
     const intro = buildSettingsSectionHtml({
-        title: '输入快捷键',
-        desc: '在酒馆输入框中，用按键插入文字或包裹选区。',
-        actionsHtml: `<label class="yuzi-input-shortcut-toggle"><span>启用</span>
-            <input type="checkbox" class="phone-settings-switch" data-field="enabled" aria-label="启用输入快捷键"${enabled ? ' checked' : ''}></label>`,
-        bodyHtml: `<div class="yuzi-input-shortcut-toolbar"><span>${rules.length} 条规则 · 修改后点击保存</span>
-            <button type="button" class="phone-settings-btn" data-action="add">新增规则</button></div>`,
+        title: t("输入快捷键"),
+        desc: t("在酒馆输入框中，用按键插入文字或包裹选区。"),
+        actionsHtml: `<label class="yuzi-input-shortcut-toggle"><span>${t`启用`}</span>
+            <input type="checkbox" class="phone-settings-switch" data-field="enabled" aria-label="${t`启用输入快捷键`}"${enabled ? ' checked' : ''}></label>`,
+        bodyHtml: `<div class="yuzi-input-shortcut-toolbar"><span>${t`${rules.length} 条规则 · 修改后点击保存`}</span>
+            <button type="button" class="phone-settings-btn" data-action="add">${t`新增规则`}</button></div>`,
     });
     const cards = rules.map((rule, index) => `<div data-rule-id="${escapeHtmlAttr(rule.id)}">${buildSettingsSectionHtml({
-        title: `规则 ${index + 1}`,
+        title: t`规则 ${index + 1}`,
         desc: '',
-        actionsHtml: `<label class="yuzi-input-shortcut-toggle"><span>启用</span>
-            <input type="checkbox" class="phone-settings-switch" data-field="rule-enabled" aria-label="启用规则 ${index + 1}"${rule.enabled ? ' checked' : ''}></label>`,
+        actionsHtml: `<label class="yuzi-input-shortcut-toggle"><span>${t`启用`}</span>
+            <input type="checkbox" class="phone-settings-switch" data-field="rule-enabled" aria-label="${t`启用规则 ${index + 1}`}"${rule.enabled ? ' checked' : ''}></label>`,
         bodyHtml: `<div class="yuzi-input-shortcut-fields">
             <div class="yuzi-input-shortcut-binding">
-                <label class="yuzi-input-shortcut-field"><span>快捷键</span>
-                    <button type="button" class="phone-settings-btn yuzi-input-shortcut-key" data-action="record" aria-pressed="${recordingId === rule.id}">${recordingId === rule.id ? '请按键…' : escapeHtml(formatShortcut(rule.shortcut))}</button></label>
-                <label class="yuzi-input-shortcut-field"><span>动作</span>
+                <label class="yuzi-input-shortcut-field"><span>${t`快捷键`}</span>
+                    <button type="button" class="phone-settings-btn yuzi-input-shortcut-key" data-action="record" aria-pressed="${recordingId === rule.id}">${recordingId === rule.id ? t("请按键…") : escapeHtml(formatShortcut(rule.shortcut))}</button></label>
+                <label class="yuzi-input-shortcut-field"><span>${t`动作`}</span>
                     <select class="phone-settings-select" data-field="action">
-                        <option value="insert"${rule.action === 'insert' ? ' selected' : ''}>插入文本</option>
-                        <option value="wrap"${rule.action === 'wrap' ? ' selected' : ''}>成对包裹</option>
+                        <option value="insert"${rule.action === 'insert' ? ' selected' : ''}>${t`插入文本`}</option>
+                        <option value="wrap"${rule.action === 'wrap' ? ' selected' : ''}>${t`成对包裹`}</option>
                     </select></label>
             </div>
             ${rule.action === 'wrap'
-        ? `<div class="yuzi-input-shortcut-pair">${buildTextField('left', '左侧内容', rule.left)}${buildTextField('right', '右侧内容', rule.right)}</div>`
-        : buildTextField('text', '插入内容', rule.text, 3)}
+        ? `<div class="yuzi-input-shortcut-pair">${buildTextField('left', t("左侧内容"), rule.left)}${buildTextField('right', t("右侧内容"), rule.right)}</div>`
+        : buildTextField('text', t("插入内容"), rule.text, 3)}
             <div class="yuzi-input-shortcut-actions">
-                <span data-rule-status role="status">${dirtyIds.includes(rule.id) ? '未保存' : ''}</span>
-                <button type="button" class="phone-settings-btn" data-action="delete">删除</button>
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="save">保存</button>
+                <span data-rule-status role="status">${dirtyIds.includes(rule.id) ? t("未保存") : ''}</span>
+                <button type="button" class="phone-settings-btn" data-action="delete">${t`删除`}</button>
+                <button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="save">${t`保存`}</button>
             </div>
         </div>`,
     })}</div>`).join('');
     return buildSettingsPageFrame({
-        title: '输入快捷键',
+        title: t("输入快捷键"),
         bodyClass: 'phone-app-body phone-settings-scroll yuzi-input-shortcuts',
-        bodyHtml: intro + (cards || '<p class="yuzi-input-shortcut-empty">还没有规则，点击「新增规则」开始。</p>'),
+        bodyHtml: intro + (cards || `<p class="yuzi-input-shortcut-empty">${t("还没有规则，点击「新增规则」开始。")}</p>`),
     });
 }
 
@@ -60,7 +61,7 @@ export function createInputShortcutsPage(ctx) {
     function markDirty(id, card) {
         dirtyIds.add(id);
         const status = card?.querySelector('[data-rule-status]');
-        if (status) status.textContent = '未保存';
+        if (status) status.textContent = t("未保存");
     }
     function stopRecording(commit = false) {
         if (!recording) return;
@@ -112,7 +113,7 @@ export function createInputShortcutsPage(ctx) {
             stopRecording();
             if (wasRecording) return;
             recording = { button, rule, candidate: null };
-            button.textContent = '请按键…';
+            button.textContent = t("请按键…");
             button.setAttribute('aria-pressed', 'true');
             button.focus({ preventScroll: true });
         } else if (action === 'save') {
@@ -121,7 +122,7 @@ export function createInputShortcutsPage(ctx) {
             rules = rules.map(item => item.id === rule.id ? result.config.rules.find(saved => saved.id === rule.id) : item);
             dirtyIds.delete(rule.id);
             redraw();
-            feedback(result, '规则已保存');
+            feedback(result, t("规则已保存"));
         } else if (action === 'delete') {
             const saved = service.readConfig().rules.some(item => item.id === rule.id);
             if (saved && !feedback(service.removeRule(rule.id))) return;

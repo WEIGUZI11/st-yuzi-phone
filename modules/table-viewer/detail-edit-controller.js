@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { findFirstEnumValidationError } from './ddl-field-metadata.js';
 
@@ -181,7 +182,7 @@ export function bindGenericDetailEditController(options = {}) {
         if (!synced) {
             state.returnToListMode();
             renderKeepScroll();
-            showInlineToast(container, '外部表更新同步失败，已返回列表', true);
+            showInlineToast(container, t("外部表更新同步失败，已返回列表"), true);
             return;
         }
 
@@ -192,17 +193,17 @@ export function bindGenericDetailEditController(options = {}) {
         if (!Number.isInteger(currentRowIndex) || currentRowIndex < 0 || !Array.isArray(rows[currentRowIndex])) {
             state.returnToListMode();
             renderKeepScroll();
-            showInlineToast(container, '外部表更新后当前行已不存在，已返回列表', true);
+            showInlineToast(container, t("外部表更新后当前行已不存在，已返回列表"), true);
             return;
         }
 
         renderKeepScroll();
-        showInlineToast(container, '已同步外部表更新');
+        showInlineToast(container, t("已同步外部表更新"));
     }
 
     function handleToggleEditMode() {
         if (rowLocked && !state.editMode) {
-            showInlineToast(container, '当前条目已锁定，无法编辑');
+            showInlineToast(container, t("当前条目已锁定，无法编辑"));
             return;
         }
 
@@ -231,7 +232,7 @@ export function bindGenericDetailEditController(options = {}) {
         if (Number.isNaN(lockColIndex) || lockColIndex < 0) return;
 
         if (isTableRowLocked(sheetKey, rowIndexForLock)) {
-            showInlineToast(container, '当前条目已锁定，无法切换字段锁');
+            showInlineToast(container, t("当前条目已锁定，无法切换字段锁"));
             return;
         }
 
@@ -241,7 +242,7 @@ export function bindGenericDetailEditController(options = {}) {
         if (nextLocked && state.editMode && Number.isInteger(rawColIndex)) {
             state.removeDraftValue(rawColIndex);
         }
-        showInlineToast(container, nextLocked ? '字段已锁定' : '字段已解锁');
+        showInlineToast(container, nextLocked ? t("字段已锁定") : t("字段已解锁"));
         renderKeepScroll();
     }
 
@@ -283,7 +284,7 @@ export function bindGenericDetailEditController(options = {}) {
 
         try {
             if (!Number.isInteger(saveRowIndex) || saveRowIndex < 0) {
-                showInlineToast(container, '保存失败：行索引无效');
+                showInlineToast(container, t("保存失败：行索引无效"));
                 return;
             }
 
@@ -312,23 +313,23 @@ export function bindGenericDetailEditController(options = {}) {
             });
 
             if (!hasChanges) {
-                showInlineToast(container, '没有需要保存的修改');
+                showInlineToast(container, t("没有需要保存的修改"));
                 return;
             }
 
             if (!Array.isArray(rows) || !Array.isArray(rows[saveRowIndex])) {
-                showInlineToast(container, '保存失败：行索引超出范围');
+                showInlineToast(container, t("保存失败：行索引超出范围"));
                 return;
             }
 
             if (typeof updateTableRow !== 'function') {
-                showInlineToast(container, '保存失败：数据库行级更新接口不可用');
+                showInlineToast(container, t("保存失败：数据库行级更新接口不可用"));
                 return;
             }
 
             const liveTableName = typeof getLiveTableName === 'function' ? String(getLiveTableName() || '').trim() : '';
             if (!liveTableName) {
-                showInlineToast(container, '保存失败：缺少表格名称');
+                showInlineToast(container, t("保存失败：缺少表格名称"));
                 return;
             }
 
@@ -360,7 +361,7 @@ export function bindGenericDetailEditController(options = {}) {
                     message: '通用表详情保存前置校验失败',
                     context: validationDiagnostics,
                 });
-                showInlineToast(container, enumValidationError.message || '保存失败：字段值不在允许范围内');
+                showInlineToast(container, enumValidationError.message || t("保存失败：字段值不在允许范围内"));
                 return;
             }
 
@@ -397,7 +398,7 @@ export function bindGenericDetailEditController(options = {}) {
                 if (!refreshedFromSheet || !Array.isArray(rows[saveRowIndex])) {
                     state.returnToListMode();
                     deferredToast = {
-                        message: refreshedFromSheet ? '保存成功，但当前行已不存在，已返回列表' : '保存成功，但刷新数据失败，已返回列表',
+                        message: refreshedFromSheet ? t("保存成功，但当前行已不存在，已返回列表") : t("保存成功，但刷新数据失败，已返回列表"),
                         warning: true,
                     };
                     return;
@@ -405,7 +406,7 @@ export function bindGenericDetailEditController(options = {}) {
 
                 state.setEditMode(false);
                 deferredToast = {
-                    message: result.refreshed === false ? '保存成功，但刷新投影失败' : '保存成功',
+                    message: result.refreshed === false ? t("保存成功，但刷新投影失败") : t("保存成功"),
                     warning: result.refreshed === false,
                 };
             } else {
@@ -421,7 +422,7 @@ export function bindGenericDetailEditController(options = {}) {
                         repositoryDiagnostics: result?.diagnostics || null,
                     },
                 });
-                showInlineToast(container, `保存失败：${result?.message || '数据库行级更新失败'}`);
+                showInlineToast(container, t`保存失败：${result?.message || t("数据库行级更新失败")}`);
             }
         } catch (err) {
             logger.error({
@@ -431,7 +432,7 @@ export function bindGenericDetailEditController(options = {}) {
                 error: err,
             });
             if (isViewerActive()) {
-                showInlineToast(container, `保存异常: ${err?.message || '未知错误'}`);
+                showInlineToast(container, t`保存异常: ${err?.message || t("未知错误")}`);
             }
         } finally {
             if (suppressExternalTableUpdate && typeof runtime?.setSuppressExternalTableUpdate === 'function') {

@@ -2074,3 +2074,20 @@
     outline-offset: 3px;
 }
 .phone-settings-page .yuzi-failure-logs [hidden] { display: none; }
+
+/* 英文标题和动作允许分行；只作用自有设置控件，不进入内容预设。 */
+#yuzi-phone-standalone[lang="en"] .phone-settings-section-head {
+    flex-wrap: wrap;
+}
+
+#yuzi-phone-standalone[lang="en"] .phone-settings-section-side {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+
+#yuzi-phone-standalone[lang="en"] .phone-settings-btn {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}

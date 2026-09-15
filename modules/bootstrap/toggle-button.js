@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { PHONE_ICONS } from '../phone-home/icons.js';
 import { applyAppearanceFontLibrary } from '../settings-app/services/appearance-settings.js';
 import {
@@ -37,6 +38,10 @@ export function applyPhoneToggleVisibility(btn, settings = getPhoneSettings()) {
 
 export function applyPhoneToggleVisualStyle(btn, settings = getPhoneSettings()) {
     if (!(btn instanceof HTMLElement)) return;
+
+    const text = btn.querySelector('.yuzi-phone-toggle-text');
+    if (text) text.textContent = t(TOGGLE_LABEL);
+    btn.title = t('拖拽移动 / 点击打开');
 
     const size = clampNumber(settings?.phoneToggleStyleSize, 32, 72, DEFAULT_TOGGLE_SIZE);
     const shapeRaw = String(settings?.phoneToggleStyleShape || DEFAULT_TOGGLE_SHAPE).trim();
@@ -301,11 +306,11 @@ export function createPhoneToggleButton(options = {}) {
 
         const textSpan = document.createElement('span');
         textSpan.className = 'yuzi-phone-toggle-text';
-        textSpan.textContent = TOGGLE_LABEL;
+        textSpan.textContent = t(TOGGLE_LABEL);
 
         btn.appendChild(iconSpan);
         btn.appendChild(textSpan);
-        btn.title = '拖拽移动 / 点击打开';
+        btn.title = t("拖拽移动 / 点击打开");
         btn.style.visibility = 'hidden';
 
         root.appendChild(btn);

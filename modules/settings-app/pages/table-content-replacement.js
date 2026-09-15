@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { normalizeTableContentReplacementSettings } from '../../table-content-replacement/config.js';
 import { buildTableContentReplacementPageHtml } from '../layout/frame.js';
 import { showConfirmDialog } from '../ui/confirm-dialog.js';
@@ -101,9 +102,9 @@ function getTargetEmptyRuleCount(area) {
 
 function getResultErrorMessage(result, fallback) {
     const code = asId(result?.code);
-    if (code === 'settings_save_failed') return '设置保存失败，请稍后重试。';
-    if (code === 'mapping_missing') return '找不到要保存的单表区域。';
-    if (code === 'apply_failed' || code === 'table_data_unavailable') return '规则已保存，但当前表格暂时无法应用。';
+    if (code === 'settings_save_failed') return t("设置保存失败，请稍后重试。");
+    if (code === 'mapping_missing') return t("找不到要保存的单表区域。");
+    if (code === 'apply_failed' || code === 'table_data_unavailable') return t("规则已保存，但当前表格暂时无法应用。");
     return asText(result?.message).trim() || fallback;
 }
 
@@ -243,7 +244,7 @@ export function createTableContentReplacementPage(ctx) {
             state.errors = clearScopeError(state.errors, kind === 'global' ? 'global' : 'table', mappingId);
             repaint();
             const changedCellCount = Number(result.changedCellCount) || 0;
-            if (changedCellCount > 0) notify(`已替换 ${changedCellCount} 个单元格`);
+            if (changedCellCount > 0) notify(t`已替换 ${changedCellCount} 个单元格`);
             return;
         }
 
@@ -259,7 +260,7 @@ export function createTableContentReplacementPage(ctx) {
         }
 
         repaint();
-        notify(getResultErrorMessage(result, '保存表格内容替换规则失败。'), true);
+        notify(getResultErrorMessage(result, t("保存表格内容替换规则失败。")), true);
     };
 
     const requestSave = (kind, mappingId = '') => {
@@ -273,11 +274,11 @@ export function createTableContentReplacementPage(ctx) {
 
         showConfirmDialog(
             ctx.container,
-            '确认删除匹配文本？',
-            `本区域有 ${emptyTargetCount} 条规则的“替换为”为空，保存后会删除匹配到的文字。是否继续？`,
+            t("确认删除匹配文本？"),
+            t`本区域有 ${emptyTargetCount} 条规则的“替换为”为空，保存后会删除匹配到的文字。是否继续？`,
             () => { void saveArea(kind, mappingId); },
-            '继续保存',
-            '取消',
+            t("继续保存"),
+            t("取消"),
             ctx.pageRuntime,
         );
     };
@@ -288,8 +289,8 @@ export function createTableContentReplacementPage(ctx) {
         if (!area) return;
         showConfirmDialog(
             ctx.container,
-            '删除单表替换区域？',
-            `将删除“${asText(area.tableNameSnapshot).trim() || asId(area.sheetKey) || '此表'}”的替换配置，不会回滚已经写入表格的数据。`,
+            t("删除单表替换区域？"),
+            t`将删除“${asText(area.tableNameSnapshot).trim() || asId(area.sheetKey) || t("此表")}”的替换配置，不会回滚已经写入表格的数据。`,
             async () => {
                 if (!isActive() || state.busy) return;
                 const nextDraft = cloneConfig(state.draft);
@@ -322,14 +323,14 @@ export function createTableContentReplacementPage(ctx) {
                         ),
                     };
                     repaint();
-                    notify('单表替换区域已删除');
+                    notify(t("单表替换区域已删除"));
                     return;
                 }
                 repaint();
-                notify(getResultErrorMessage(result, '删除单表替换区域失败。'), true);
+                notify(getResultErrorMessage(result, t("删除单表替换区域失败。")), true);
             },
-            '确认删除',
-            '取消',
+            t("确认删除"),
+            t("取消"),
             ctx.pageRuntime,
         );
     };

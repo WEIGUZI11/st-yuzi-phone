@@ -767,6 +767,7 @@ export interface SettingsFullscreenOverlayService {
 }
 
 export interface PhoneSettings {
+    phoneLanguage: 'zh-CN' | 'en';
     enabled: boolean;
     phoneToggleX: number | null;
     phoneToggleY: number | null;
@@ -1082,6 +1083,7 @@ export interface SettingsAppearanceAppCatalog {
 }
 
 export interface SettingsAppearancePageService {
+    savePhoneLanguage: (value: 'zh-CN' | 'en') => boolean;
     getLayoutValue: (key: string, fallback: number) => string;
     getPhoneSettings: SettingsModule['getPhoneSettings'];
     buildAppearanceAppCatalog: (rawData?: Record<string, any> | null) => SettingsAppearanceAppCatalog;

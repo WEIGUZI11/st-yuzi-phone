@@ -190,7 +190,7 @@ assertOrdered(createInstanceBody, [
     'if (!isPendingRouteActive()) return;',
     'const loadId = state.loadSequence + 1;',
     'state.currentMessageId = expectedMessageId;',
-    'renderVariableStatus(container, \'loading\', expectedMessageId, \'正在读取当前楼层变量…\');',
+    "renderVariableStatus(container, 'loading', expectedMessageId, t(\"正在读取当前楼层变量…\"));",
     'await waitForContainerConnection(container, runtime, () => isPendingRouteActive());',
     'if (!isActive(expectedMessageId) || state.loadSequence !== loadId) return;',
     'const result = await getFloorVariablesAsync(expectedMessageId);',
@@ -203,7 +203,7 @@ assertOrdered(createInstanceBody, [
 ], 'refreshView lifecycle');
 assertOrdered(createInstanceBody, [
     'container.innerHTML = buildVariableManagerPageHtml(state.currentMessageId, isMvu);',
-    'renderVariableStatus(container, \'loading\', state.currentMessageId, \'正在读取当前楼层变量…\');',
+    "renderVariableStatus(container, 'loading', state.currentMessageId, t(\"正在读取当前楼层变量…\"));",
     'bindBottomBarInsetSync(container, runtime);',
     'void loadAndRenderContent({ showLoading: false });',
 ], 'mount initial loading lifecycle');
@@ -252,7 +252,7 @@ assertOrdered(saveBody, [
     'if (!isVariableManagerPageAlive(page, deps, messageId, runtime)) return;',
     'const success = await setFloorVariable(messageId, path, newValue);',
     'if (!isVariableManagerPageAlive(page, deps, messageId, runtime)) return;',
-    "showToastIfAlive(page, deps, messageId, '变量已更新', false, runtime);",
+    "showToastIfAlive(page, deps, messageId, t(\"变量已更新\"), false, runtime);",
     'refreshViewIfAlive(page, deps, messageId, runtime);',
 ], 'doSaveEdit lifecycle');
 assert(!saveBody.includes('showToast(page,'), 'doSaveEdit 不能裸 showToast');
@@ -277,7 +277,7 @@ assert(interactions.includes('const SELECTABLE_DELETE_SELECTOR = \'.vm-card[data
 assert(interactions.includes('function getDeleteTarget(element)'), '删除态必须定义结构化删除目标解析');
 assert(interactions.includes('function collectSelectedDeleteTargets(page)'), '删除态必须收集结构化删除目标');
 assert(interactions.includes('function normalizeDeleteTargets(targets)'), '删除态必须做父子删除目标归一化');
-assert(interactions.includes('return `确认删除${getDeleteTargetKindLabel(target.kind)}「${target.label}」？`;'), '单目标删除确认标题必须包含删除类型与名称');
+assert(interactions.includes("return t`确认删除${getDeleteTargetKindLabel(target.kind)}「${target.label}」？`;"), '单目标删除确认标题必须包含删除类型与名称');
 
 const addBody = extractFunctionBody(
     interactions,
@@ -289,7 +289,7 @@ assertOrdered(addBody, [
     'const ok = await addFloorVariable(messageId, path, value);',
     'if (!isVariableManagerPageAlive(page, deps, messageId, runtime)) return;',
     'closeDialogIfAlive(overlay, page, deps, messageId, runtime);',
-    "showToastIfAlive(page, deps, messageId, '变量已添加', false, runtime);",
+    "showToastIfAlive(page, deps, messageId, t(\"变量已添加\"), false, runtime);",
     'refreshViewIfAlive(page, deps, messageId, runtime);',
 ], 'confirmAddVariableDialog lifecycle');
 assert(!addBody.includes('showToast(page,'), 'confirmAddVariableDialog 不能裸 showToast');

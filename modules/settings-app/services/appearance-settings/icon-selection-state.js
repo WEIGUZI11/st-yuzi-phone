@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { normalizeAppIconOriginsSettings } from '../../../settings/schema.js';
 
 function cloneAppIcons(raw) {
@@ -17,7 +18,7 @@ export function collectAppearancePackIcons(pack) {
         used.add(dataUrl);
         return [{
             id: String(resource?.id || `icon_${index + 1}`),
-            name: String(resource?.name || resource?.id || `图标 ${index + 1}`),
+            name: String(resource?.name || resource?.id || t`图标 ${index + 1}`),
             dataUrl,
         }];
     });

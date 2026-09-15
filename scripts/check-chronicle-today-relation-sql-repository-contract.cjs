@@ -36,8 +36,8 @@ function main() {
     assertIncludes(repository, 'api.querySql', 'querySqlViaApi 必须优先支持 querySql');
     assertIncludes(repository, 'api.executeSqlQuery', 'querySqlViaApi 必须支持 executeSqlQuery fallback');
     assertIncludes(repository, 'api.queryTableRows', 'queryTableRowsViaApi 必须调用 queryTableRows');
-    assertIncludes(repository, "buildFailure('runtime_not_ready', 'SQLite 只读 runtime 尚未就绪')", 'querySql 方法未发布时必须返回 runtime_not_ready');
-    assertIncludes(repository, "buildFailure('runtime_not_ready', 'SQLite 表格只读 runtime 尚未就绪')", 'queryTableRows 方法未发布时必须返回 runtime_not_ready');
+    assertIncludes(repository, "buildFailure('runtime_not_ready', t(\"SQLite 只读 runtime 尚未就绪\"))", 'querySql 方法未发布时必须返回 runtime_not_ready');
+    assertIncludes(repository, "buildFailure('runtime_not_ready', t(\"SQLite 表格只读 runtime 尚未就绪\"))", 'queryTableRows 方法未发布时必须返回 runtime_not_ready');
     assertIncludes(repository, 'api.getLastSqlApiError()', '只读查询 null 结果必须读取底层 SQL 诊断');
     assertIncludes(repository, "String(diagnostic.method || '') !== methodName", '只读诊断必须匹配本次调用 method');
     assertIncludes(repository, 'Number(diagnostic.at) < startedAt', '只读诊断必须不早于本次调用开始时间');

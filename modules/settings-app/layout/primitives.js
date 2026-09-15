@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import {
     buildPhoneBackButton,
     buildPhoneNavBar,
@@ -6,70 +7,70 @@ import {
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 
 export const SETTINGS_ENTRY_META = {
-    input_shortcuts: { glyph: '键', title: '输入快捷键', description: '自定义酒馆输入框快捷键', tone: 'is-button' },
-    logs: { glyph: '志', title: '日志', description: '当前聊天的 QQ 失败记录', tone: 'is-api' },
+    input_shortcuts: { get glyph() { return t("键"); }, get title() { return t("输入快捷键"); }, get description() { return t("自定义酒馆输入框快捷键"); }, tone: 'is-button' },
+    logs: { get glyph() { return t("志"); }, get title() { return t("日志"); }, get description() { return t("当前聊天的 QQ 失败记录"); }, tone: 'is-api' },
     appearance: {
-        glyph: '界',
-        title: '界面外观',
-        description: '背景、图标布局与显示细节',
+        get glyph() { return t("界"); },
+        get title() { return t("界面外观"); },
+        get description() { return t("背景、图标布局与显示细节"); },
         tone: 'is-appearance',
-        badge: '桌面',
+        get badge() { return t("桌面"); },
     },
     beautify: {
-        glyph: '模',
-        title: '模板工坊',
-        description: '管理小剧场与通用表格模板',
+        get glyph() { return t("模"); },
+        get title() { return t("模板工坊"); },
+        get description() { return t("管理小剧场与通用表格模板"); },
         tone: 'is-beautify',
-        badge: '模板',
+        get badge() { return t("模板"); },
     },
     button_style: {
-        glyph: '控',
-        title: '控件与按钮',
-        description: '管理悬浮入口显示、位置、尺寸、形态与封面',
+        get glyph() { return t("控"); },
+        get title() { return t("控件与按钮"); },
+        get description() { return t("管理悬浮入口显示、位置、尺寸、形态与封面"); },
         tone: 'is-button',
-        badge: '交互',
+        get badge() { return t("交互"); },
     },
     worldbook_reading: {
-        glyph: '书',
-        title: '读取世界书',
-        description: '管理 QQ 提示词允许读取的角色世界书条目',
+        get glyph() { return t("书"); },
+        get title() { return t("读取世界书"); },
+        get description() { return t("管理 QQ 提示词允许读取的角色世界书条目"); },
         tone: 'is-worldbook',
-        badge: '上下文',
+        get badge() { return t("上下文"); },
     },
     image_generation: {
-        glyph: '绘',
-        title: '生图设置',
-        description: '配置智慧姬、角色资料映射与测试生成',
+        get glyph() { return t("绘"); },
+        get title() { return t("生图设置"); },
+        get description() { return t("配置智慧姬、角色资料映射与测试生成"); },
         tone: 'is-image-generation',
-        badge: '图片',
+        get badge() { return t("图片"); },
     },
     api_presets: {
         glyph: 'API',
-        title: 'API 预设',
-        description: '管理 QQ 使用的接口、模型与生成参数',
+        get title() { return t("API 预设"); },
+        get description() { return t("管理 QQ 使用的接口、模型与生成参数"); },
         tone: 'is-api',
-        badge: '接口',
+        get badge() { return t("接口"); },
     },
     ai_instruction_presets: {
-        glyph: '令',
-        title: 'AI 指令预设',
-        description: '管理 QQ 聊天回复与主动消息的分段提示词',
+        get glyph() { return t("令"); },
+        get title() { return t("AI 指令预设"); },
+        get description() { return t("管理 QQ 聊天回复与主动消息的分段提示词"); },
         tone: 'is-ai',
-        badge: '提示词',
+        get badge() { return t("提示词"); },
     },
     table_content_replacement: {
-        glyph: '换',
-        title: '表格内容词汇替换',
-        description: '按全局或单表规则批量替换普通文字',
+        get glyph() { return t("换"); },
+        get title() { return t("表格内容词汇替换"); },
+        get description() { return t("按全局或单表规则批量替换普通文字"); },
         tone: 'is-table-content-replacement',
-        badge: '表格',
+        get badge() { return t("表格"); },
     },
     fullscreen_overlay: {
-        glyph: '幕',
-        title: '弹幕设置',
-        description: '管理表格内容的全屏浮层展示',
+        get glyph() { return t("幕"); },
+        get title() { return t("弹幕设置"); },
+        get description() { return t("管理表格内容的全屏浮层展示"); },
         tone: 'is-fullscreen-overlay',
-        badge: '浮层',
+        get badge() { return t("浮层"); },
     },
 };
 
@@ -210,7 +211,7 @@ export function buildSettingsHomeItemHtml({ entry, title, description = '', quic
 
     const entryMeta = SETTINGS_ENTRY_META[entry] || {};
     const resolvedToneClass = String(toneClass || entryMeta.tone || '').trim();
-    const resolvedGlyph = String(entryMeta.glyph || title || '设').trim();
+    const resolvedGlyph = String(entryMeta.glyph || title || t("设")).trim();
     const tagsHtml = Array.isArray(tags)
         ? tags.map((tag) => {
             if (!tag) return '';

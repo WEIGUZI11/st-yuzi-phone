@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { getPhoneSettings, savePhoneSetting } from '../../../settings.js';
 import { Logger } from '../../../error-handler.js';
 import { showToast } from '../../ui/toast.js';
@@ -38,7 +39,7 @@ export function setupHomeAppLabelColorSettings(container) {
         const nextValue = normalizeHomeAppLabelColorMode(selectEl.value);
         syncControl(nextValue);
         savePhoneSetting(HOME_APP_LABEL_COLOR_SETTING_KEY, nextValue);
-        showToast(container, nextValue === 'black' ? '首页 App 名称已切换为黑色' : '首页 App 名称已切换为白色');
+        showToast(container, nextValue === 'black' ? t("首页 App 名称已切换为黑色") : t("首页 App 名称已切换为白色"));
     };
 
     selectEl.addEventListener('change', onChange);

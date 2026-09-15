@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 /**
  * 变量管理器 - 树状卡片视图组件
  * 保留顶层分组，但组内使用对象节点 + 叶子卡片递归渲染
@@ -30,7 +31,7 @@ export function flattenToGroups(data, options = {}) {
         if (!miscGroup) {
             miscGroup = {
                 groupPath: '__misc__',
-                groupName: '其他',
+                groupName: t("其他"),
                 leafCount: 0,
                 nodes: [],
             };
@@ -266,7 +267,7 @@ function renderCardHtml(item, deleteMode, selectedPaths) {
     const deleteModeClass = deleteMode ? 'vm-card-delete-mode' : '';
     const description = String(item?.mvu?.description || '').trim();
     const descriptionHtml = description ? `
-        <span class="vm-card-description-label">说明</span>
+        <span class="vm-card-description-label">${t`说明`}</span>
         <span class="vm-card-description">${escapeHtml(description)}</span>
     ` : '';
     const deleteAttrs = buildDeleteTargetAttrs(item);
@@ -300,7 +301,7 @@ function renderObjectNodeHtml(node, deleteMode, selectedPaths) {
         ...node,
         deleteKind: 'object',
     });
-    const metaText = node.leafCount > 0 ? `${node.leafCount} 项字段` : '空对象';
+    const metaText = node.leafCount > 0 ? t`${node.leafCount} 项字段` : t("空对象");
     const childrenHtml = renderTreeNodesHtml(node.children, deleteMode, selectedPaths);
     const treeAttrs = buildTreeNodeAttrs(node);
 
@@ -325,7 +326,7 @@ function renderObjectNodeHtml(node, deleteMode, selectedPaths) {
 
 function renderTreeNodesHtml(nodes, deleteMode, selectedPaths) {
     if (!Array.isArray(nodes) || nodes.length === 0) {
-        return '<div class="vm-object-empty">空对象</div>';
+        return `<div class="vm-object-empty">${t("空对象")}</div>`;
     }
 
     return nodes.map((node) => {
@@ -345,7 +346,7 @@ export function renderGroupsHtml(groups, options = {}) {
     const { deleteMode = false, selectedPaths = new Set() } = options;
 
     if (!groups || groups.length === 0) {
-        return '<div class="vm-empty-state">当前楼层没有变量数据</div>';
+        return `<div class="vm-empty-state">${t("当前楼层没有变量数据")}</div>`;
     }
 
     return groups.map((group) => {

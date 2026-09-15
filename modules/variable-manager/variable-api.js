@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 /**
  * 变量管理器 - 变量接口封装层
  * 自动检测 MVU 框架，提供统一的变量读写接口
@@ -86,7 +87,7 @@ async function waitForMvuInitialized(timeoutMs) {
         await Promise.race([
             Promise.resolve().then(() => waitGlobalInitialized('Mvu')),
             delay(safeTimeout).then(() => {
-                throw new Error(`等待 MVU 初始化超时: ${safeTimeout}ms`);
+                throw new Error(t`等待 MVU 初始化超时: ${safeTimeout}ms`);
             }),
         ]);
         return true;

@@ -3,6 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 (async () => {
+    const { t } = await import('../modules/i18n/index.js');
     const {
         createNarrativeMessage,
         createTransferMessage,
@@ -104,7 +105,7 @@ const path = require('node:path');
     let dialog;
     let payload;
     let currentConversation = { kind: 'private' };
-    const openDialog = require('node:vm').runInNewContext(dialogSource, {
+    const openDialog = require('node:vm').runInNewContext(dialogSource, { t,
         asText: value => String(value ?? '').trim(),
         conversationSnapshots: { get: () => currentConversation },
         createElement: tag => new Field(tag),

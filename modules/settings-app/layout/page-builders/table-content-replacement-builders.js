@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../../utils/dom-escape.js';
 import {
     buildSettingsPageFrame,
@@ -34,7 +35,7 @@ function getRunnableRules(rules) {
 
 function formatRunningRuleValue(value) {
     const text = asText(value);
-    if (text.length === 0) return '（空白）';
+    if (text.length === 0) return t("（空白）");
     return text
         .replace(/\r\n|\r|\n/gu, '↵')
         .replace(/\t/gu, '⇥')
@@ -48,7 +49,7 @@ function buildRunningRuleGroupHtml({ scope = 'global', mappingId = '', label = '
         <div class="phone-table-content-replacement-running-group" data-running-rule-scope="${escapeHtmlAttr(scope)}"${mappingAttr}>
             <div class="phone-table-content-replacement-running-group-head">
                 <span class="phone-table-content-replacement-running-group-title">${escapeHtml(label)}</span>
-                <span class="phone-table-content-replacement-running-group-count">${safeRules.length} 条</span>
+                <span class="phone-table-content-replacement-running-group-count">${t`${safeRules.length} 条`}</span>
             </div>
             <ol class="phone-table-content-replacement-running-list">
                 ${safeRules.map((rule, index) => `
@@ -70,7 +71,7 @@ function buildRunningRulesSummaryHtml({ config = {}, resolvedTableRules = [] } =
     const global = safeConfig.global && typeof safeConfig.global === 'object' ? safeConfig.global : {};
     const globalRules = global.enabled === true ? getRunnableRules(global.rules) : [];
     if (globalRules.length > 0) {
-        groups.push({ scope: 'global', label: '全局替换', rules: globalRules });
+        groups.push({ scope: 'global', label: t("全局替换"), rules: globalRules });
     }
 
     asArray(safeConfig.tableRules).forEach((area) => {
@@ -84,8 +85,8 @@ function buildRunningRulesSummaryHtml({ config = {}, resolvedTableRules = [] } =
             resolved?.tableName
             || area.tableNameSnapshot
             || area.sheetKey
-            || '未命名表格',
-        ).trim() || '未命名表格';
+            || t("未命名表格"),
+        ).trim() || t("未命名表格");
         groups.push({
             scope: 'table',
             mappingId: asId(area.mappingId),
@@ -97,14 +98,14 @@ function buildRunningRulesSummaryHtml({ config = {}, resolvedTableRules = [] } =
     const totalRuleCount = groups.reduce((total, group) => total + group.rules.length, 0);
     const bodyHtml = groups.length > 0
         ? groups.map(buildRunningRuleGroupHtml).join('')
-        : '<p class="phone-table-content-replacement-running-empty">暂无已生效规则。</p>';
+        : `<p class="phone-table-content-replacement-running-empty">${t("暂无已生效规则。")}</p>`;
 
     return `
         <section class="phone-table-content-replacement-running-summary">
             <div class="phone-table-content-replacement-running-summary-head">
                 <div>
-                    <h2 class="phone-table-content-replacement-running-summary-title">已生效规则</h2>
-                    <p class="phone-table-content-replacement-running-summary-meta">${totalRuleCount}条</p>
+                    <h2 class="phone-table-content-replacement-running-summary-title">${t`已生效规则`}</h2>
+                    <p class="phone-table-content-replacement-running-summary-meta">${t`${totalRuleCount}条`}</p>
                 </div>
             </div>
             <div class="phone-table-content-replacement-running-groups">${bodyHtml}</div>
@@ -132,20 +133,20 @@ function buildRuleHtml({ rule = {}, index = 0, scope = 'global', mappingId = '',
     return `
         <article class="phone-table-content-replacement-rule" data-rule-id="${escapeHtmlAttr(ruleId)}" data-rule-index="${index}" data-rule-scope="${safeScope}">
             <div class="phone-table-content-replacement-rule-head">
-                <span class="phone-table-content-replacement-rule-index">规则 ${index + 1}</span>
+                <span class="phone-table-content-replacement-rule-index">${t`规则 ${index + 1}`}</span>
                 <div class="phone-table-content-replacement-rule-actions">
-                    <button type="button" class="phone-settings-btn phone-settings-btn-ghost phone-table-content-replacement-rule-move" data-action="move-rule-up" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(moveUpDisabled)} aria-label="上移规则">↑</button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-ghost phone-table-content-replacement-rule-move" data-action="move-rule-down" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(moveDownDisabled)} aria-label="下移规则">↓</button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-danger phone-table-content-replacement-rule-delete" data-action="delete-rule" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}>删除</button>
+                    <button type="button" class="phone-settings-btn phone-settings-btn-ghost phone-table-content-replacement-rule-move" data-action="move-rule-up" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(moveUpDisabled)} aria-label="${t`上移规则`}">↑</button>
+                    <button type="button" class="phone-settings-btn phone-settings-btn-ghost phone-table-content-replacement-rule-move" data-action="move-rule-down" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(moveDownDisabled)} aria-label="${t`下移规则`}">↓</button>
+                    <button type="button" class="phone-settings-btn phone-settings-btn-danger phone-table-content-replacement-rule-delete" data-action="delete-rule" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}>${t`删除`}</button>
                 </div>
             </div>
             <div class="phone-table-content-replacement-rule-fields">
                 <label class="phone-table-content-replacement-field">
-                    <span>原词</span>
+                    <span>${t`原词`}</span>
                     <textarea class="phone-settings-textarea phone-table-content-replacement-textarea" rows="2" data-action="update-rule" data-field="source" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}>${escapeHtml(asText(rule.source))}</textarea>
                 </label>
                 <label class="phone-table-content-replacement-field">
-                    <span>替换为</span>
+                    <span>${t`替换为`}</span>
                     <textarea class="phone-settings-textarea phone-table-content-replacement-textarea" rows="2" data-action="update-rule" data-field="target" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}>${escapeHtml(asText(rule.target))}</textarea>
                 </label>
             </div>
@@ -167,7 +168,7 @@ function buildRulesEditorHtml({ rules = [], scope = 'global', mappingId = '', er
             disabled,
             error: errorByIndex.get(index),
         })).join('')
-        : '<div class="phone-settings-note phone-table-content-replacement-empty-rules">暂无规则。</div>';
+        : `<div class="phone-settings-note phone-table-content-replacement-empty-rules">${t("暂无规则。")}</div>`;
     const addAction = scope === 'table' ? 'add-table-rule' : 'add-global-rule';
     const scopeAttr = scope === 'table'
         ? ` data-area-scope="table" data-mapping-id="${escapeHtmlAttr(mappingId)}"`
@@ -177,7 +178,7 @@ function buildRulesEditorHtml({ rules = [], scope = 'global', mappingId = '', er
         <div class="phone-table-content-replacement-rules" data-rules-scope="${scope}">
             ${rulesHtml}
             <div class="phone-settings-action phone-table-content-replacement-add-rule-action">
-                <button type="button" class="phone-settings-btn phone-settings-btn-ghost" data-action="${addAction}"${scopeAttr}${isDisabled(disabled)}>添加规则</button>
+                <button type="button" class="phone-settings-btn phone-settings-btn-ghost" data-action="${addAction}"${scopeAttr}${isDisabled(disabled)}>${t`添加规则`}</button>
             </div>
         </div>
     `;
@@ -186,7 +187,7 @@ function buildRulesEditorHtml({ rules = [], scope = 'global', mappingId = '', er
 function buildAreaSwitchHtml({ id, enabled, scope, mappingId = '', disabled = false } = {}) {
     const safeScope = scope === 'table' ? 'table' : 'global';
     const action = safeScope === 'table' ? 'toggle-table' : 'toggle-global';
-    const label = safeScope === 'table' ? '启用此表替换' : '启用全局替换';
+    const label = safeScope === 'table' ? t("启用此表替换") : t("启用全局替换");
     const scopeAttr = safeScope === 'table'
         ? ` data-area-scope="table" data-mapping-id="${escapeHtmlAttr(mappingId)}"`
         : '';
@@ -208,7 +209,7 @@ function buildTableOptionsHtml(tables, selectedSheetKey = '') {
             const tableName = asText(table.tableName || table.name || sheetKey).trim() || sheetKey;
             const status = asId(table.status, 'available');
             const available = status === 'available';
-            return `<option value="${escapeHtmlAttr(sheetKey)}"${sheetKey === safeSelected ? ' selected' : ''}${available ? '' : ' disabled'}>${escapeHtml(tableName)}${available ? '' : '（当前不可用）'}</option>`;
+            return `<option value="${escapeHtmlAttr(sheetKey)}"${sheetKey === safeSelected ? ' selected' : ''}${available ? '' : ' disabled'}>${escapeHtml(tableName)}${available ? '' : t("（当前不可用）")}</option>`;
         })
         .join('');
 }
@@ -216,10 +217,10 @@ function buildTableOptionsHtml(tables, selectedSheetKey = '') {
 function buildTableAreaHtml({ area = {}, table = null, errors = {}, busy = false } = {}) {
     const mappingId = asId(area.mappingId, 'mapping_1');
     const tableNameSnapshot = asText(area.tableNameSnapshot || area.tableName).trim();
-    const tableName = asText(table?.tableName || table?.name || tableNameSnapshot || area.sheetKey || '未命名表格').trim();
+    const tableName = asText(table?.tableName || table?.name || tableNameSnapshot || area.sheetKey || t("未命名表格")).trim();
     const status = asId(table?.status, table ? 'available' : 'missing');
     const unavailable = status !== 'available';
-    const title = asText(table?.tableName).trim() || tableNameSnapshot || tableName || '未命名表格';
+    const title = asText(table?.tableName).trim() || tableNameSnapshot || tableName || t("未命名表格");
     const errorList = asArray(errors?.rules);
     const areaClass = unavailable ? ' is-unavailable' : '';
     const disabled = busy;
@@ -230,7 +231,7 @@ function buildTableAreaHtml({ area = {}, table = null, errors = {}, busy = false
                 <div class="phone-table-content-replacement-area-heading">
                     <div class="phone-table-content-replacement-area-title-row">
                         <h3 class="phone-table-content-replacement-area-title">${escapeHtml(title)}</h3>
-                        ${unavailable ? '<span class="phone-settings-badge is-warning">当前不可用</span>' : ''}
+                        ${unavailable ? `<span class="phone-settings-badge is-warning">${t("当前不可用")}</span>` : ''}
                     </div>
                 </div>
                 <div class="phone-table-content-replacement-area-actions">
@@ -240,13 +241,13 @@ function buildTableAreaHtml({ area = {}, table = null, errors = {}, busy = false
                         scope: 'table',
                         mappingId,
                     })}
-                    <button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="delete-table" data-mapping-id="${escapeHtmlAttr(mappingId)}"${isDisabled(busy)}>移除配置</button>
+                    <button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="delete-table" data-mapping-id="${escapeHtmlAttr(mappingId)}"${isDisabled(busy)}>${t`移除配置`}</button>
                 </div>
             </div>
-            ${unavailable ? '<div class="phone-settings-note phone-table-content-replacement-unavailable-note">表格暂不可用，规则保留，恢复后继续生效。</div>' : ''}
+            ${unavailable ? `<div class="phone-settings-note phone-table-content-replacement-unavailable-note">${t("表格暂不可用，规则保留，恢复后继续生效。")}</div>` : ''}
             ${buildRulesEditorHtml({ rules: area.rules, scope: 'table', mappingId, errors: errorList, disabled })}
             <div class="phone-settings-action phone-table-content-replacement-save-action">
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="save-table" data-mapping-id="${escapeHtmlAttr(mappingId)}"${isDisabled(busy)}>保存并应用</button>
+                <button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="save-table" data-mapping-id="${escapeHtmlAttr(mappingId)}"${isDisabled(busy)}>${t`保存并应用`}</button>
             </div>
         </article>
     `;
@@ -285,11 +286,11 @@ export function buildTableContentReplacementPageHtml(viewModel = {}) {
             errors: errors.mappings?.[area.mappingId] || {},
             busy,
         })).join('')
-        : '<div class="phone-settings-note">暂无单表配置。</div>';
+        : `<div class="phone-settings-note">${t("暂无单表配置。")}</div>`;
     const statusHtml = status === 'loading'
-        ? '<div class="phone-settings-note">正在读取表格目录…</div>'
+        ? `<div class="phone-settings-note">${t("正在读取表格目录…")}</div>`
         : status === 'error'
-            ? '<div class="phone-settings-note">当前无法读取表格目录；已保存的规则仍会保留。</div>'
+            ? `<div class="phone-settings-note">${t("当前无法读取表格目录；已保存的规则仍会保留。")}</div>`
             : '';
     const selectDisabled = availableTables.length === 0;
     const globalErrors = Array.isArray(errors.global) ? errors.global : [];
@@ -301,23 +302,23 @@ export function buildTableContentReplacementPageHtml(viewModel = {}) {
             <div class="phone-table-content-replacement-area-head">
                 ${buildAreaSwitchHtml({ id: 'phone-table-content-replacement-global-enabled', enabled: global.enabled === true, scope: 'global', disabled: busy })}
             </div>
-            <p class="phone-table-content-replacement-helper">按普通文字匹配；修改后需点击「保存并应用」。</p>
+            <p class="phone-table-content-replacement-helper">${t`按普通文字匹配；修改后需点击「保存并应用」。`}</p>
             ${globalErrorHtml}
             ${buildRulesEditorHtml({ rules: global.rules, scope: 'global', errors: globalErrors, disabled: busy })}
             <div class="phone-settings-action phone-table-content-replacement-save-action">
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="save-global"${isDisabled(busy)}>保存并应用</button>
+                <button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="save-global"${isDisabled(busy)}>${t`保存并应用`}</button>
             </div>
         </article>
     `;
     const addTableHtml = `
         <div class="phone-table-content-replacement-add-table">
-            <label for="phone-table-content-replacement-table-select">选择表格</label>
+            <label for="phone-table-content-replacement-table-select">${t`选择表格`}</label>
             <div class="phone-table-content-replacement-add-table-controls">
                 <select id="phone-table-content-replacement-table-select" class="phone-settings-select phone-table-content-replacement-table-select"${isDisabled(selectDisabled)}>
-                    <option value="">${selectDisabled ? '没有可添加的表格' : '请选择一张表'}</option>
+                    <option value="">${selectDisabled ? t("没有可添加的表格") : t("请选择一张表")}</option>
                     ${buildTableOptionsHtml(availableTables)}
                 </select>
-                <button type="button" class="phone-settings-btn" data-action="add-table"${isDisabled(selectDisabled || busy)}>添加表格</button>
+                <button type="button" class="phone-settings-btn" data-action="add-table"${isDisabled(selectDisabled || busy)}>${t`添加表格`}</button>
             </div>
         </div>
     `;
@@ -329,20 +330,20 @@ export function buildTableContentReplacementPageHtml(viewModel = {}) {
         ${runningRulesSummaryHtml}
         ${buildSettingsSectionHtml({
             id: 'phone-table-content-replacement-global-section',
-            title: '全局替换',
-            desc: '适用于当前及后续可用的普通数据表，先于单表规则执行。',
+            title: t("全局替换"),
+            desc: t("适用于当前及后续可用的普通数据表，先于单表规则执行。"),
             bodyHtml: globalBodyHtml,
         })}
         ${buildSettingsSectionHtml({
             id: 'phone-table-content-replacement-table-section',
-            title: '单表替换',
-            desc: '仅作用于指定表格。',
+            title: t("单表替换"),
+            desc: t("仅作用于指定表格。"),
             actionsHtml: addTableHtml,
             bodyHtml: `<div class="phone-table-content-replacement-table-areas">${tableAreasHtml}</div>`,
         })}`;
 
     return buildSettingsPageFrame({
-        title: '表格内容词汇替换',
+        title: t("表格内容词汇替换"),
         bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-table-content-replacement-page',
         bodyHtml,
     });

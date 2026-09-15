@@ -205,10 +205,10 @@ async function main() {
         && has(contents.fontLibrary, "id: 'builtin.modern-sans'")
         && has(contents.fontLibrary, "id: 'builtin.chill-round'")
         && has(contents.fontLibrary, "id: 'builtin.basic-sans'")
-        && has(contents.fontLibrary, "name: '系统清晰'")
-        && has(contents.fontLibrary, "name: '现代黑体'")
-        && has(contents.fontLibrary, "name: '寒蝉圆体'")
-        && has(contents.fontLibrary, "name: '基础无衬线'")
+        && has(contents.fontLibrary, "get name() { return t(\"系统清晰\"); }")
+        && has(contents.fontLibrary, "get name() { return t(\"现代黑体\"); }")
+        && has(contents.fontLibrary, "get name() { return t(\"寒蝉圆体\"); }")
+        && has(contents.fontLibrary, "get name() { return t(\"基础无衬线\"); }")
         && !has(contents.fontLibrary, "id: 'builtin.system'")
         && !has(contents.fontLibrary, "id: 'builtin.rounded'")
         && !has(contents.fontLibrary, "id: 'builtin.serif'")
@@ -378,8 +378,8 @@ async function main() {
         && has(contents.appearanceBuilder, '需联网加载。'));
     check(results, 'appearanceBuilder', '外观页 HTML 包含首页 App 名称颜色设置', has(contents.appearanceBuilder, '首页名称颜色')
         && has(contents.appearanceBuilder, 'id="phone-home-app-label-color-mode"')
-        && has(contents.appearanceBuilder, '>白色</option>')
-        && has(contents.appearanceBuilder, '>黑色</option>'));
+        && has(contents.appearanceBuilder, '>${t`白色`}</option>')
+        && has(contents.appearanceBuilder, '>${t`黑色`}</option>'));
 
     check(results, 'appearancePage', '外观页从 appearancePageService 读取 setupBgUpload()', has(contents.appearancePage, 'const setupBgUpload = appearancePageService.setupBgUpload;'));
     check(results, 'appearancePage', '外观页从 appearancePageService 读取 renderIconUploadList()', has(contents.appearancePage, 'const renderIconUploadList = appearancePageService.renderIconUploadList;'));

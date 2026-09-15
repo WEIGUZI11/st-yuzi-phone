@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import {
     getPhoneSettings as getStoredPhoneSettings,
     savePhoneSetting as persistPhoneSetting,
@@ -81,7 +82,7 @@ function readConfig(getPhoneSettings, override) {
 function toRuleErrors(errors = []) {
     return (Array.isArray(errors) ? errors : []).map(error => ({
         ...error,
-        message: RULE_ERROR_MESSAGES[error?.code] || '规则内容无效。',
+        message: RULE_ERROR_MESSAGES[error?.code] || t("规则内容无效。"),
     }));
 }
 
@@ -148,7 +149,7 @@ export function createTableContentReplacementSettingsService(options = {}) {
         if (!isPlainObject(rawData)) {
             return {
                 status: 'error',
-                error: { code: 'table_data_unavailable', message: '当前无法读取表格目录。' },
+                error: { code: 'table_data_unavailable', message: t("当前无法读取表格目录。") },
                 config: clone(config),
                 tables: [],
                 tableRules: buildResolvedTableRules(config, []),
@@ -226,7 +227,7 @@ export function createTableContentReplacementSettingsService(options = {}) {
             ...applied,
             ok: applied?.ok !== false,
             config: clone(nextConfig),
-            errors: applied?.ok === false ? [{ code: applied.code || 'apply_failed', message: '应用替换失败。' }] : [],
+            errors: applied?.ok === false ? [{ code: applied.code || 'apply_failed', message: t("应用替换失败。") }] : [],
         };
     }
 

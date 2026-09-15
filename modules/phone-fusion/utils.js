@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 export function extractSheets(template) {
     if (!template || typeof template !== 'object') return [];
     return Object.keys(template)
@@ -62,14 +63,14 @@ export function pickJsonFile(callback, onError, runtime = null) {
                 const obj = JSON.parse(text);
                 callback(obj, file.name);
             } catch (error) {
-                onError?.(`模板文件解析失败：${file.name}`, error);
+                onError?.(t`模板文件解析失败：${file.name}`, error);
             } finally {
                 cleanupInput();
             }
         };
 
         reader.onerror = () => {
-            onError?.(`模板文件读取失败：${file.name}`, reader.error || null);
+            onError?.(t`模板文件读取失败：${file.name}`, reader.error || null);
             cleanupInput();
         };
 

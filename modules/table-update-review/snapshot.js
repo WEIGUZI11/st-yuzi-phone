@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { getDB } from '../phone-core/db-bridge.js';
 
@@ -166,7 +167,7 @@ function resolveRowTitle(row = [], headers = []) {
         const text = normalizeText(cell);
         if (text) return text.slice(0, 48);
     }
-    return '未命名';
+    return t("未命名");
 }
 
 function normalizeSheet(sheetKey, sheet) {
@@ -176,7 +177,7 @@ function normalizeSheet(sheetKey, sheet) {
         const identity = resolveRowIdentity(row, headers, headers, rowIndex);
         const cells = {};
         headers.forEach((header, colIndex) => {
-            const key = header || `列${colIndex + 1}`;
+            const key = header || t`列${colIndex + 1}`;
             cells[key] = normalizeCellValue(row[colIndex]);
         });
         return {
@@ -215,7 +216,7 @@ export function readCurrentTableSnapshot() {
 export function readCurrentRawTableSnapshot() {
     const api = getDB();
     if (!api || typeof api.exportTableAsJson !== 'function') {
-        const error = new Error('AutoCardUpdaterAPI.exportTableAsJson 不可用');
+        const error = new Error(t("AutoCardUpdaterAPI.exportTableAsJson 不可用"));
         logger.warn({ action: 'snapshot.read', message: '读取表格快照失败：API 不可用' });
         throw error;
     }

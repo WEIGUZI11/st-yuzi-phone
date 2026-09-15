@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { downloadTextFile } from '../../settings-app/services/media-upload.js';
 
 export function downloadJsonPack(filename, pack) {
@@ -25,10 +26,10 @@ export function pickJsonPackFile(callback, options = {}) {
         }
         try {
             const source = await file.text();
-            if (!source.trim()) throw new Error('导入文件为空');
+            if (!source.trim()) throw new Error(t("导入文件为空"));
             await callback(source, Object.freeze({ name: String(file.name || '') }));
         } catch (error) {
-            onError?.(error?.message || '读取导入文件失败');
+            onError?.(error?.message || t("读取导入文件失败"));
         } finally {
             cleanup();
         }

@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { escapeHtmlAttr } from '../utils/dom-escape.js';
 import { formatTableCountBadge, getHomeDockApps, getSheetRowCount, normalizeHiddenTableApps } from './home-data.js';
 import { getIconForSheet, getTextIcon } from './icons.js';
@@ -37,10 +38,10 @@ export function buildHomeScreenViewModel(rawData, phoneSettings, options = {}) {
         const reviewCustomIcon = phoneSettings?.appIcons?.[TABLE_UPDATE_REVIEW_APP_ID] || '';
         const reviewIconHtml = reviewCustomIcon
             ? `<img src="${escapeHtmlAttr(reviewCustomIcon)}" class="phone-app-icon-img" alt="${escapeHtmlAttr(TABLE_UPDATE_REVIEW_APP_NAME)}">`
-            : `<div class="phone-app-icon-svg">${getTextIcon(TABLE_UPDATE_REVIEW_APP_ICON_TEXT, '#34C759', '#007AFF')}</div>`;
+            : `<div class="phone-app-icon-svg">${getTextIcon(t(TABLE_UPDATE_REVIEW_APP_ICON_TEXT), '#34C759', '#007AFF')}</div>`;
         apps.push({
             key: TABLE_UPDATE_REVIEW_APP_ID,
-            name: TABLE_UPDATE_REVIEW_APP_NAME,
+            name: t(TABLE_UPDATE_REVIEW_APP_NAME),
             iconHtml: reviewIconHtml,
             badgeText: '',
             totalCount: 0,
@@ -59,7 +60,7 @@ export function buildHomeScreenViewModel(rawData, phoneSettings, options = {}) {
             : `<div class="phone-app-icon-svg">${getVariableManagerIcon()}</div>`;
         apps.push({
             key: VARIABLE_MANAGER_APP.id,
-            name: VARIABLE_MANAGER_APP.name,
+            name: t(VARIABLE_MANAGER_APP.name),
             iconHtml: vmIconHtml,
             badgeText: '',
             totalCount: 0,

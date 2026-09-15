@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import {
     getSheetKeys,
     getTableDataAsync,
@@ -68,7 +69,7 @@ function getTemplateImportOptions(container) {
 }
 
 function getTemplateScopeLabel(scope) {
-    return scope === 'global' ? '全局' : '当前聊天';
+    return scope === 'global' ? t("全局") : t("当前聊天");
 }
 
 function getTemplateImportSuccessText(importResult, options) {
@@ -80,8 +81,8 @@ function getTemplateImportSuccessText(importResult, options) {
     const scopeLabel = getTemplateScopeLabel(importResult?.scope || options.scope);
     const presetName = String(options.presetName || '').trim();
     return presetName
-        ? `模板已导入${scopeLabel}预设：${presetName}`
-        : `模板已导入${scopeLabel}预设`;
+        ? t`模板已导入${scopeLabel}预设：${presetName}`
+        : t`模板已导入${scopeLabel}预设`;
 }
 
 export function createFusionInteractionController(deps = {}) {
@@ -132,7 +133,7 @@ export function createFusionInteractionController(deps = {}) {
         };
 
         const onUseBuiltinA = () => {
-            setSourceA(container, createBuiltinTheaterSourceModel(), '内置小剧场+纪要表');
+            setSourceA(container, createBuiltinTheaterSourceModel(), t("内置小剧场+纪要表"));
         };
 
         const onImportB = () => {
@@ -146,16 +147,16 @@ export function createFusionInteractionController(deps = {}) {
                 const rawData = await getTableDataAsync();
                 const sheetCount = getSheetKeys(rawData).length;
                 if (!rawData || sheetCount === 0) {
-                    reportFusionError('当前数据库表格为空，无法作为模板 B 来源', null, { Logger, showNotification });
+                    reportFusionError(t("当前数据库表格为空，无法作为模板 B 来源"), null, { Logger, showNotification });
                     return;
                 }
                 setSourceB(
                     container,
-                    createDatabaseCurrentSourceModel(rawData, { name: '当前数据库表格' }),
-                    `当前数据库表格（${sheetCount} 张）`,
+                    createDatabaseCurrentSourceModel(rawData, { name: t("当前数据库表格") }),
+                    t`当前数据库表格（${sheetCount} 张）`,
                 );
             } catch (error) {
-                reportFusionError('读取当前数据库表格失败', error, { Logger, showNotification });
+                reportFusionError(t("读取当前数据库表格失败"), error, { Logger, showNotification });
             }
         };
 
@@ -167,20 +168,20 @@ export function createFusionInteractionController(deps = {}) {
             try {
                 const mergeResult = performMerge(container);
                 if (!mergeResult || mergeResult.sheetCount === 0) {
-                    reportFusionError('没有可导入的合并表格，请先选择至少一个有效表格', null, { Logger, showNotification });
+                    reportFusionError(t("没有可导入的合并表格，请先选择至少一个有效表格"), null, { Logger, showNotification });
                     return;
                 }
 
-                const validation = validateFusionTemplate(mergeResult.mergedTemplate, { name: '合并模板' });
+                const validation = validateFusionTemplate(mergeResult.mergedTemplate, { name: t("合并模板") });
                 if (!validation.templateImportable) {
-                    reportFusionError(`合并结果未通过模板导入校验：${validation.invalidReason || '存在无效表格'}`, null, { Logger, showNotification });
+                    reportFusionError(t`合并结果未通过模板导入校验：${validation.invalidReason || t("存在无效表格")}`, null, { Logger, showNotification });
                     return;
                 }
 
                 const importOptions = getTemplateImportOptions(container);
                 const importResult = await importTemplateFromDataViaApi(mergeResult.mergedTemplate, importOptions);
                 if (!importResult.ok) {
-                    reportFusionError(`导入模板失败：${importResult.message || importResult.code || '数据库 API 未确认成功'}`, importResult.error, { Logger, showNotification });
+                    reportFusionError(t`导入模板失败：${importResult.message || importResult.code || t("数据库 API 未确认成功")}`, importResult.error, { Logger, showNotification });
                     return;
                 }
 

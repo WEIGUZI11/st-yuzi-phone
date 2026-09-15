@@ -5,6 +5,7 @@ const vm = require('node:vm');
 const { pathToFileURL } = require('node:url');
 const ROOT = path.resolve(__dirname, '..');
 async function main() {
+    const { t } = await import('../modules/i18n/index.js');
     const { buildAppearancePageHtml, buildButtonStylePageHtml } = await import(pathToFileURL(path.join(ROOT, 'modules/settings-app/layout/page-builders/appearance-builders.js')));
     for (const currentShape of ['circle', 'rounded']) for (const currentCover of ['', 'data:image/png;base64,AA==']) for (const floatingToggleEnabled of [true, false]) {
         const html = buildButtonStylePageHtml({ currentSize: 48, currentShape, currentCover, floatingToggleEnabled });
@@ -56,7 +57,7 @@ async function main() {
     const container = { querySelector(id) { assert.ok(id in buttons, `unexpected DOM dependency: ${id}`); return buttons[id]; } };
     let saved = true, picked, pickOptions, bytes = 1;
     const writes = [], toasts = [], invalidations = [];
-    const sandbox = {
+    const sandbox = { t,
         savePhoneSetting: (...args) => { writes.push(args); return saved; },
         cacheRemove: (...args) => { invalidations.push(args); return Promise.resolve(); },
         CACHE_STORES: { images: 'images' }, Logger: { withScope: () => ({ warn() {} }) },

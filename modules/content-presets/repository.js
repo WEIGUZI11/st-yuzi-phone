@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import {
     CONTENT_PRESET_BINDING_INDEX, CONTENT_PRESET_DB_NAME, CONTENT_PRESET_DB_VERSION, CONTENT_PRESET_STORES,
 } from './constants.js';
@@ -8,7 +9,7 @@ import { normalizePackagePath } from './paths.js';
 let dbPromise = null;
 
 function openRequest(factory = globalThis.indexedDB) {
-    if (!factory?.open) throw new Error('IndexedDB 不可用');
+    if (!factory?.open) throw new Error(t("IndexedDB 不可用"));
     return factory.open(CONTENT_PRESET_DB_NAME, CONTENT_PRESET_DB_VERSION);
 }
 
@@ -33,8 +34,8 @@ export function openContentPresetRepository(factory = globalThis.indexedDB) {
         };
         let request;
         try { request = openRequest(factory); } catch (error) { fail(error); return; }
-        request.onerror = () => fail(request.error || new Error('打开玉子美化数据库失败'));
-        request.onblocked = () => fail(new DOMException('玉子美化数据库升级被阻塞', 'BlockedError'));
+        request.onerror = () => fail(request.error || new Error(t("打开玉子美化数据库失败")));
+        request.onblocked = () => fail(new DOMException(t("玉子美化数据库升级被阻塞"), 'BlockedError'));
         request.onupgradeneeded = () => {
             const db = request.result;
             const transaction = request.transaction;
@@ -68,7 +69,7 @@ function runTransaction(db, stores, mode, operation) {
         let transactionCompleted = false;
         let operationCompleted = false;
         let operationValue;
-        const fail = error => { if (!settled) { settled = true; reject(error || tx.error || new Error('玉子美化数据库事务失败')); } };
+        const fail = error => { if (!settled) { settled = true; reject(error || tx.error || new Error(t("玉子美化数据库事务失败"))); } };
         const abortAndFail = error => {
             if (settled) return;
             try { tx.abort(); } catch {}
@@ -80,7 +81,7 @@ function runTransaction(db, stores, mode, operation) {
             resolve(operationValue);
         };
         tx.onerror = () => fail(tx.error);
-        tx.onabort = () => fail(tx.error || new DOMException('事务已中止', 'AbortError'));
+        tx.onabort = () => fail(tx.error || new DOMException(t("事务已中止"), 'AbortError'));
         tx.oncomplete = () => { transactionCompleted = true; succeedIfReady(); };
         let result;
         try { result = operation(tx); } catch (error) { abortAndFail(error); return; }
@@ -95,19 +96,19 @@ function runTransaction(db, stores, mode, operation) {
 function requestResult(request) {
     return new Promise((resolve, reject) => {
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error || new Error('IndexedDB 请求失败'));
+        request.onerror = () => reject(request.error || new Error(t("IndexedDB 请求失败")));
     });
 }
 function text(value) { return String(value ?? '').trim(); }
 function toBinding(sheetKey, presetId, targetId, targetKey) {
     const value = text(targetId);
     const record = { sheetKey: text(sheetKey), presetId: text(presetId), [targetKey]: value, ...(targetKey === 'displayId' ? { itemId: value } : {}) };
-    if (!record.sheetKey || !record.presetId || !record[targetKey]) throw new Error(`绑定缺少 sheetKey、presetId 或 ${targetKey}`);
+    if (!record.sheetKey || !record.presetId || !record[targetKey]) throw new Error(t`绑定缺少 sheetKey、presetId 或 ${targetKey}`);
     return record;
 }
 function toPopupSourceBinding(sheetKey, presetId) {
     const record = { sheetKey: text(sheetKey), presetId: text(presetId) };
-    if (!record.sheetKey || !record.presetId) throw new Error('绑定缺少 sheetKey 或 presetId');
+    if (!record.sheetKey || !record.presetId) throw new Error(t("绑定缺少 sheetKey 或 presetId"));
     return record;
 }
 
@@ -191,13 +192,13 @@ function writeValidatedBinding(tx, record, storeName, valuesOf, capability, targ
     return new Promise((resolve, reject) => {
         let request;
         try { request = presetStore.get(record.presetId); } catch (error) { reject(error); return; }
-        request.onerror = () => reject(request.error || new Error('读取绑定预设失败'));
+        request.onerror = () => reject(request.error || new Error(t("读取绑定预设失败")));
         request.onsuccess = () => {
             try {
                 const preset = request.result;
-                if (!isTrustedContentPresetRecord(preset)) throw new Error('绑定引用的预设不符合玉子美化 Runtime API 合同');
+                if (!isTrustedContentPresetRecord(preset)) throw new Error(t("绑定引用的预设不符合玉子美化 Runtime API 合同"));
                 const target = (Array.isArray(valuesOf(preset)) ? valuesOf(preset) : []).find(value => value.id === record[targetKey]);
-                if (!capability(target)) throw new Error(`绑定引用的预设项不提供${label}能力`);
+                if (!capability(target)) throw new Error(t`绑定引用的预设项不提供${label}能力`);
                 bindingStore.put(record);
                 resolve(record);
             } catch (error) { reject(error); }
@@ -235,11 +236,11 @@ export function setPopupActiveBindings(bindings) {
     const seen = new Set();
     for (const binding of Array.isArray(bindings) ? bindings : []) {
         const record = toPopupSourceBinding(binding?.sheetKey, binding?.presetId);
-        if (seen.has(record.sheetKey)) throw new Error('同一原子弹窗应用不能重复绑定同一表');
+        if (seen.has(record.sheetKey)) throw new Error(t("同一原子弹窗应用不能重复绑定同一表"));
         seen.add(record.sheetKey);
         records.push(record);
     }
-    if (records.length === 0) throw new Error('弹窗美化原子应用缺少绑定目标');
+    if (records.length === 0) throw new Error(t("弹窗美化原子应用缺少绑定目标"));
     return openContentPresetRepository().then(db => runTransaction(
         db,
         [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.popupByTable],
@@ -249,8 +250,8 @@ export function setPopupActiveBindings(bindings) {
             const bindingStore = tx.objectStore(CONTENT_PRESET_STORES.popupByTable);
             return Promise.all([...new Set(records.map(record => record.presetId))]
                 .map(presetId => requestResult(presetStore.get(presetId)).then(preset => {
-                    if (!isTrustedContentPresetRecord(preset)) throw new Error('绑定引用的预设不符合玉子美化 Runtime API 合同');
-                    if (!(preset.displays || []).some(hasPopupCapability)) throw new Error('绑定引用的预设不提供弹窗美化能力');
+                    if (!isTrustedContentPresetRecord(preset)) throw new Error(t("绑定引用的预设不符合玉子美化 Runtime API 合同"));
+                    if (!(preset.displays || []).some(hasPopupCapability)) throw new Error(t("绑定引用的预设不提供弹窗美化能力"));
                 }))).then(() => {
                 records.forEach(record => bindingStore.put(record));
                 return Object.freeze(records.map(record => Object.freeze({ ...record })));
@@ -273,7 +274,7 @@ function removePresetBindings(tx, presetId, storeName) {
     return new Promise((resolve, reject) => {
         let request;
         try { request = index.getAll(text(presetId)); } catch (error) { reject(error); return; }
-        request.onerror = () => reject(request.error || new Error('读取预设绑定失败'));
+        request.onerror = () => reject(request.error || new Error(t("读取预设绑定失败")));
         request.onsuccess = () => {
             try {
                 const affectedSheetKeys = request.result.map(record => text(record?.sheetKey)).filter(Boolean);
@@ -291,7 +292,7 @@ function removeAllPresetBindings(tx, presetId) {
 }
 
 export async function replacePresetRecord(record) {
-    if (!isTrustedContentPresetRecord(record)) throw new Error('预设记录不符合玉子美化 Runtime API 合同');
+    if (!isTrustedContentPresetRecord(record)) throw new Error(t("预设记录不符合玉子美化 Runtime API 合同"));
     const db = await openContentPresetRepository();
     return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable], 'readwrite', tx => {
         tx.objectStore(CONTENT_PRESET_STORES.presets).put(record);
@@ -301,7 +302,7 @@ export async function replacePresetRecord(record) {
 
 export async function updatePresetFiles(presetId, patch = {}) {
     const id = text(presetId);
-    if (!id) throw new Error('预设 ID 不能为空');
+    if (!id) throw new Error(t("预设 ID 不能为空"));
     const removePaths = [...new Set((Array.isArray(patch.removePaths) ? patch.removePaths : []).map(normalizePackagePath))];
     const file = patch.file == null ? null : { ...patch.file, path: normalizePackagePath(patch.file.path) };
     const db = await openContentPresetRepository();
@@ -309,16 +310,16 @@ export async function updatePresetFiles(presetId, patch = {}) {
         const store = tx.objectStore(CONTENT_PRESET_STORES.presets);
         let request;
         try { request = store.get(id); } catch (error) { reject(error); return; }
-        request.onerror = () => reject(request.error || new Error('读取预设失败'));
+        request.onerror = () => reject(request.error || new Error(t("读取预设失败")));
         request.onsuccess = () => {
             try {
                 const current = request.result;
-                if (!isTrustedContentPresetRecord(current)) throw new Error(`预设不存在或记录无效：${id}`);
+                if (!isTrustedContentPresetRecord(current)) throw new Error(t`预设不存在或记录无效：${id}`);
                 const files = { ...current.files };
                 removePaths.forEach(path => delete files[path]);
                 if (file) files[file.path] = file;
                 const record = { ...current, files };
-                if (!isTrustedContentPresetRecord(record)) throw new Error('更新后的预设记录不符合玉子美化 Runtime API 合同');
+                if (!isTrustedContentPresetRecord(record)) throw new Error(t("更新后的预设记录不符合玉子美化 Runtime API 合同"));
                 store.put(record);
                 resolve(record);
             } catch (error) { reject(error); }
@@ -328,7 +329,7 @@ export async function updatePresetFiles(presetId, patch = {}) {
 
 export async function deletePresetRecord(presetId) {
     const id = text(presetId);
-    if (!id) throw new Error('预设 ID 不能为空');
+    if (!id) throw new Error(t("预设 ID 不能为空"));
     const db = await openContentPresetRepository();
     return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable], 'readwrite', tx => {
         tx.objectStore(CONTENT_PRESET_STORES.presets).delete(id);

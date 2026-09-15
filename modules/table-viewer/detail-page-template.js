@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../utils/dom-escape.js';
 import {
     buildPhoneBackButton,
@@ -13,8 +14,8 @@ function buildDetailEditControlHtml(pair) {
         const hasCurrentOption = value === '' || fieldMetadata.options.includes(value);
         return `
             <select class="phone-row-detail-input" data-input-col="${escapeHtmlAttr(String(pair.rawColIndex))}" data-input-control="select" ${pair.isLocked ? 'disabled' : ''}>
-                <option value="">请选择${escapeHtml(pair.key)}</option>
-                ${!hasCurrentOption ? `<option value="${escapeHtmlAttr(value)}" selected>${escapeHtml(`${value}（不在可选项中）`)}</option>` : ''}
+                <option value="">${t`请选择${escapeHtml(pair.key)}`}</option>
+                ${!hasCurrentOption ? `<option value="${escapeHtmlAttr(value)}" selected>${escapeHtml(t`${value}（不在可选项中）`)}</option>` : ''}
                 ${fieldMetadata.options.map((option) => `<option value="${escapeHtmlAttr(option)}" ${option === value ? 'selected' : ''}>${escapeHtml(option)}</option>`).join('')}
             </select>
         `;
@@ -43,7 +44,7 @@ export function buildGenericDetailPageHtml(options = {}) {
     });
     const previousHtml = buildPhoneSwitchButton('previous', {
         className: 'phone-detail-pager-btn',
-        label: '上一条',
+        label: t("上一条"),
         disabled: pagerDisabled,
         attributes: {
             'data-pager': 'prev',
@@ -53,7 +54,7 @@ export function buildGenericDetailPageHtml(options = {}) {
     });
     const nextHtml = buildPhoneSwitchButton('next', {
         className: 'phone-detail-pager-btn',
-        label: '下一条',
+        label: t("下一条"),
         disabled: pagerDisabled,
         attributes: {
             'data-pager': 'next',
@@ -73,28 +74,28 @@ export function buildGenericDetailPageHtml(options = {}) {
                             <div class="phone-row-detail-kv phone-generic-slot-detail-field ${pair.isLocked ? 'is-locked' : ''} ${pair.preferFullRow ? 'is-long-content' : ''} ${state.cellLockManageMode ? 'show-lock-tools' : ''}" data-col-index="${pair.rawColIndex}">
                                 <div class="phone-generic-field-header">
                                     <span class="phone-row-detail-key">${escapeHtml(pair.key)}</span>
-                                    ${pair.isLocked ? `<span class="phone-generic-field-lock-state">${pair.cellLocked ? '字段锁定' : '整行锁定'}</span>` : ''}
+                                    ${pair.isLocked ? `<span class="phone-generic-field-lock-state">${pair.cellLocked ? t("字段锁定") : t("整行锁定")}</span>` : ''}
                                 </div>
                                 ${state.editMode
                                     ? buildDetailEditControlHtml(pair)
                                     : `<span class="phone-row-detail-value">${escapeHtml(pair.value || '—')}</span>`
                                 }
                                 <div class="phone-row-detail-tools phone-generic-slot-detail-tools">
-                                    <button type="button" class="phone-cell-lock-btn ${pair.cellLocked ? 'locked' : ''}" data-cell-lock="${pair.lockColIndex}" data-cell-raw="${pair.rawColIndex}" ${rowLocked ? 'disabled' : ''}>${pair.cellLocked ? '已锁定' : '锁定'}</button>
+                                    <button type="button" class="phone-cell-lock-btn ${pair.cellLocked ? 'locked' : ''}" data-cell-lock="${pair.lockColIndex}" data-cell-raw="${pair.rawColIndex}" ${rowLocked ? 'disabled' : ''}>${pair.cellLocked ? t("已锁定") : t("锁定")}</button>
                                 </div>
                             </div>
                         `).join('')}
                     </div>
                 </div>
             </div>
-            <div class="phone-detail-pager-bar phone-generic-slot-pager" aria-label="详情页翻页">
+            <div class="phone-detail-pager-bar phone-generic-slot-pager" aria-label="${t`详情页翻页`}">
                 ${previousHtml}
                 ${nextHtml}
             </div>
             <div class="phone-detail-bottom-bar phone-generic-slot-actions" data-phone-bottom-bar>
-                <button type="button" class="phone-detail-bottom-btn" id="phone-toggle-edit-mode">${state.editMode ? '退出编辑' : '进入编辑'}</button>
-                <button type="button" class="phone-detail-bottom-btn" id="phone-save-row" ${state.editMode && !rowLocked ? '' : 'disabled'}>${state.saving ? '保存中...' : '保存更改'}</button>
-                <button type="button" class="phone-detail-bottom-btn ${state.cellLockManageMode ? 'active' : ''}" id="phone-cell-lock-mode-btn">${state.cellLockManageMode ? '完成' : '字段锁定'}</button>
+                <button type="button" class="phone-detail-bottom-btn" id="phone-toggle-edit-mode">${state.editMode ? t("退出编辑") : t("进入编辑")}</button>
+                <button type="button" class="phone-detail-bottom-btn" id="phone-save-row" ${state.editMode && !rowLocked ? '' : 'disabled'}>${state.saving ? t("保存中...") : t("保存更改")}</button>
+                <button type="button" class="phone-detail-bottom-btn ${state.cellLockManageMode ? 'active' : ''}" id="phone-cell-lock-mode-btn">${state.cellLockManageMode ? t("完成") : t("字段锁定")}</button>
             </div>
         </div>
     `;

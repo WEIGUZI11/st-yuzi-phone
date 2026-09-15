@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 /**
  * 变量管理器 - 入口模块
  * 导出 renderVariableManager 供路由系统调用
@@ -100,7 +101,7 @@ function createVariableManagerPageInstance(container, options = {}) {
         const isMvu = isMvuAvailable();
 
         if (showLoading) {
-            renderVariableStatus(container, 'loading', expectedMessageId, '正在读取当前楼层变量…');
+            renderVariableStatus(container, 'loading', expectedMessageId, t("正在读取当前楼层变量…"));
         }
 
         await waitForContainerConnection(container, runtime, () => isPendingRouteActive());
@@ -128,7 +129,7 @@ function createVariableManagerPageInstance(container, options = {}) {
         const isMvu = isMvuAvailable();
 
         container.innerHTML = buildVariableManagerPageHtml(state.currentMessageId, isMvu);
-        renderVariableStatus(container, 'loading', state.currentMessageId, '正在读取当前楼层变量…');
+        renderVariableStatus(container, 'loading', state.currentMessageId, t("正在读取当前楼层变量…"));
         bindBottomBarInsetSync(container, runtime);
 
         const cleanupInteractions = bindVariableManagerInteractions(container, {
@@ -249,11 +250,11 @@ function renderVariableStatus(container, status, messageId, message) {
 }
 
 function resolveStatusMessage(status, messageId) {
-    if (messageId < 0) return '当前没有聊天消息';
-    if (status === 'loading') return '正在读取当前楼层变量…';
-    if (status === 'unavailable') return '未检测到可用的变量接口';
-    if (status === 'error') return '变量读取失败，请刷新重试';
-    return '当前楼层没有变量数据';
+    if (messageId < 0) return t("当前没有聊天消息");
+    if (status === 'loading') return t("正在读取当前楼层变量…");
+    if (status === 'unavailable') return t("未检测到可用的变量接口");
+    if (status === 'error') return t("变量读取失败，请刷新重试");
+    return t("当前楼层没有变量数据");
 }
 
 /**
@@ -265,24 +266,24 @@ function renderVariableContent(container, result) {
 
     const messageId = Number(result?.messageId);
     if (!Number.isFinite(messageId) || messageId < 0) {
-        renderVariableStatus(container, 'unavailable', -1, '当前没有聊天消息');
+        renderVariableStatus(container, 'unavailable', -1, t("当前没有聊天消息"));
         return;
     }
 
     if (result?.status === 'unavailable') {
-        renderVariableStatus(container, 'unavailable', messageId, '未检测到 MVU / TavernHelper 变量接口');
+        renderVariableStatus(container, 'unavailable', messageId, t("未检测到 MVU / TavernHelper 变量接口"));
         return;
     }
 
     if (result?.status === 'error') {
-        renderVariableStatus(container, 'error', messageId, `变量读取失败：${result?.error?.message || '请刷新重试'}`);
+        renderVariableStatus(container, 'error', messageId, t`变量读取失败：${result?.error?.message || t("请刷新重试")}`);
         return;
     }
 
     const data = result?.data;
 
     if (!data || Object.keys(data).length === 0) {
-        renderVariableStatus(container, 'empty', messageId, '当前楼层没有变量数据');
+        renderVariableStatus(container, 'empty', messageId, t("当前楼层没有变量数据"));
         return;
     }
 
@@ -336,7 +337,7 @@ function syncBottomBarInset(container) {
 function updateFloorLabel(container, messageId) {
     const floorLabel = container.querySelector('.vm-floor-label');
     if (floorLabel) {
-        floorLabel.textContent = messageId >= 0 ? `第${messageId}楼` : '无数据';
+        floorLabel.textContent = messageId >= 0 ? t`第${messageId}楼` : t("无数据");
     }
 }
 
@@ -371,7 +372,7 @@ export const VARIABLE_MANAGER_APP = {
 export function getVariableManagerIcon() {
     return `
         <div style="width:100%;height:100%;background:linear-gradient(135deg,#7C4DFF,#536DFE);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;color:#fff;border-radius:var(--yuzi-phone-home-app-icon-radius,12px);box-sizing:border-box;">
-            变
+            ${t`变`}
         </div>
     `;
 }

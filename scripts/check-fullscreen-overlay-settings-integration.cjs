@@ -26,7 +26,7 @@ async function main() {
 
     assert.match(state, /fullscreenOverlayScrollTop:\s*0/u);
     assert.match(primitives, /fullscreen_overlay:\s*\{/u);
-    assert.match(primitives, /title:\s*'弹幕设置'/u);
+    assert.match(primitives, /get title\(\) \{ return t\("弹幕设置"\)/u);
 
     assert.match(builders, /export function buildFullscreenOverlayPageHtml/u);
     assert.match(frame, /buildFullscreenOverlayPageHtml/u);

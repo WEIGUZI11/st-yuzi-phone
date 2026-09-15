@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import {
     createStableImageOwnershipTarget,
     validateStableImageOwnershipTarget,
@@ -108,20 +109,20 @@ export function createTableDisplayImageGenerationService(options = {}) {
         : null;
 
     if (!orchestrator || typeof orchestrator.generate !== 'function') {
-        throw new TypeError('表格展示生图服务需要共享 orchestrator.generate');
+        throw new TypeError(t("表格展示生图服务需要共享 orchestrator.generate"));
     }
     if (!ownershipService || typeof ownershipService.beginReplacement !== 'function'
         || typeof ownershipService.commitReplacement !== 'function'
         || typeof ownershipService.read !== 'function'
         || typeof ownershipService.invalidate !== 'function'
         || typeof ownershipService.invalidateChatScope !== 'function') {
-        throw new TypeError('表格展示生图服务需要完整的稳定图片归属服务');
+        throw new TypeError(t("表格展示生图服务需要完整的稳定图片归属服务"));
     }
     if (typeof isTableEnabled !== 'function') {
-        throw new TypeError('表格展示生图服务需要 isTableEnabled 表级开关');
+        throw new TypeError(t("表格展示生图服务需要 isTableEnabled 表级开关"));
     }
     if (typeof isCurrentTarget !== 'function') {
-        throw new TypeError('表格展示生图服务需要 isCurrentTarget 归属复核');
+        throw new TypeError(t("表格展示生图服务需要 isCurrentTarget 归属复核"));
     }
 
     const inFlight = new Map();

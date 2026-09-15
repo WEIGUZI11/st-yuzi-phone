@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { createRuntimeScope } from '../runtime-manager.js';
 import { subscribeTableUpdate } from '../phone-core/callbacks.js';
@@ -102,10 +103,10 @@ let deps = { ...defaultDeps };
 function buildErrorPayload(error) {
     return {
         status: 'error',
-        message: '读取本楼表格更新失败',
+        message: t("读取本楼表格更新失败"),
         error: {
             name: String(error?.name || 'Error'),
-            message: String(error?.message || error || '未知错误'),
+            message: String(error?.message || error || t("未知错误")),
         },
         tables: [],
         tableCount: 0,
@@ -191,7 +192,7 @@ function publishReviewState(reviewState, rawSnapshot = null) {
         ...reviewState,
         chatKey: currentChatKey,
         status: reviewState.changeCount > 0 ? 'ready' : 'empty',
-        message: reviewState.changeCount > 0 ? reviewState.message : '本楼暂无表格更新',
+        message: reviewState.changeCount > 0 ? reviewState.message : t("本楼暂无表格更新"),
     });
     if (!committedState.sessionKey
         || (committedState.status !== 'ready' && committedState.status !== 'empty')) {
@@ -405,7 +406,7 @@ function registerAsyncCleanup(promise) {
 function handleGenerationStarted() {
     try {
         reviewSession?.beginPreSnapshot('generation-started', readNormalizedSnapshot());
-        resetReviewState('已捕获 AI 回复前表格基准，等待本楼更新', {
+        resetReviewState(t("已捕获 AI 回复前表格基准，等待本楼更新"), {
             chatKey: currentChatKey,
         });
     } catch (error) {
@@ -421,7 +422,7 @@ function handleAiFloor(payload, reason) {
             reason,
             readNormalizedSnapshot(),
         );
-        resetReviewState('已建立最近 AI 楼审核会话，等待表格更新', {
+        resetReviewState(t("已建立最近 AI 楼审核会话，等待表格更新"), {
             chatKey: currentChatKey,
         });
     } catch (error) {
@@ -443,7 +444,7 @@ function handleChatChanged(chatId) {
     currentChatKey = normalizeChatKey(chatId)
         || normalizeChatKey(deps.readCurrentChatKey?.());
     reviewSession?.resetReviewSession('chat-changed');
-    resetReviewState('聊天已切换，审核会话已重置', {
+    resetReviewState(t("聊天已切换，审核会话已重置"), {
         chatKey: currentChatKey,
     });
     if (typeof unsubscribeTableUpdate === 'function') {
@@ -485,7 +486,7 @@ export function startTableUpdateReviewService(options = {}) {
 
     const subscribed = ensureTableUpdateSubscription();
 
-    resetReviewState('等待最近 AI 回复触发表格更新', {
+    resetReviewState(t("等待最近 AI 回复触发表格更新"), {
         chatKey: currentChatKey,
     });
     logger.debug({
@@ -524,7 +525,7 @@ export function stopTableUpdateReviewService() {
     currentChatKey = '';
     deps = { ...defaultDeps };
     isRefreshing = false;
-    resetReviewState('审核服务已停止');
+    resetReviewState(t("审核服务已停止"));
     logger.debug({ action: 'service.stop', message: '表格更新审核服务已停止' });
     return true;
 }

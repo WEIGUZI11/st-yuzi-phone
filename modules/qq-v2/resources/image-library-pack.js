@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 const IMAGE_LIBRARY_KEY = 'imageLibraryAssets';
 const STICKERS_KEY = 'qq-v2.resources.stickers';
 const IMAGE_LIBRARIES = Object.freeze({
@@ -22,15 +23,15 @@ function asObject(value) {
 
 function requireStateStore(stateStore) {
     if (!stateStore || typeof stateStore.read !== 'function' || typeof stateStore.transact !== 'function') {
-        throw new TypeError('QQ 图片资料包需要有效的 state store');
+        throw new TypeError(t("QQ 图片资料包需要有效的 state store"));
     }
     return stateStore;
 }
 
 function requireUniqueId(value, label, usedIds) {
     const id = asText(value, 256);
-    if (!id) throw new Error(`${label}缺少资源 ID`);
-    if (usedIds.has(id)) throw new Error(`资源 ID 重复：${id}`);
+    if (!id) throw new Error(t`${label}缺少资源 ID`);
+    if (usedIds.has(id)) throw new Error(t`资源 ID 重复：${id}`);
     usedIds.add(id);
     return id;
 }
@@ -48,33 +49,33 @@ function appendableId(value, usedIds) {
 
 function requireImageMimeType(value, label) {
     const mimeType = asText(value, 128).toLowerCase();
-    if (!/^image\/[a-z0-9.+-]+$/u.test(mimeType)) throw new Error(`${label}的图片类型无效`);
+    if (!/^image\/[a-z0-9.+-]+$/u.test(mimeType)) throw new Error(t`${label}的图片类型无效`);
     return mimeType;
 }
 
 function requireDataUrl(value, mimeType, label) {
     const dataUrl = asText(value);
-    if (!dataUrl.startsWith(`data:${mimeType};base64,`)) throw new Error(`${label}的图片数据无效`);
+    if (!dataUrl.startsWith(`data:${mimeType};base64,`)) throw new Error(t`${label}的图片数据无效`);
     return dataUrl;
 }
 
 function dataUrlToBlob(dataUrl, mimeType) {
     const encoded = dataUrl.slice(dataUrl.indexOf(',') + 1);
-    if (encoded.length > MAX_BASE64_LENGTH) throw new Error('单张图片不能超过 8MB');
+    if (encoded.length > MAX_BASE64_LENGTH) throw new Error(t("单张图片不能超过 8MB"));
     let binary;
     try {
         binary = atob(encoded);
     } catch {
-        throw new Error('图片数据不是有效的 Base64');
+        throw new Error(t("图片数据不是有效的 Base64"));
     }
     const bytes = new Uint8Array(binary.length);
     for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-    if (bytes.byteLength > MAX_RESOURCE_BYTES) throw new Error('单张图片不能超过 8MB');
+    if (bytes.byteLength > MAX_RESOURCE_BYTES) throw new Error(t("单张图片不能超过 8MB"));
     return new Blob([bytes], { type: mimeType });
 }
 
 async function blobToDataUrl(blob, mimeType) {
-    if (blob.size > MAX_RESOURCE_BYTES) throw new Error('单张图片不能超过 8MB');
+    if (blob.size > MAX_RESOURCE_BYTES) throw new Error(t("单张图片不能超过 8MB"));
     const bytes = new Uint8Array(await blob.arrayBuffer());
     let binary = '';
     const chunkSize = 0x8000;
@@ -91,7 +92,7 @@ async function resolveBlob(record, readMedia) {
 
 async function exportImageAsset(asset, usedIds, readMedia) {
     const blob = await resolveBlob(asset, readMedia);
-    if (!(blob instanceof Blob)) throw new Error(`图片资源 ${asset?.assetId || ''} 缺少 Blob`);
+    if (!(blob instanceof Blob)) throw new Error(t`图片资源 ${asset?.assetId || ''} 缺少 Blob`);
     const label = `图片资源 ${asset.assetId || ''}`;
     const id = requireUniqueId(asset.assetId, label, usedIds);
     const mimeType = requireImageMimeType(asset.mimeType || blob.type, label);
@@ -105,11 +106,11 @@ async function exportImageAsset(asset, usedIds, readMedia) {
 
 async function exportSticker(sticker, usedIds, readMedia) {
     const blob = await resolveBlob(sticker, readMedia);
-    if (!(blob instanceof Blob)) throw new Error(`表情资源 ${sticker?.id || ''} 缺少 Blob`);
+    if (!(blob instanceof Blob)) throw new Error(t`表情资源 ${sticker?.id || ''} 缺少 Blob`);
     const label = `表情资源 ${sticker.id || ''}`;
     const id = requireUniqueId(sticker.id, label, usedIds);
     const description = asText(sticker.description, 4000);
-    if (!description) throw new Error(`${label}缺少表情含义`);
+    if (!description) throw new Error(t`${label}缺少表情含义`);
     const mimeType = requireImageMimeType(sticker.mimeType || blob.type, label);
     return {
         id,
@@ -122,19 +123,19 @@ async function exportSticker(sticker, usedIds, readMedia) {
 
 function parsePack(input) {
     const pack = typeof input === 'string' ? JSON.parse(input) : input;
-    if (!pack || typeof pack !== 'object' || Array.isArray(pack)) throw new Error('图片资料包必须是 JSON 对象');
+    if (!pack || typeof pack !== 'object' || Array.isArray(pack)) throw new Error(t("图片资料包必须是 JSON 对象"));
     if (pack.format !== QQ_IMAGE_LIBRARY_PACK_FORMAT) {
-        throw new Error(`图片资料包 format 必须是 ${QQ_IMAGE_LIBRARY_PACK_FORMAT}`);
+        throw new Error(t`图片资料包 format 必须是 ${QQ_IMAGE_LIBRARY_PACK_FORMAT}`);
     }
     if (Number(pack.schemaVersion) !== QQ_IMAGE_LIBRARY_PACK_SCHEMA_VERSION) {
-        throw new Error(`图片资料包 schemaVersion 必须是 ${QQ_IMAGE_LIBRARY_PACK_SCHEMA_VERSION}`);
+        throw new Error(t`图片资料包 schemaVersion 必须是 ${QQ_IMAGE_LIBRARY_PACK_SCHEMA_VERSION}`);
     }
     const libraries = pack.libraries;
     if (!libraries || typeof libraries !== 'object' || Array.isArray(libraries)) {
-        throw new Error('图片资料包缺少 libraries');
+        throw new Error(t("图片资料包缺少 libraries"));
     }
     for (const key of [...Object.keys(IMAGE_LIBRARIES), 'stickers']) {
-        if (!Array.isArray(libraries[key])) throw new Error(`图片资料包 libraries.${key} 必须是数组`);
+        if (!Array.isArray(libraries[key])) throw new Error(t`图片资料包 libraries.${key} 必须是数组`);
     }
     return libraries;
 }
@@ -163,7 +164,7 @@ function importSticker(raw, index, usedIds) {
     const mimeType = requireImageMimeType(source.mimeType, label);
     const blob = dataUrlToBlob(requireDataUrl(source.dataUrl, mimeType, label), mimeType);
     const description = asText(source.description, 4000);
-    if (!description) throw new Error(`${label}缺少表情含义`);
+    if (!description) throw new Error(t`${label}缺少表情含义`);
     return {
         id: requireUniqueId(source.id, label, usedIds),
         description,

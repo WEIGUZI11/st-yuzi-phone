@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { getPhoneSettings, savePhoneSetting } from '../../../settings.js';
 import { Logger } from '../../../error-handler.js';
 import { showToast } from '../../ui/toast.js';
@@ -79,12 +80,12 @@ export function setupPhoneThemeModeSettings(container) {
         if (!ok) {
             syncControl(prevValue);
             applyPhoneThemeMode(prevValue);
-            showToast(container, '主题模式保存失败，已回滚', true);
+            showToast(container, t("主题模式保存失败，已回滚"), true);
             return;
         }
 
         applyPhoneThemeMode(nextValue);
-        showToast(container, nextValue === 'dark' ? '已切换到夜间模式' : '已切换到白天模式');
+        showToast(container, nextValue === 'dark' ? t("已切换到夜间模式") : t("已切换到白天模式"));
     };
 
     selectEl.addEventListener('change', onChange);

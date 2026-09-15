@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../../utils/dom-escape.js';
 import {
     buildSettingsHeroHtml,
@@ -33,7 +34,7 @@ function buildApplicationSelect({
         const itemId = isPopup ? '' : candidate.itemId;
         const displayCount = isPopup ? asArray(candidate.displays).length : 0;
         const itemName = isPopup
-            ? (displayCount > 1 ? `${displayCount} 款展示样式` : (candidate.item?.name || '自定义展示'))
+            ? (displayCount > 1 ? t`${displayCount} 款展示样式` : (candidate.item?.name || t("自定义展示")))
             : (candidate.item?.name || itemId);
         return `
         <option value="${escapeHtmlAttr(isPopup ? candidate.presetId : `${candidate.presetId}:${itemId}`)}"
@@ -59,26 +60,26 @@ export function buildBeautifyTemplatePageHtml(viewModel = {}) {
     const tables = Array.isArray(viewModel.tables) ? viewModel.tables : [];
     const status = String(viewModel.status || 'loading');
     const heroHtml = buildSettingsHeroHtml({
-        eyebrow: '模板工坊',
-        title: '模板工坊',
-        description: '导入预设，为表格选择展示。',
+        eyebrow: t("模板工坊"),
+        title: t("模板工坊"),
+        description: t("导入预设，为表格选择展示。"),
     });
     const statusHtml = status === 'loading'
-        ? '<div class="phone-settings-note">正在读取模板仓库…</div>'
+        ? `<div class="phone-settings-note">${t("正在读取模板仓库…")}</div>`
         : status === 'unavailable' || status === 'error'
-            ? `<div class="phone-settings-note">模板仓库不可用：${escapeHtml(viewModel.error?.message || '未知错误')}</div>`
+            ? `<div class="phone-settings-note">${t`模板仓库不可用：${escapeHtml(viewModel.error?.message || t("未知错误"))}`}</div>`
             : '';
     const presetCardsHtml = presets.length > 0
         ? presets.map((preset) => {
             const issues = Array.isArray(preset.issues) ? preset.issues : [];
             return `<article class="phone-settings-card">
                 <div class="phone-settings-card-title">${escapeHtml(preset.name || preset.id)}</div>
-                <div class="phone-settings-card-desc">${Number(preset.items?.length || 0)}个模板项</div>
+                <div class="phone-settings-card-desc">${t`${Number(preset.items?.length || 0)}个模板项`}</div>
                 ${issues.length > 0 ? `<ul class="phone-settings-list">${issues.map((issue) => `<li><strong>${escapeHtml(issue.code || 'issue')}</strong>：${escapeHtml(issue.message || '')}</li>`).join('')}</ul>` : ''}
-                <div class="phone-settings-action"><button type="button" class="phone-settings-btn" data-action="export" data-preset-id="${escapeHtmlAttr(preset.id)}">导出</button><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="delete" data-preset-id="${escapeHtmlAttr(preset.id)}">删除</button></div>
+                <div class="phone-settings-action"><button type="button" class="phone-settings-btn" data-action="export" data-preset-id="${escapeHtmlAttr(preset.id)}">${t`导出`}</button><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="delete" data-preset-id="${escapeHtmlAttr(preset.id)}">${t`删除`}</button></div>
             </article>`;
         }).join('')
-        : '<div class="phone-settings-note">尚未导入玉子美化预设。</div>';
+        : `<div class="phone-settings-note">${t("尚未导入玉子美化预设。")}</div>`;
     const tableCardsHtml = tables.length > 0
         ? tables.map((table) => {
             const pageCandidates = asArray(table.pageCandidates ?? table.candidates);
@@ -87,27 +88,27 @@ export function buildBeautifyTemplatePageHtml(viewModel = {}) {
             const popupActive = table.popupActive;
             const applications = `${buildApplicationSelect({
                 application: 'page',
-                label: '表格美化应用',
-                emptyLabel: '默认页面',
+                label: t("表格美化应用"),
+                emptyLabel: t("默认页面"),
                 sheetKey: table.sheetKey,
                 candidates: pageCandidates,
                 active: pageActive,
             })}${buildApplicationSelect({
                 application: 'popup',
-                label: '弹窗应用',
-                emptyLabel: '内置展示',
+                label: t("弹窗应用"),
+                emptyLabel: t("内置展示"),
                 sheetKey: table.sheetKey,
                 candidates: popupCandidates,
                 active: popupActive,
             })}`;
             return `<article class="phone-settings-card"><div class="phone-settings-card-title">${escapeHtml(table.tableName || table.sheetKey)}</div><div class="phone-settings-form">${applications}</div></article>`;
         }).join('')
-        : '<div class="phone-settings-note">没有可配置的真实表。</div>';
+        : `<div class="phone-settings-note">${t("没有可配置的真实表。")}</div>`;
     const bodyHtml = `${statusHtml}
-        ${buildSettingsSectionHtml({ title: '完整预设', bodyHtml: `<div class="phone-settings-action"><button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="import">导入预设</button></div>${presetCardsHtml}` })}
-        ${buildSettingsSectionHtml({ title: '表格应用', desc: '导入后，请分别选择页面和弹窗应用。', bodyHtml: `${tableCardsHtml}<div class="phone-settings-action"><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-page">全部恢复页面默认</button><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-popup">全部清空弹窗应用</button></div>` })}`;
+        ${buildSettingsSectionHtml({ title: t("完整预设"), bodyHtml: `<div class="phone-settings-action"><button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="import">${t`导入预设`}</button></div>${presetCardsHtml}` })}
+        ${buildSettingsSectionHtml({ title: t("表格应用"), desc: t("导入后，请分别选择页面和弹窗应用。"), bodyHtml: `${tableCardsHtml}<div class="phone-settings-action"><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-page">${t`全部恢复页面默认`}</button><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-popup">${t`全部清空弹窗应用`}</button></div>` })}`;
     return buildSettingsPageFrame({
-        title: '模板工坊',
+        title: t("模板工坊"),
         heroHtml,
         bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open',
         bodyHtml,

@@ -1,3 +1,4 @@
+import { applyPhoneLanguage } from './i18n/index.js';
 // modules/settings.js
 /**
  * Yuzi Phone - 设置与存储 facade
@@ -101,7 +102,9 @@ export function migrateLegacyPhoneSettings() {
 export function getPhoneSettings() {
     try {
         const settings = ensureNamespace();
-        return settings || clone(defaultSettings);
+        const result = settings || clone(defaultSettings);
+        applyPhoneLanguage(result.phoneLanguage);
+        return result;
     } catch (error) {
         Logger.error('[玉子手机] 获取设置失败:', error);
         return clone(defaultSettings);
@@ -113,6 +116,7 @@ const persistenceTools = createSettingsPersistenceTools({
     ensureNamespace,
     onSettingChanged(key) {
         appearanceContext.markChanged(key);
+        if (key === 'phoneLanguage' || key == null) applyPhoneLanguage(ensureNamespace()?.phoneLanguage);
         notifyPhoneSettingsUpdated(key);
     },
     validateSetting,

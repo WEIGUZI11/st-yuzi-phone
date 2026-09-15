@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { Logger } from '../../error-handler.js';
 
 const logger = Logger.withScope({ scope: 'phone-core/data-api/database-ui-bridge', feature: 'db-ui' });
@@ -183,7 +184,7 @@ export async function openDatabaseUi() {
             ok: true,
             code: 'ok',
             source: apiResult.source,
-            message: '已触发数据库界面打开',
+            message: t("已触发数据库界面打开"),
         };
     }
 
@@ -192,7 +193,7 @@ export async function openDatabaseUi() {
             ok: false,
             code: 'v2_failed',
             source: apiResult.source,
-            message: '数据库新 UI 接口调用失败，请检查数据库本体控制台日志',
+            message: t("数据库新 UI 接口调用失败，请检查数据库本体控制台日志"),
         };
     }
 
@@ -202,7 +203,7 @@ export async function openDatabaseUi() {
             ok: true,
             code: 'ok',
             source: menuResult.source,
-            message: '已触发数据库界面打开',
+            message: t("已触发数据库界面打开"),
         };
     }
 
@@ -211,7 +212,7 @@ export async function openDatabaseUi() {
             ok: false,
             code: 'v2_menu_failed',
             source: menuResult.source,
-            message: '数据库新 UI 菜单入口点击失败，请检查数据库本体控制台日志',
+            message: t("数据库新 UI 菜单入口点击失败，请检查数据库本体控制台日志"),
         };
     }
 
@@ -221,7 +222,7 @@ export async function openDatabaseUi() {
             ok: true,
             code: 'ok',
             source: legacyResult.source,
-            message: '已打开数据库设置面板',
+            message: t("已打开数据库设置面板"),
         };
     }
 
@@ -229,7 +230,7 @@ export async function openDatabaseUi() {
         ok: false,
         code: 'api_unavailable',
         source: 'none',
-        message: '数据库界面接口不可用，请确认数据库插件已加载',
+        message: t("数据库界面接口不可用，请确认数据库插件已加载"),
     };
 }
 
@@ -240,7 +241,7 @@ export async function openDatabaseVisualizerUi() {
             ok: true,
             code: 'ok',
             source: v2Result.source,
-            message: '已打开可视化编辑器',
+            message: t("已打开可视化编辑器"),
         };
     }
 
@@ -249,7 +250,7 @@ export async function openDatabaseVisualizerUi() {
             ok: false,
             code: 'v2_failed',
             source: v2Result.source,
-            message: '新可视化编辑器接口调用失败',
+            message: t("新可视化编辑器接口调用失败"),
         };
     }
 
@@ -259,7 +260,7 @@ export async function openDatabaseVisualizerUi() {
             ok: true,
             code: 'ok',
             source: legacyResult.source,
-            message: '已打开可视化编辑器',
+            message: t("已打开可视化编辑器"),
         };
     }
 
@@ -267,6 +268,6 @@ export async function openDatabaseVisualizerUi() {
         ok: false,
         code: 'api_unavailable',
         source: 'none',
-        message: '可视化编辑器接口不可用，请确认数据库插件已加载',
+        message: t("可视化编辑器接口不可用，请确认数据库插件已加载"),
     };
 }

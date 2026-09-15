@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { buildTableNavigationCatalog } from '../table-navigation/catalog.js';
 import { createTableSnapshot } from './snapshot.js';
 import {
@@ -21,7 +22,7 @@ function freezeList(values) {
 
 function readonlyMap(entries) {
     const result = new Map(entries);
-    const rejectMutation = () => { throw new TypeError('内容预设生图使用方目录是只读的'); };
+    const rejectMutation = () => { throw new TypeError(t("内容预设生图使用方目录是只读的")); };
     for (const name of ['set', 'delete', 'clear']) {
         Object.defineProperty(result, name, {
             configurable: false,

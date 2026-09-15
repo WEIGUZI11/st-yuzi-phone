@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../utils/dom-escape.js';
 import {
     buildPhoneBackButton,
@@ -15,7 +16,7 @@ export function buildGenericListToolbarSearchHtml(options = {}) {
 
     return showSearch ? `
         <label class="phone-generic-search-control" for="phone-generic-list-search">
-            <span class="phone-generic-search-label">搜索条目</span>
+            <span class="phone-generic-search-label">${t`搜索条目`}</span>
             <input
                 type="text"
                 inputmode="search"
@@ -25,7 +26,7 @@ export function buildGenericListToolbarSearchHtml(options = {}) {
                 spellcheck="false"
                 class="phone-generic-search-input"
                 id="phone-generic-list-search"
-                placeholder="搜索标题、字段内容或关键词"
+                placeholder="${t`搜索标题、字段内容或关键词`}"
                 value="${escapeHtmlAttr(searchQuery)}"
                 ${totalRowCount === 0 ? 'disabled' : ''}
             >
@@ -45,7 +46,7 @@ export function buildGenericListToolbarActionsHtml(options = {}) {
     const reviewCount = Math.max(0, Number(reviewUpdatedRowCount || 0));
 
     return `
-        ${showSearch && searchQuery ? '<button type="button" class="phone-generic-toolbar-btn" data-action="clear-search" data-clear-search="1">清空搜索</button>' : ''}
+        ${showSearch && searchQuery ? `<button type="button" class="phone-generic-toolbar-btn" data-action="clear-search" data-clear-search="1">${t("清空搜索")}</button>` : ''}
         <button
             type="button"
             class="phone-generic-toolbar-btn phone-generic-review-filter-btn ${onlyShowReviewUpdates ? 'is-active' : ''}"
@@ -53,7 +54,7 @@ export function buildGenericListToolbarActionsHtml(options = {}) {
             data-toggle-review-updates-only="1"
             aria-pressed="${onlyShowReviewUpdates ? 'true' : 'false'}"
             ${!onlyShowReviewUpdates && reviewCount <= 0 ? 'disabled' : ''}
-        >${onlyShowReviewUpdates ? `本楼更新 ${reviewCount}` : '只看本楼更新'}</button>
+        >${onlyShowReviewUpdates ? t`本楼更新 ${reviewCount}` : t("只看本楼更新")}</button>
         <button
             type="button"
             class="phone-generic-toolbar-btn phone-generic-sort-btn ${sortDescending ? 'is-active' : ''}"
@@ -61,14 +62,14 @@ export function buildGenericListToolbarActionsHtml(options = {}) {
             data-toggle-sort="1"
             aria-pressed="${sortDescending ? 'true' : 'false'}"
             ${totalRowCount <= 1 ? 'disabled' : ''}
-            aria-label="当前${sortDescending ? '倒序' : '正序'}，切换为${sortDescending ? '正序' : '倒序'}"
-            title="当前${sortDescending ? '倒序' : '正序'}，切换为${sortDescending ? '正序' : '倒序'}"
+            aria-label="${t`当前${sortDescending ? t("倒序") : t("正序")}，切换为${sortDescending ? t("正序") : t("倒序")}`}"
+            title="${t`当前${sortDescending ? t("倒序") : t("正序")}，切换为${sortDescending ? t("正序") : t("倒序")}`}"
         ><svg class="phone-generic-sort-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path class="phone-generic-sort-up" d="M7 20V4m-4 4 4-4 4 4"/><path class="phone-generic-sort-down" d="M17 4v16m-4-4 4 4 4-4"/></svg></button>
     `;
 }
 
 export function buildGenericListToolbarInfoHtml({ visibleCount = 0, showResultCount = true } = {}) {
-    return showResultCount ? `<span class="phone-generic-result-pill">${visibleCount}条</span>` : '';
+    return showResultCount ? `<span class="phone-generic-result-pill">${t`${visibleCount}条`}</span>` : '';
 }
 
 export function buildGenericListToolbarHtml(options = {}) {
@@ -97,19 +98,19 @@ function buildGenericTitleNavigationHtml(tableName, navigationControlState = {},
         previousHtml: showNavigation ? buildPhoneSwitchButton('previous', {
             className: 'phone-generic-table-navigation-btn',
             action: 'switch-table-previous',
-            label: '上一张表',
+            label: t("上一张表"),
             disabled: previous.disabled === true,
             attributes: { 'aria-disabled': previous.disabled ? 'true' : 'false' },
         }) : '',
         nextHtml: showNavigation ? buildPhoneSwitchButton('next', {
             className: 'phone-generic-table-navigation-btn',
             action: 'switch-table-next',
-            label: '下一张表',
+            label: t("下一张表"),
             disabled: next.disabled === true,
             attributes: { 'aria-disabled': next.disabled ? 'true' : 'false' },
         }) : '',
         className: `phone-generic-title-navigation ${showNavigation ? 'phone-generic-table-navigation' : 'is-title-only'}`,
-        attributes: showNavigation ? { 'aria-label': '切换表格' } : {},
+        attributes: showNavigation ? { 'aria-label': t("切换表格") } : {},
     });
 }
 
@@ -130,10 +131,10 @@ export function buildGenericListNavHtml(options = {}) {
     const deleteDisabled = deletingSelection || selectedCount <= 0;
 
     const actionsHtml = deleteManageMode ? `
-                <div class="phone-nav-secondary-actions phone-generic-nav-delete-actions" aria-label="批量删除操作">
-                    <button type="button" class="phone-generic-nav-delete-btn ${allVisibleDeleteRowsSelected ? 'is-active' : ''}" data-action="select-all-delete-rows" aria-pressed="${allVisibleDeleteRowsSelected ? 'true' : 'false'}" ${selectAllDisabled ? 'disabled' : ''}>全选</button>
-                    <button type="button" class="phone-generic-nav-delete-btn" data-action="clear-delete-selection" ${clearDisabled ? 'disabled' : ''}>清空</button>
-                    <button type="button" class="phone-generic-nav-delete-btn is-danger" data-action="delete-selected-rows" ${deleteDisabled ? 'disabled' : ''}>${deletingSelection ? '删除中...' : `删 ${selectedCount}`}</button>
+                <div class="phone-nav-secondary-actions phone-generic-nav-delete-actions" aria-label="${t`批量删除操作`}">
+                    <button type="button" class="phone-generic-nav-delete-btn ${allVisibleDeleteRowsSelected ? 'is-active' : ''}" data-action="select-all-delete-rows" aria-pressed="${allVisibleDeleteRowsSelected ? 'true' : 'false'}" ${selectAllDisabled ? 'disabled' : ''}>${t`全选`}</button>
+                    <button type="button" class="phone-generic-nav-delete-btn" data-action="clear-delete-selection" ${clearDisabled ? 'disabled' : ''}>${t`清空`}</button>
+                    <button type="button" class="phone-generic-nav-delete-btn is-danger" data-action="delete-selected-rows" ${deleteDisabled ? 'disabled' : ''}>${deletingSelection ? t("删除中...") : t`删 ${selectedCount}`}</button>
                 </div>
             ` : '';
 
@@ -178,7 +179,7 @@ export function buildGenericListRowHtml(viewModel, options = {}) {
                     <span class="phone-nav-list-main phone-generic-slot-list-main">${escapeHtml(viewModel.title)}</span>
                     ${showListStatus ? `
                         <span class="phone-generic-list-badges">
-                            ${viewModel.rowLocked ? '<span class="phone-generic-status-chip is-warning">已锁定</span>' : ''}
+                            ${viewModel.rowLocked ? `<span class="phone-generic-status-chip is-warning">${t("已锁定")}</span>` : ''}
                             ${viewModel.statusText && !viewModel.rowLocked ? `<span class="phone-generic-status-chip is-${escapeHtmlAttr(viewModel.statusTone)}">${escapeHtml(viewModel.statusText)}</span>` : ''}
                         </span>
                     ` : ''}
@@ -187,15 +188,14 @@ export function buildGenericListRowHtml(viewModel, options = {}) {
             </span>
             <span class="phone-nav-list-side phone-generic-slot-list-side">
                 <span class="phone-generic-list-side-meta">
-                    <span class="phone-nav-list-meta phone-generic-slot-list-meta">${viewModel.nonEmptyCount} 项</span>
+                    <span class="phone-nav-list-meta phone-generic-slot-list-meta">${t`${viewModel.nonEmptyCount} 项`}</span>
                     ${showListTime && viewModel.timeText ? `<span class="phone-generic-list-time">${escapeHtml(viewModel.timeText)}</span>` : ''}
                 </span>
                 ${lockManageMode
-                    ? `<span class="phone-row-lock-chip ${viewModel.rowLocked ? 'locked' : ''}" aria-hidden="true">${viewModel.rowLocked ? '已锁定' : '锁定'}</span>`
+                    ? `<span class="phone-row-lock-chip ${viewModel.rowLocked ? 'locked' : ''}" aria-hidden="true">${viewModel.rowLocked ? t("已锁定") : t("锁定")}</span>`
                     : deleteManageMode
-                        ? `<span class="phone-row-select-circle ${deleteSelected ? 'is-selected' : ''} ${deletingCurrent ? 'pending' : ''} ${deleteDisabled ? 'disabled' : ''}" aria-hidden="true" title="${viewModel.rowLocked ? '条目已锁定' : (deleteSelected ? '取消选择' : '选择删除')}">${deleteSelected ? '✓' : ''}</span>`
-                        : (showListArrow ? '<span class="phone-nav-list-arrow phone-generic-slot-list-arrow">查看</span>' : '')
-                }
+                        ? `<span class="phone-row-select-circle ${deleteSelected ? 'is-selected' : ''} ${deletingCurrent ? 'pending' : ''} ${deleteDisabled ? 'disabled' : ''}" aria-hidden="true" title="${viewModel.rowLocked ? t("条目已锁定") : (deleteSelected ? t("取消选择") : t("选择删除"))}">${deleteSelected ? '✓' : ''}</span>`
+                        : (showListArrow ? `<span class="phone-nav-list-arrow phone-generic-slot-list-arrow">${t("查看")}</span>` : '')}
             </span>
         </button>
     `;
@@ -239,16 +239,16 @@ function buildGenericEmptyStateHtml(options = {}) {
     const hasSearchQuery = String(searchQuery || '').trim().length > 0;
     let emptyAction = 'clear-search';
     let emptyActionType = 'clear-search';
-    let emptyActionLabel = '清空搜索';
+    let emptyActionLabel = t("清空搜索");
 
     if (totalRowCount === 0) {
         emptyAction = 'add-row';
         emptyActionType = 'add';
-        emptyActionLabel = '新增第一条记录';
+        emptyActionLabel = t("新增第一条记录");
     } else if (onlyShowReviewUpdates && (!hasSearchQuery || reviewCount <= 0)) {
         emptyAction = 'toggle-review-updates-only';
         emptyActionType = 'show-all';
-        emptyActionLabel = '显示全部条目';
+        emptyActionLabel = t("显示全部条目");
     }
 
     return `
@@ -285,10 +285,10 @@ export function buildGenericListContentHtml(options = {}) {
             <section class="phone-generic-list-panel">
                 <div class="phone-generic-list-header">
                     <div class="phone-generic-list-header-main">
-                        <span>条目</span>
-                        <span>摘要与状态</span>
+                        <span>${t`条目`}</span>
+                        <span>${t`摘要与状态`}</span>
                     </div>
-                    <div class="phone-generic-list-header-side">字段 / 操作</div>
+                    <div class="phone-generic-list-header-side">${t`字段 / 操作`}</div>
                 </div>
                 <div class="phone-nav-list phone-generic-slot-list">
                     ${buildGenericListRowsHtml({
@@ -332,9 +332,9 @@ export function buildGenericListBottomBarHtml(options = {}) {
 
     return `
         <div class="phone-list-bottom-bar phone-generic-slot-actions" data-phone-bottom-bar>
-            ${showAddAction ? '<button type="button" class="phone-list-bottom-btn" id="phone-list-add-btn" data-action="add-row">新增</button>' : ''}
-            ${showLockAction ? `<button type="button" class="phone-list-bottom-btn ${lockManageMode ? 'active' : ''}" id="phone-list-lock-btn" data-action="toggle-lock-mode">${lockManageMode ? '完成' : '锁定'}</button>` : ''}
-            ${showDeleteAction ? `<button type="button" class="phone-list-bottom-btn ${deleteManageMode ? 'active' : ''}" id="phone-list-delete-btn" data-action="toggle-delete-mode">${deleteManageMode ? '完成' : '删除'}</button>` : ''}
+            ${showAddAction ? `<button type="button" class="phone-list-bottom-btn" id="phone-list-add-btn" data-action="add-row">${t("新增")}</button>` : ''}
+            ${showLockAction ? `<button type="button" class="phone-list-bottom-btn ${lockManageMode ? 'active' : ''}" id="phone-list-lock-btn" data-action="toggle-lock-mode">${lockManageMode ? t("完成") : t("锁定")}</button>` : ''}
+            ${showDeleteAction ? `<button type="button" class="phone-list-bottom-btn ${deleteManageMode ? 'active' : ''}" id="phone-list-delete-btn" data-action="toggle-delete-mode">${deleteManageMode ? t("完成") : t("删除")}</button>` : ''}
         </div>
     `;
 }

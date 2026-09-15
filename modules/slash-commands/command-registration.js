@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { createFallbackSlashCommands, handleListTablesCommand, handlePhoneCommand, handleSettingsCommand, handleTableCommand } from './command-actions.js';
 import { clearFallbackSlashCommands, registerFallbackSlashCommands } from './host-adapter.js';
@@ -7,22 +8,22 @@ const SLASH_COMMAND_DEFINITIONS = Object.freeze([
     {
         name: 'yuziphone',
         handler: handlePhoneCommand,
-        description: '玉子手机控制命令：/yuziphone [open|close|toggle|reset|status|help]',
+        get description() { return t("玉子手机控制命令：/yuziphone [open|close|toggle|reset|status|help]"); },
     },
     {
         name: 'yuziphone-open',
         handler: () => handlePhoneCommand('open'),
-        description: '打开玉子手机',
+        get description() { return t("打开玉子手机"); },
     },
     {
         name: 'yuziphone-close',
         handler: () => handlePhoneCommand('close'),
-        description: '关闭玉子手机',
+        get description() { return t("关闭玉子手机"); },
     },
     {
         name: 'yuziphone-toggle',
         handler: () => handlePhoneCommand('toggle'),
-        description: '切换玉子手机状态',
+        get description() { return t("切换玉子手机状态"); },
     },
     {
         name: 'yuziphone-table',
@@ -32,12 +33,12 @@ const SLASH_COMMAND_DEFINITIONS = Object.freeze([
     {
         name: 'yuziphone-tables',
         handler: handleListTablesCommand,
-        description: '列出所有可用表格',
+        get description() { return t("列出所有可用表格"); },
     },
     {
         name: 'yuziphone-settings',
         handler: handleSettingsCommand,
-        description: '手机设置命令：/yuziphone-settings [reset|export|import]',
+        get description() { return t("手机设置命令：/yuziphone-settings [reset|export|import]"); },
     },
 ]);
 

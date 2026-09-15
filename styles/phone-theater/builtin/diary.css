@@ -1,0 +1,270 @@
+.yuzi-theater-diary-content {
+  display: block !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+}
+.yuzi-theater-diary-list {
+  display: flex !important;
+  position: static !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  align-content: flex-start !important;
+  gap: 18px !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+.yuzi-theater-diary-person-group {
+  display: flex;
+  position: static;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+.yuzi-theater-diary-person-title {
+  position: sticky;
+  top: -18px;
+  z-index: 4;
+  margin: 0;
+  padding: 10px 4px 8px;
+  background: var(--yuzi-phone-theater-bg);
+  color: var(--yuzi-phone-theater-ink);
+  font-size: calc(15px * var(--yuzi-phone-readable-text-scale,1));
+  font-weight: 650;
+  border-bottom: 1px solid var(--yuzi-phone-theater-line);
+}
+.yuzi-theater-diary-card {
+  position: static !important;
+  display: block !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+.yuzi-theater-diary-avatar {
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  border-radius: 50% !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  color: #fff !important;
+  font-size: calc(13px * var(--yuzi-phone-readable-text-scale,1)) !important;
+  font-weight: 700 !important;
+}
+.yuzi-theater-diary-avatar[data-has-image=true] {
+  color: transparent !important;
+}
+.yuzi-theater-diary-card-footer {
+  position: relative !important;
+  z-index: 2;
+}
+.yuzi-theater-diary-footer-button {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+}
+.yuzi-theater-diary {
+  --yuzi-phone-theater-bg:#fff;
+  --yuzi-phone-theater-card:#fff;
+  --yuzi-phone-theater-ink:#171717;
+  --yuzi-phone-theater-copy:rgba(20,20,20,.62);
+  --yuzi-phone-theater-muted:#888;
+  --yuzi-phone-theater-line:rgba(0,0,0,.08);
+  --yuzi-phone-theater-avatar:#000;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: inherit;
+  overflow: hidden;
+  background: var(--yuzi-phone-theater-bg);
+  color: var(--yuzi-phone-theater-ink);
+  font-family: var(--yuzi-phone-font-family,sans-serif);
+  color-scheme: light;
+}
+.yuzi-theater-diary[data-theme=dark] {
+  --yuzi-phone-theater-bg:#050505;
+  --yuzi-phone-theater-card:#111;
+  --yuzi-phone-theater-ink:rgba(255,255,255,.88);
+  --yuzi-phone-theater-copy:rgba(255,255,255,.62);
+  --yuzi-phone-theater-muted:#888;
+  --yuzi-phone-theater-line:rgba(255,255,255,.08);
+  --yuzi-phone-theater-avatar:#000;
+  color-scheme: dark;
+}
+.yuzi-theater-diary,
+.yuzi-theater-diary * {
+  box-sizing: border-box;
+}
+.yuzi-theater-diary button {
+  font: inherit;
+}
+.yuzi-theater-diary svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.yuzi-theater-diary-content {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 14px 42px;
+}
+.yuzi-theater-diary-list {
+  display: grid;
+  gap: 16px;
+}
+.yuzi-theater-diary-card {
+  overflow: hidden;
+  background: var(--yuzi-phone-theater-card);
+  border: 1px solid var(--yuzi-phone-theater-line);
+  border-radius: 16px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .025);
+}
+.yuzi-theater-diary-card-header {
+  padding: 17px 18px 15px;
+  border-bottom: 1px solid var(--yuzi-phone-theater-line);
+  color: var(--yuzi-phone-theater-ink);
+  font-family: var(--yuzi-phone-font-family,sans-serif);
+  font-size: calc(15px * var(--yuzi-phone-readable-text-scale,1));
+  font-weight: 400;
+  letter-spacing: .12em;
+  text-align: center;
+}
+.yuzi-theater-diary-card-content {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px;
+}
+.yuzi-theater-diary-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--yuzi-phone-theater-avatar);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
+}
+.yuzi-theater-diary-copy {
+  min-width: 0;
+}
+.yuzi-theater-diary-author {
+  display: block;
+  margin: 1px 0 8px;
+  color: var(--yuzi-phone-theater-ink);
+  font-size: calc(13px * var(--yuzi-phone-readable-text-scale,1));
+  font-weight: 600;
+}
+.yuzi-theater-diary-body {
+  color: var(--yuzi-phone-theater-copy);
+  font-size: calc(14px * var(--yuzi-phone-readable-text-scale,1));
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.yuzi-theater-diary-body del {
+  color: var(--yuzi-phone-theater-muted);
+  text-decoration-thickness: 1px;
+}
+.yuzi-theater-diary-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(11px * var(--yuzi-phone-readable-text-scale,1));
+}
+.yuzi-theater-diary-time svg {
+  width: 15px;
+  height: 15px;
+}
+.yuzi-theater-diary-postscripts {
+  grid-column: 1/-1;
+  display: grid;
+  gap: 7px;
+  margin-top: 2px;
+  padding-top: 15px;
+  border-top: 1px solid var(--yuzi-phone-theater-line);
+}
+.yuzi-theater-diary-postscript {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  color: var(--yuzi-phone-theater-copy);
+  font-size: calc(12px * var(--yuzi-phone-readable-text-scale,1));
+  line-height: 1.65;
+}
+.yuzi-theater-diary-postscript strong {
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(10px * var(--yuzi-phone-readable-text-scale,1));
+  letter-spacing: .08em;
+}
+.yuzi-theater-diary-card-footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  align-items: center;
+  min-height: 50px;
+  padding: 0 16px;
+  border-top: 1px solid var(--yuzi-phone-theater-line);
+}
+.yuzi-theater-diary-footer-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--yuzi-phone-theater-muted);
+  font-size: calc(12px * var(--yuzi-phone-readable-text-scale,1));
+  cursor: pointer;
+}
+.yuzi-theater-diary-footer-button:nth-of-type(2) {
+  justify-self: center;
+}
+.yuzi-theater-diary-footer-button:last-child {
+  justify-self: end;
+}
+.yuzi-theater-diary-footer-button:hover,
+.yuzi-theater-diary-footer-button:focus-visible,
+.yuzi-theater-diary-footer-button:active {
+  color: var(--yuzi-phone-theater-ink);
+}
+.yuzi-theater-diary-footer-button svg {
+  width: 17px;
+  height: 17px;
+}
+.yuzi-theater-diary-footer-separator {
+  width: 1px;
+  height: 15px;
+  margin: 0 9px;
+  background: var(--yuzi-phone-theater-line);
+}
+.yuzi-theater-diary-more {
+  font-size: calc(20px * var(--yuzi-phone-readable-text-scale,1));
+  letter-spacing: .08em;
+  line-height: 1;
+}
+.yuzi-theater-diary-empty {
+  padding: 44px 16px;
+  color: var(--yuzi-phone-theater-muted);
+  text-align: center;
+}
+.yuzi-theater-diary-content {
+  padding-bottom: calc(8px + var(--yuzi-theater-home-clearance));
+}
+
+/* An opaque header keeps the shell's dark corners out of the backdrop. */
+.yuzi-theater-diary > .yuzi-phone-theater-nav {
+  --yuzi-phone-nav-background: var(--yuzi-phone-theater-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}

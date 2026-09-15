@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { registerPhoneTemporaryLayerHost } from './shell-temporary-layer-host.js';
 
 const BOTTOM_BAR_SELECTOR = '[data-phone-bottom-bar]';
@@ -93,6 +94,7 @@ export function bindPhoneShellAppControls(root, {
         const layout = bottomBar ? 'docked' : 'floating';
         indicator.hidden = hidden;
         indicator.setAttribute?.('aria-hidden', String(hidden));
+        indicator.setAttribute?.('aria-label', t('返回手机主页'));
         indicator.tabIndex = hidden ? -1 : 0;
         shell?.setAttribute?.('data-yuzi-phone-home-indicator-layout', layout);
 
@@ -145,7 +147,7 @@ export function bindPhoneShellAppControls(root, {
     if (root && root !== screen) {
         observer?.observe?.(root, {
             attributes: true,
-            attributeFilter: ['data-yuzi-phone-theme'],
+            attributeFilter: ['data-yuzi-phone-theme', 'lang'],
         });
     }
     view?.addEventListener?.('resize', scheduleRefresh);

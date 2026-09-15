@@ -23,10 +23,10 @@ async function main() {
     assert.match(app, /data-qq-current-profile/, 'all root identity avatars expose the current-profile route seam');
     assert.match(app, /target\.dataset\.qqCurrentProfile[\s\S]{0,120}type:\s*'current-profile'/,
         'the current-profile avatar enters the route owned by the profile task');
-    assert.match(app, /statusText\.textContent\s*=\s*'\\u5728\\u7ebf - WIFI'/,
+    assert.match(app, /statusText\.textContent\s*=\s*t\("在线 - WIFI"\)/,
         'message and assistant identity headers show the Figma WIFI presence label');
 
-    assert.match(app, /\['创建群聊',\s*'message'\][\s\S]{0,500}\['创建频道',\s*'hashtag'\][\s\S]{0,500}\['加好友\/群',\s*'user-plus'\]/,
+    assert.match(app, /\[t\("创建群聊"\),\s*'message'\][\s\S]{0,500}\[t\("创建频道"\),\s*'hashtag'\][\s\S]{0,500}\[t\("加好友\/群"\),\s*'user-plus'\]/,
         'the message plus menu keeps the three Figma rows in order');
     assert.match(app, /yuzi-qq-message-add-contact-action[\s\S]{0,140}data-qq-add-contact-menu/,
         'only the final plus-menu row is wired to add a contact');

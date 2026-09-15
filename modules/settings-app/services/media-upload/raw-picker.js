@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { clampNumber } from './core.js';
 
 function imageFileRecord(file) {
@@ -54,7 +55,7 @@ export function pickImageFiles(callback, options = {}) {
 
         const invalidFile = files.find((file) => !String(file.type || '').startsWith('image/'));
         if (invalidFile) {
-            onError?.(`${invalidFile.name || '所选文件'}不是图片文件`);
+            onError?.(t`${invalidFile.name || t("所选文件")}不是图片文件`);
             cleanup();
             return;
         }
@@ -62,7 +63,7 @@ export function pickImageFiles(callback, options = {}) {
         const maxBytes = Math.max(1, maxSizeMB) * 1024 * 1024;
         const oversizedFile = files.find((file) => Number(file.size) > maxBytes);
         if (oversizedFile) {
-            onError?.(`${oversizedFile.name || '所选图片'}超过 ${maxSizeMB}MB`);
+            onError?.(t`${oversizedFile.name || t("所选图片")}超过 ${maxSizeMB}MB`);
             cleanup();
             return;
         }
@@ -71,7 +72,7 @@ export function pickImageFiles(callback, options = {}) {
             if (isDisposed()) return;
             await Promise.resolve(callback(Object.freeze(files.map(imageFileRecord))));
         } catch (error) {
-            onError?.(error?.message || '图片处理失败');
+            onError?.(error?.message || t("图片处理失败"));
         } finally {
             cleanup();
         }

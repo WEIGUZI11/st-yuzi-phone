@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../utils/dom-escape.js';
 import {
     buildPhoneBackButton,
@@ -12,9 +13,9 @@ function formatCount(value) {
 }
 
 function formatChangeType(type) {
-    if (type === 'insert') return '新增';
-    if (type === 'delete') return '删除';
-    return '修改';
+    if (type === 'insert') return t("新增");
+    if (type === 'delete') return t("删除");
+    return t("修改");
 }
 
 function isReviewIdentityField(fieldName) {
@@ -28,19 +29,19 @@ function getVisibleReviewFields(fields = []) {
 
 function formatAiReplyFloorText(floorId) {
     const realFloorId = Number(floorId);
-    if (!Number.isInteger(realFloorId) || realFloorId < 0) return '最近 AI 回复';
-    return `AI 回复第 ${Math.floor(realFloorId / 2) + 1} 楼`;
+    if (!Number.isInteger(realFloorId) || realFloorId < 0) return t("最近 AI 回复");
+    return t`AI 回复第 ${Math.floor(realFloorId / 2) + 1} 楼`;
 }
 
 function formatReviewFieldValue(value) {
     const text = String(value ?? '');
-    return text === '' ? '空' : text;
+    return text === '' ? t("空") : text;
 }
 
 function buildFieldSummaryHtml(fields = [], changeType = 'update') {
     const displayFields = getVisibleReviewFields(fields);
     return displayFields.map((field) => {
-        const fieldName = field.field || '字段';
+        const fieldName = field.field || t("字段");
         if (changeType === 'insert') {
             const value = formatReviewFieldValue(field.after);
             return `
@@ -74,7 +75,7 @@ function buildFieldSummaryHtml(fields = [], changeType = 'update') {
 
 function buildChangeItemHtml(change = {}) {
     const typeText = formatChangeType(change.type);
-    const rowLabel = `第 ${formatCount(change.rowIndex) + 1} 行`;
+    const rowLabel = t`第 ${formatCount(change.rowIndex) + 1} 行`;
     const title = change.rowTitle || rowLabel;
     if (change.type === 'delete') {
         return `
@@ -82,7 +83,7 @@ function buildChangeItemHtml(change = {}) {
                 <span class="tur-change-type is-delete">${typeText}</span>
                 <span class="tur-change-main">
                     <strong class="tur-row-title" title="${escapeHtmlAttr(title)}">${escapeHtml(title)}</strong>
-                    <small>${escapeHtml(rowLabel)} · 已删除，仅展示净变化</small>
+                    <small>${t`${escapeHtml(rowLabel)} · 已删除，仅展示净变化`}</small>
                 </span>
                 <span class="tur-change-fields">${buildFieldSummaryHtml(change.fields, change.type)}</span>
             </article>
@@ -110,8 +111,8 @@ function buildTableGroupHtml(table = {}) {
         <details class="tur-table-card" data-sheet-key="${escapeHtmlAttr(table.sheetKey || '')}">
             <summary class="tur-table-summary tur-table-header">
                 <div>
-                    <h3>${escapeHtml(table.tableName || table.sheetKey || '未命名表格')}</h3>
-                    <p>${formatCount(table.insertCount)} 新增 · ${formatCount(table.updateCount)} 修改 · ${formatCount(table.deleteCount)} 删除</p>
+                    <h3>${escapeHtml(table.tableName || table.sheetKey || t("未命名表格"))}</h3>
+                    <p>${t`${formatCount(table.insertCount)} 新增 · ${formatCount(table.updateCount)} 修改 · ${formatCount(table.deleteCount)} 删除`}</p>
                 </div>
                 <span class="tur-table-count">${formatCount(table.changeCount)}</span>
             </summary>
@@ -127,7 +128,7 @@ export function buildTableUpdateReviewPageHtml(state = {}) {
             className: 'tur-nav-back',
             attributes: { 'data-action': 'nav-back' },
         }),
-        centerHtml: buildPhoneNavTitleSwitcher({ title: TABLE_UPDATE_REVIEW_APP_NAME }),
+        centerHtml: buildPhoneNavTitleSwitcher({ title: t(TABLE_UPDATE_REVIEW_APP_NAME) }),
     });
     return `
         <div class="phone-app-page tur-page">
@@ -143,12 +144,12 @@ export function buildTableUpdateReviewContentHtml(state = {}) {
     const tables = Array.isArray(state.tables) ? state.tables : [];
     const statusClass = state.status === 'error' ? 'is-error' : state.changeCount > 0 ? 'is-ready' : 'is-empty';
     const floorText = formatAiReplyFloorText(state.floorId);
-    const message = state.error?.message || state.message || '暂无本楼更新';
+    const message = state.error?.message || state.message || t("暂无本楼更新");
     return `
         <section class="tur-summary ${statusClass}">
             <div><span class="tur-kicker">${escapeHtml(floorText)}</span><h2>${escapeHtml(message)}</h2></div>
-            <div class="tur-metrics"><span>${formatCount(state.tableCount)} 表</span><span>${formatCount(state.changeCount)} 更新</span></div>
+            <div class="tur-metrics"><span>${t`${formatCount(state.tableCount)} 表`}</span><span>${t`${formatCount(state.changeCount)} 更新`}</span></div>
         </section>
-        ${tables.length > 0 ? `<div class="tur-table-list">${tables.map(buildTableGroupHtml).join('')}</div>` : '<div class="tur-empty">当前还没有可审核的本楼表格更新。</div>'}
+        ${tables.length > 0 ? `<div class="tur-table-list">${tables.map(buildTableGroupHtml).join('')}</div>` : `<div class="tur-empty">${t("当前还没有可审核的本楼表格更新。")}</div>`}
     `;
 }

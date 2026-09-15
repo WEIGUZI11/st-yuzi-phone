@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 
 const logger = Logger.withScope({ scope: 'settings/persistence', feature: 'settings' });
@@ -60,7 +61,7 @@ export function createSettingsPersistenceTools(options = {}) {
                 message: '保存设置失败',
                 error,
             });
-            showNotification?.('保存设置失败', 'error');
+            showNotification?.(t("保存设置失败"), 'error');
         }
     }
 
@@ -120,7 +121,7 @@ export function createSettingsPersistenceTools(options = {}) {
                 message: '触发宿主设置保存请求失败',
                 error,
             });
-            showNotification?.('保存设置失败', 'error');
+            showNotification?.(t("保存设置失败"), 'error');
         }
         return false;
     }
@@ -151,7 +152,7 @@ export function createSettingsPersistenceTools(options = {}) {
                     message: '设置验证失败',
                     context: { key, validationError: result.error },
                 });
-                showNotification?.(`设置验证失败: ${result.error}`, 'warning');
+                showNotification?.(t`设置验证失败: ${result.error}`, 'warning');
             }
 
             settings[key] = result.value;
@@ -165,7 +166,7 @@ export function createSettingsPersistenceTools(options = {}) {
                 context: { key },
                 error,
             });
-            showNotification?.('保存设置失败', 'error');
+            showNotification?.(t("保存设置失败"), 'error');
             return false;
         }
     }
@@ -188,7 +189,7 @@ export function createSettingsPersistenceTools(options = {}) {
                     message: '批量设置验证失败：patch 必须是对象',
                     context: { patchType: Array.isArray(patch) ? 'array' : typeof patch },
                 });
-                showNotification?.('批量设置保存失败：数据格式错误', 'warning');
+                showNotification?.(t("批量设置保存失败：数据格式错误"), 'warning');
                 return false;
             }
 
@@ -217,7 +218,7 @@ export function createSettingsPersistenceTools(options = {}) {
             });
 
             if (hasInvalid) {
-                showNotification?.('部分设置已按默认规则修正', 'warning');
+                showNotification?.(t("部分设置已按默认规则修正"), 'warning');
             }
 
             schedulePersistSettings(ctx);
@@ -228,7 +229,7 @@ export function createSettingsPersistenceTools(options = {}) {
                 message: '批量保存设置失败',
                 error,
             });
-            showNotification?.('保存设置失败', 'error');
+            showNotification?.(t("保存设置失败"), 'error');
             return false;
         }
     }
@@ -254,7 +255,7 @@ export function createSettingsPersistenceTools(options = {}) {
                 message: '重置设置失败',
                 error,
             });
-            showNotification?.('重置设置失败', 'error');
+            showNotification?.(t("重置设置失败"), 'error');
             return false;
         }
     }

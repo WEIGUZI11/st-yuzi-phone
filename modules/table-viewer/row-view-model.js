@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { shouldSkipAutoManagedColumn } from '../utils/table-column-metadata.js';
 
 const DEFAULT_GENERIC_FIELD_BINDINGS_BY_VIEWER = Object.freeze({
@@ -170,7 +171,7 @@ function resolveStatusTone(value, locked = false) {
 }
 
 export function getRowEntryTitle(row, headers = [], rawHeaders = [], fieldBindings = {}) {
-    if (!Array.isArray(row)) return '未命名';
+    if (!Array.isArray(row)) return t("未命名");
 
     const headerMap = buildGenericHeaderIndexMap(headers, rawHeaders, row);
     const boundTitle = getCellByGenericHeaders(row, headerMap, fieldBindings.summaryTitle || []);
@@ -200,7 +201,7 @@ export function getRowEntryTitle(row, headers = [], rawHeaders = [], fieldBindin
         .filter(Boolean)
         .sort((a, b) => b.score - a.score || a.idx - b.idx || a.text.length - b.text.length);
 
-    return candidates[0]?.text || '未命名';
+    return candidates[0]?.text || t("未命名");
 }
 
 export function shouldPreferFullRowField(pair) {
@@ -255,10 +256,10 @@ export function buildGenericRowViewModel(row, rowIndex, headers = [], rawHeaders
         title,
         nonEmptyCount,
         rowLocked,
-        statusText: rowLocked ? '已锁定' : truncateText(boundStatus || statusField?.value || '', 14),
+        statusText: rowLocked ? t("已锁定") : truncateText(boundStatus || statusField?.value || '', 14),
         statusTone: resolveStatusTone(boundStatus || statusField?.value || '', rowLocked),
         timeText: truncateText(boundTime || timeField?.value || '', 18),
-        previewText: preferredPreviewParts.join(' · ') || previewParts.join(' · ') || '点击查看完整字段与详情信息',
+        previewText: preferredPreviewParts.join(' · ') || previewParts.join(' · ') || t("点击查看完整字段与详情信息"),
         searchText: buildSearchIndex(row, headers, rawHeaders),
     };
 }
@@ -266,25 +267,25 @@ export function buildGenericRowViewModel(row, rowIndex, headers = [], rawHeaders
 function getDetailSectionMeta(sectionKey) {
     if (sectionKey === 'overview') {
         return {
-            title: '基础信息',
-            description: '用于快速确认条目身份、标题和核心属性。',
+            title: t("基础信息"),
+            description: t("用于快速确认条目身份、标题和核心属性。"),
         };
     }
     if (sectionKey === 'status') {
         return {
-            title: '状态与时间',
-            description: '集中查看流程状态、时间节点与只读信息。',
+            title: t("状态与时间"),
+            description: t("集中查看流程状态、时间节点与只读信息。"),
         };
     }
     if (sectionKey === 'content') {
         return {
-            title: '内容信息',
-            description: '包含描述、正文、备注与可读性较强的字段内容。',
+            title: t("内容信息"),
+            description: t("包含描述、正文、备注与可读性较强的字段内容。"),
         };
     }
     return {
-        title: '扩展信息',
-        description: '承载补充字段、结构化配置与其他元数据。',
+        title: t("扩展信息"),
+        description: t("承载补充字段、结构化配置与其他元数据。"),
     };
 }
 

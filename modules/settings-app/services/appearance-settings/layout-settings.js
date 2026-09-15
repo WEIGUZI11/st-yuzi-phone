@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { defaultSettings, getPhoneSettings, savePhoneSetting } from '../../../settings.js';
 import { createDebouncedTask } from '../../../runtime-manager.js';
 import { clampNumber } from '../../../utils/object.js';
@@ -48,7 +49,7 @@ export function setupIconLayoutSettings(container) {
             const value = clampLayoutValue(input.value, item);
             input.value = String(value);
             savePhoneSetting(item.key, value);
-            showToast(container, '图标布局已更新');
+            showToast(container, t("图标布局已更新"));
         });
     });
 

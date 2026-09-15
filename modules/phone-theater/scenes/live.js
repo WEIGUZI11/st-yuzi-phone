@@ -1,3 +1,4 @@
+import { mount as mountBuiltin } from '../builtin/live.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { buildTheaterDeleteKey } from '../core/delete-key.js';
 import { getCellByHeader, mapTheaterRows, normalizeText, resolveRowIdentity, splitSemicolonText } from '../core/table-index.js';
@@ -353,6 +354,7 @@ function bindInteractions(container, context = {}) {
 
 export const liveScene = Object.freeze({
     id: 'live',
+    mountBuiltin,
     appKey: '__theater_live',
     name: '直播',
     iconText: '播',

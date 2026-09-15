@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { computeAppearanceFontHash as computeResourceFingerprint } from './schema.js';
 
 // 外观资源是持久数据，不使用有 TTL / LRU 的图片缓存。
@@ -6,7 +7,7 @@ const STORE = 'assets';
 const REF_PREFIX = 'yuzi-appearance:';
 export const APPEARANCE_ASSET_FIELDS = [
     'backgroundImage', 'appIcons', 'phoneToggleCoverImage',
-    'appearanceFontLibrary', 'appearanceResourcePool',
+    'appearanceFontLibrary', 'appearanceResourcePool', 'theaterProfiles',
 ];
 let dbPromise;
 
@@ -19,7 +20,7 @@ function openDb() {
         request.onerror = () => reject(request.error);
         request.onblocked = () => {
             blocked = true;
-            reject(new Error('外观资源数据库被其他页面阻塞，请关闭旧页面后重试'));
+            reject(new Error(t("外观资源数据库被其他页面阻塞，请关闭旧页面后重试")));
         };
         request.onsuccess = () => {
             const db = request.result;
@@ -37,7 +38,7 @@ async function transact(mode, operate) {
         const tx = db.transaction(STORE, mode);
         let result;
         tx.oncomplete = () => resolve(result);
-        tx.onabort = tx.onerror = () => reject(tx.error || new Error('外观资源保存失败'));
+        tx.onabort = tx.onerror = () => reject(tx.error || new Error(t("外观资源保存失败")));
         try {
             operate(tx.objectStore(STORE), value => { result = value; });
         } catch (error) {
@@ -75,7 +76,7 @@ async function mapValues(value, transform) {
 function makeAsset(dataUrl) {
     const comma = dataUrl.indexOf(',');
     const header = dataUrl.slice(0, comma + 1);
-    if (comma < 0 || !/;base64,$/i.test(header)) throw new Error('外观资源不是有效的 Base64 文件');
+    if (comma < 0 || !/;base64,$/i.test(header)) throw new Error(t("外观资源不是有效的 Base64 文件"));
     const binary = atob(dataUrl.slice(comma + 1));
     const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
     return { header, blob: new Blob([bytes], { type: header.slice(5).split(';')[0] }) };
@@ -88,7 +89,7 @@ function restoreDataUrl(asset) {
             const encoded = String(reader.result);
             resolve(asset.header + encoded.slice(encoded.indexOf(',') + 1));
         };
-        reader.onerror = () => reject(reader.error || new Error('外观资源读取失败'));
+        reader.onerror = () => reject(reader.error || new Error(t("外观资源读取失败")));
         reader.readAsDataURL(asset.blob);
     });
 }

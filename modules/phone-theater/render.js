@@ -1,3 +1,4 @@
+import { mountBuiltinTheater } from './builtin/runtime.js';
 import { getTableData } from '../phone-core/data-api.js';
 import { navigateBack } from '../phone-core/routing.js';
 import { getPhoneCoreState, phoneRuntime } from '../phone-core/state.js';
@@ -118,6 +119,7 @@ function bindTheaterSceneEvents(container, lifecycle) {
 export function renderTheaterScene(container, sceneId, options = {}) {
     if (!(container instanceof HTMLElement)) return;
 
+    container.__yuziBuiltinDispose?.();
     const state = getTheaterRenderState(container, sceneId);
     const lifecycle = createTheaterLifecycleContext(container, state.sceneId, options);
     const scrollPreserver = createRuntimeScrollPreserver(container, state, '.phone-app-body.phone-theater-body', phoneRuntime);
@@ -155,6 +157,10 @@ export function renderTheaterScene(container, sceneId, options = {}) {
     }
 
     try {
+        if (viewModel.available && typeof viewModel.scene.mountBuiltin === 'function') {
+            mountBuiltinTheater(container, {scene:viewModel.scene, sheetKey:state.navigationSheetKey, rawData, navigation:uiState.tableNavigation, lifecycle});
+            return;
+        }
         container.innerHTML = buildTheaterScenePageHtml(viewModel, uiState);
         bindTheaterSceneEvents(container, lifecycle);
         bindTheaterSceneInteractions(container, {

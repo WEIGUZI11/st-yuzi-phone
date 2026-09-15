@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import {
     BUILTIN_THEATER_TEMPLATE_SHA256,
     BUILTIN_THEATER_TEMPLATE_SOURCE_PATH,
@@ -167,7 +168,7 @@ export function createLocalJsonSourceModel(rawData, fileName = '') {
     return createSourceModel(rawData, {
         type: FUSION_SOURCE_TYPES.LOCAL,
         fileName,
-        name: fileName || '本地 JSON',
+        name: fileName || t("本地 JSON"),
     });
 }
 
@@ -175,7 +176,7 @@ export function createBuiltinTheaterSourceModel() {
     return createSourceModel(createBuiltinTheaterTemplate(), {
         type: FUSION_SOURCE_TYPES.BUILTIN_THEATER,
         id: FUSION_SOURCE_TYPES.BUILTIN_THEATER,
-        name: '内置小剧场+纪要表',
+        name: t("内置小剧场+纪要表"),
         sourcePath: BUILTIN_THEATER_TEMPLATE_SOURCE_PATH,
         sha256: BUILTIN_THEATER_TEMPLATE_SHA256,
     });
@@ -185,7 +186,7 @@ export function createDatabaseCurrentSourceModel(rawData, options = {}) {
     return createSourceModel(rawData, {
         ...options,
         type: FUSION_SOURCE_TYPES.DATABASE_CURRENT,
-        name: options.name ?? '当前数据库表格',
+        name: options.name ?? t("当前数据库表格"),
         scope: options.scope ?? 'current-database',
     });
 }

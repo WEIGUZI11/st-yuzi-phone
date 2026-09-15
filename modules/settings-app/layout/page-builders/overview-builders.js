@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { isContentPresetFullPageRuntimeEnabled } from '../../../content-presets/activation-gate.js';
 import {
     SETTINGS_ENTRY_META,
@@ -39,7 +40,7 @@ export function buildSettingsHomePageHtml({
         </div>
     `;
     return buildSettingsPageFrame({
-        title: '设置',
+        title: t("设置"),
         bodyClass: 'phone-app-body phone-settings-scroll phone-settings-home-scroll',
         bodyHtml,
     });

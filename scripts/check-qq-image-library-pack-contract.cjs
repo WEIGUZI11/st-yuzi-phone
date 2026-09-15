@@ -269,7 +269,7 @@ async function testFacadeAndRuntimeWiring() {
     assert.doesNotMatch(uiSource, /覆盖图片资料|覆盖导入|导入会整体覆盖/u, '图片资料导入不得再表达覆盖语义');
     assert.match(uiSource, /status\.textContent\s*=\s*result\?\.error\?\.message/u,
         '导入校验错误必须留在确认弹窗内显示');
-    assert.match(uiSource, /已导出 QQ 图片资料', false/u, '导出成功需要使用成功 toast');
+    assert.match(uiSource, /已导出 QQ 图片资料"\), false/u, '导出成功需要使用成功 toast');
     assert.match(uiSource, /已导入：头像[\s\S]*false\)/u, '导入成功需要使用成功 toast');
     assert.match(
         selectionCleanupSource,

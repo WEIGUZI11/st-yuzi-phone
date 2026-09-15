@@ -60,7 +60,7 @@ async function main() {
     check(results, 'crop', '存在 openImageCropDialog()', has(contents.crop, 'export async function openImageCropDialog('));
     check(results, 'crop', '裁剪弹窗通过壳内临时层服务挂载', has(contents.crop, "from '../../../phone-core/shell-temporary-layer-host.js';") && has(contents.crop, 'export function mountPhoneImageCropOverlay('));
     check(results, 'crop', '裁剪弹窗支持默认开启的全图按钮 options', has(contents.crop, 'options.showCropFullImageButton !== false'));
-    check(results, 'crop', '裁剪弹窗支持全图按钮文案 options 与默认全图文案', has(contents.crop, 'options.cropFullImageButtonText') && has(contents.crop, "'全图'"));
+    check(results, 'crop', '裁剪弹窗支持全图按钮文案 options 与默认全图文案', has(contents.crop, 'options.cropFullImageButtonText') && has(contents.crop, "t(\"全图\")"));
     check(results, 'crop', '裁剪弹窗渲染全图按钮节点', has(contents.crop, 'phone-image-crop-full'));
     check(results, 'crop', '全图按钮使用整张图片归一化裁剪矩形', has(contents.crop, 'normalizeCropRect({ x: 0, y: 0, w: 1, h: 1 }, constraints)'));
     check(results, 'crop', 'crop runtime adapter 暴露 isDisposed()', has(contents.crop, 'isDisposed()') && has(contents.crop, 'return !!safeRuntime?.isDisposed?.();'));
@@ -135,7 +135,7 @@ async function main() {
     check(results, 'buttonStyle', 'button-style 声明页面 disposed helper', has(contents.buttonStyle, 'const isPageDisposed = () => {'));
     check(results, 'buttonStyle', 'button-style 按钮封面上传显式关闭二次压缩', has(contents.buttonStyle, 'compress: false,'));
     check(results, 'buttonStyle', 'button-style 上传成功回调先检查页面生命周期', has(contents.buttonStyle, 'pickImageFile((dataUrl) => {\n            if (!isPageActive()) return;'));
-    check(results, 'buttonStyle', 'button-style 上传错误回调先检查页面生命周期', has(contents.buttonStyle, "onError: (msg) => {\n                if (!isPageActive()) return;\n                showToast(container, msg || '按钮封面上传失败', true);\n            },"));
+    check(results, 'buttonStyle', 'button-style 上传错误回调先检查页面生命周期', has(contents.buttonStyle, "onError: (msg) => {\n                if (!isPageActive()) return;\n                showToast(container, msg || t(\"按钮封面上传失败\"), true);\n            },"));
     check(results, 'appearancePage', 'appearance 页面向背景上传服务传入 runtime', has(contents.appearancePage, 'setupBgUpload(container, { runtime })'));
     check(results, 'appearancePage', 'appearance 页面向图标上传服务传入 runtime', has(contents.appearancePage, '{ runtime, items: iconSlots },'));
 

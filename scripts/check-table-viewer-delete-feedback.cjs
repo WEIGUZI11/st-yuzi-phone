@@ -130,7 +130,7 @@ assertOrdered(deleteBody, [
 ], 'deleteRowsFromList 成功或部分成功后必须先重排锁状态并阻断 inactive UI 回写');
 assertOrdered(deleteBody, [
     'const synced = syncRowsFromSheet();',
-    "const message = result.message || (deletedRowIndexes.length > 1 ? `已删除 ${deletedRowIndexes.length} 条记录` : '删除成功');",
+    "const message = result.message || (deletedRowIndexes.length > 1 ? t`已删除 ${deletedRowIndexes.length} 条记录` : t(\"删除成功\"));",
     'if (!synced) {',
     'viewSynced: false,',
 ], 'deleteRowsFromList 必须区分本地视图同步失败');
@@ -183,7 +183,7 @@ assertOrdered(handleBody, [
     'if (deleteOutcome.deleted) {',
     'refreshListAfterDataMutation(container);',
 ], 'executeDeleteSelectedRows 仍只能在实际删除后刷新列表');
-assert(handleBody.includes("context.showInlineToast(container, `删除异常: ${err?.message || '未知错误'}`, true);"), 'executeDeleteSelectedRows 异常必须使用错误样式');
+assert(handleBody.includes("context.showInlineToast(container, t`删除异常: ${err?.message || t(\"未知错误\")}`, true);"), 'executeDeleteSelectedRows 异常必须使用错误样式');
 
 console.log('[table-viewer-delete-feedback-check] 检查通过');
 console.log('- OK | 通用表批量删除结果保留 ok/deleted/message/refreshed/viewSynced');

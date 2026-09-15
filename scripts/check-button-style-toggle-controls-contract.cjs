@@ -76,7 +76,7 @@ function main() {
         has(contents.eventRegistry, "eventManager.add(window, 'yuzi-phone-toggle-position-reset', handleTogglePositionReset);"));
 
     pushCheck(results, 'primitives', 'settings 入口文案覆盖显示与位置职责',
-        has(contents.primitives, "description: '管理悬浮入口显示、位置、尺寸、形态与封面'"));
+        has(contents.primitives, "get description() { return t(\"管理悬浮入口显示、位置、尺寸、形态与封面\"); }"));
 
     pushCheck(results, 'buttonStylePage', '按钮封面上传禁用压缩',
         has(contents.buttonStylePage, 'compress: false'));

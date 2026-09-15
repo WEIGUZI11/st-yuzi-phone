@@ -1,3 +1,5 @@
+import { getAppearanceIconDisplayName } from './icon-slots.js';
+import { t } from '../../../i18n/index.js';
 import {
     getPhoneSettings,
     savePhoneSettingsPatch,
@@ -98,7 +100,7 @@ export function createIconUploadService(deps = {}) {
                         : [];
                     const source = icons.length > 0 ? {
                         id: packId,
-                        name: String(result?.meta?.name || '当前美化包'),
+                        name: String(result?.meta?.name || t("当前美化包")),
                         icons,
                     } : null;
                     activePackState = { id: packId, ready: true, source, promise: null };
@@ -119,26 +121,26 @@ export function createIconUploadService(deps = {}) {
             if (disposed) return false;
             const iconBytes = estimateBase64Bytes(dataUrl);
             if (iconBytes > STORAGE_BUDGETS.appIconBytes) {
-                showToast(listEl, `单个图标过大（${formatFileSize(iconBytes, 2)} / ${formatFileSize(STORAGE_BUDGETS.appIconBytes, 2)}），请换更小图片`, true);
+                showToast(listEl, t`单个图标过大（${formatFileSize(iconBytes, 2)} / ${formatFileSize(STORAGE_BUDGETS.appIconBytes, 2)}），请换更小图片`, true);
                 return false;
             }
 
             const nextState = buildAppIconAssignment(getPhoneSettings(), key, dataUrl, sourcePackId);
             const nextTotalBytes = estimateIconsStorageBytes(nextState.appIcons);
             if (nextTotalBytes > STORAGE_BUDGETS.appIconsTotalBytes) {
-                showToast(listEl, `自定义图标总容量超出上限（${formatFileSize(nextTotalBytes, 2)} / ${formatFileSize(STORAGE_BUDGETS.appIconsTotalBytes, 2)}），当前图片未保存。请清理部分图标或换更小图片后重试`, true);
+                showToast(listEl, t`自定义图标总容量超出上限（${formatFileSize(nextTotalBytes, 2)} / ${formatFileSize(STORAGE_BUDGETS.appIconsTotalBytes, 2)}），当前图片未保存。请清理部分图标或换更小图片后重试`, true);
                 return false;
             }
 
             const saved = savePhoneSettingsPatch(nextState);
             if (!saved) {
-                showToast(listEl, '图标保存失败，请重试', true);
+                showToast(listEl, t("图标保存失败，请重试"), true);
                 return false;
             }
 
             cacheRemove(CACHE_STORES.images, `icon:${key}`).catch(() => {});
             render();
-            showToast(listEl, '图标已更新');
+            showToast(listEl, t("图标已更新"));
             return true;
         };
 
@@ -151,12 +153,12 @@ export function createIconUploadService(deps = {}) {
                 maxWidth: 768,
                 maxHeight: 768,
                 quality: 0.68,
-                cropTitle: `裁剪 ${iconName}`,
-                cropDescription: '建议仅保留图标主体，范围越小越容易通过容量限制。',
+                cropTitle: t`裁剪 ${iconName}`,
+                cropDescription: t("建议仅保留图标主体，范围越小越容易通过容量限制。"),
                 cropPreset: 'icon',
                 onError: (msg) => {
                     if (disposed) return;
-                    showToast(listEl, msg || '图标上传失败', true);
+                    showToast(listEl, msg || t("图标上传失败"), true);
                 },
             });
         };
@@ -169,7 +171,7 @@ export function createIconUploadService(deps = {}) {
                 onSelect: icon => saveIconSelection(key, icon.dataUrl, source.id),
             });
             if (!mounted) {
-                showToast(listEl, '图标选择器打开失败，请重试', true);
+                showToast(listEl, t("图标选择器打开失败，请重试"), true);
             }
         };
 
@@ -184,7 +186,7 @@ export function createIconUploadService(deps = {}) {
             const totalUsageText = formatFileSize(currentIconsBytes, 2);
 
             if (iconSlots.length === 0) {
-                listEl.innerHTML = '<div class="phone-empty-msg">无数据</div>';
+                listEl.innerHTML = `<div class="phone-empty-msg">${t("无数据")}</div>`;
                 return;
             }
 
@@ -198,31 +200,31 @@ export function createIconUploadService(deps = {}) {
 
             const summaryHtml = `
                 <div class="phone-settings-desc" style="margin-bottom:10px;">
-                    已用 ${escapeHtml(totalUsageText)} / 上限 ${escapeHtml(totalLimitText)}
+                    ${t`已用 ${escapeHtml(totalUsageText)} / 上限 ${escapeHtml(totalLimitText)}`}
                 </div>
             `;
             const allCurrentIconEntries = Object.entries(currentIcons);
             const cleanupHtml = `
                 <div class="phone-icon-cleanup-panel">
                     <div class="phone-settings-desc" style="margin:12px 0 8px;">
-                        图标清理 · ${escapeHtml(String(allCurrentIconEntries.length))} 个。仅移除图标，不影响表格数据或背景。
+                        ${t`图标清理 · ${escapeHtml(String(allCurrentIconEntries.length))} 个。仅移除图标，不影响表格数据或背景。`}
                     </div>
                     ${allCurrentIconEntries.length > 0 ? allCurrentIconEntries.map(([key, dataUrl]) => {
                         const slot = slotMap.get(key);
-                        const label = slot ? slot.name : '隐藏旧图标 / 无当前图标位';
+                        const label = slot ? getAppearanceIconDisplayName(slot) : t("隐藏旧图标 / 无当前图标位");
                         const statusClass = slot ? 'phone-icon-status-active' : 'phone-icon-status-orphan';
                         return `
                             <div class="phone-icon-cleanup-row" data-icon-key="${escapeHtmlAttr(key)}">
                                 <span class="phone-icon-name">${escapeHtml(label)}</span>
                                 <span class="phone-icon-key">${escapeHtml(key)}</span>
-                                <span class="phone-icon-status ${statusClass}">${slot ? '当前图标位' : '隐藏旧图标'}</span>
+                                <span class="phone-icon-status ${statusClass}">${slot ? t("当前图标位") : t("隐藏旧图标")}</span>
                                 <div class="phone-icon-actions">
                                     <img src="${escapeHtmlAttr(dataUrl)}" class="phone-icon-thumb">
-                                    <button type="button" class="phone-settings-btn phone-settings-btn-danger phone-icon-delete-current-btn">删除</button>
+                                    <button type="button" class="phone-settings-btn phone-settings-btn-danger phone-icon-delete-current-btn">${t`删除`}</button>
                                 </div>
                             </div>
                         `;
-                    }).join('') : '<div class="phone-empty-msg">当前没有自定义图标</div>'}
+                    }).join('') : `<div class="phone-empty-msg">${t("当前没有自定义图标")}</div>`}
                 </div>
             `;
 
@@ -230,11 +232,11 @@ export function createIconUploadService(deps = {}) {
                 const hasCustom = phoneSettings.appIcons?.[item.key];
                 return `
                     <div class="phone-icon-upload-row" data-icon-key="${escapeHtmlAttr(item.key)}">
-                        <span class="phone-icon-name">${escapeHtml(item.name)}</span>
+                        <span class="phone-icon-name">${escapeHtml(getAppearanceIconDisplayName(item))}</span>
                         <div class="phone-icon-actions">
-                            ${hasCustom ? `<img src="${escapeHtmlAttr(hasCustom)}" class="phone-icon-thumb">` : '<span class="phone-icon-default">默认</span>'}
+                            ${hasCustom ? `<img src="${escapeHtmlAttr(hasCustom)}" class="phone-icon-thumb">` : `<span class="phone-icon-default">${t("默认")}</span>`}
                             <button type="button" class="phone-settings-btn phone-icon-upload-btn" ${activePackPending ? 'disabled aria-busy="true"' : ''}>${PHONE_ICONS.upload}</button>
-                            ${hasCustom ? `<button type="button" class="phone-settings-btn phone-settings-btn-danger phone-icon-clear-btn">清除</button>` : ''}
+                            ${hasCustom ? `<button type="button" class="phone-settings-btn phone-settings-btn-danger phone-icon-clear-btn">${t`清除`}</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -256,7 +258,7 @@ export function createIconUploadService(deps = {}) {
                     const row = btn.closest('.phone-icon-upload-row');
                     const key = row?.dataset?.iconKey;
                     if (!key) return;
-                    const iconName = String(row?.querySelector('.phone-icon-name')?.textContent || '图标').trim() || '图标';
+                    const iconName = String(row?.querySelector('.phone-icon-name')?.textContent || t("图标")).trim() || t("图标");
                     const source = activePackState.ready ? activePackState.source : null;
                     if (!source) {
                         openLocalIconUpload(key, iconName);
@@ -283,7 +285,7 @@ export function createIconUploadService(deps = {}) {
                     savePhoneSettingsPatch(nextState);
                     cacheRemove(CACHE_STORES.images, `icon:${key}`).catch(() => {});
                     render();
-                    showToast(listEl, '图标已清除');
+                    showToast(listEl, t("图标已清除"));
                 });
             });
 
@@ -297,7 +299,7 @@ export function createIconUploadService(deps = {}) {
                     savePhoneSettingsPatch(nextState);
                     cacheRemove(CACHE_STORES.images, `icon:${key}`).catch(() => {});
                     render();
-                    showToast(listEl, '当前设置图标已删除');
+                    showToast(listEl, t("当前设置图标已删除"));
                 });
             });
         };

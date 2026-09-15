@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 /**
  * Repository adapter for stable table-display image ownership records.
  *
@@ -38,7 +39,7 @@ function copyRecord(record) {
 export function createStableImageOwnershipRepository(options = {}) {
     const store = options.store || options.persistentStore;
     if (!store || typeof store.read !== 'function' || typeof store.write !== 'function') {
-        throw new TypeError('图片归属仓储需要具备 read(key) 与 write(record) 的持久 store');
+        throw new TypeError(t("图片归属仓储需要具备 read(key) 与 write(record) 的持久 store"));
     }
 
     return Object.freeze({
@@ -51,7 +52,7 @@ export function createStableImageOwnershipRepository(options = {}) {
         async write(record) {
             const copy = copyRecord(record);
             if (!copy?.key || !copy.chatScope || !copy.physicalTable || !copy.canvas) {
-                throw new TypeError('图片归属记录无效');
+                throw new TypeError(t("图片归属记录无效"));
             }
             await store.write(copy);
             return copyRecord(copy);

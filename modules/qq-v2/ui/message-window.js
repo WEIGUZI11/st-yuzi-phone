@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 export const EMPTY_MESSAGE_PAGE = Object.freeze({ items: Object.freeze([]), hasMore: false, nextBeforeSequence: null });
 
 export function mergeMessagePage(previous = EMPTY_MESSAGE_PAGE, next = EMPTY_MESSAGE_PAGE, { prepend = false } = {}) {
@@ -46,7 +47,7 @@ export function createMessageWindow({ query, canRead = () => true, onDeferred = 
             }
             if (!current()) return null;
             if (!result?.ok || !Array.isArray(result.page?.items)) {
-                throw new Error(result?.error?.message || '读取聊天消息失败');
+                throw new Error(result?.error?.message || t("读取聊天消息失败"));
             }
             record.page = mergeMessagePage(previous, result.page, { prepend });
             record.expanded = prepend || keepWindow;

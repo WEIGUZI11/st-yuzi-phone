@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { createQQV2Facade } from './facade.js';
 import { getDB } from '../../phone-core/db-bridge.js';
 import {
@@ -362,7 +363,7 @@ function buildGroupIdentity(conversation, group, peopleById, referenceByPersonId
 export function createQQV2ProductionRuntime(options = {}) {
     const host = options.host;
     if (!host || typeof host.readScope !== 'function') {
-        throw new TypeError('QQ v2 production runtime 需要有效的 host adapter');
+        throw new TypeError(t("QQ v2 production runtime 需要有效的 host adapter"));
     }
 
     let lifecycle = null;
@@ -377,7 +378,7 @@ export function createQQV2ProductionRuntime(options = {}) {
         }
     };
     const scopeInactiveError = () => {
-        const error = new Error('QQ 作用域已切换，当前操作已取消');
+        const error = new Error(t("QQ 作用域已切换，当前操作已取消"));
         error.code = 'scope_inactive';
         return error;
     };
@@ -1840,7 +1841,7 @@ export function createQQV2ProductionRuntime(options = {}) {
             ));
             if (!asset?.blob) return null;
             if (!objectUrlApi) {
-                const error = new Error('QQ 媒体渲染地址在当前运行环境不可用');
+                const error = new Error(t("QQ 媒体渲染地址在当前运行环境不可用"));
                 error.code = 'media_render_unavailable';
                 throw error;
             }
@@ -1849,7 +1850,7 @@ export function createQQV2ProductionRuntime(options = {}) {
             try {
                 url = objectUrlApi.createObjectURL(asset.blob);
             } catch (cause) {
-                const error = new Error('QQ 媒体渲染地址创建失败');
+                const error = new Error(t("QQ 媒体渲染地址创建失败"));
                 error.code = 'media_render_unavailable';
                 error.cause = cause;
                 throw error;

@@ -1,3 +1,4 @@
+import { t } from './modules/i18n/index.js';
 // index.js
 /**
  * 玉子手机 - 独立扩展入口
@@ -139,7 +140,7 @@ function blockSingletonInitialization(reason, context = {}) {
         message: '检测到玉子手机已加载或存在旧实例痕迹，已阻止重复初始化',
         context: { reason, ...context },
     });
-    showNotification('检测到玉子手机已加载，请勿同时启用扩展版和脚本版。', 'warning');
+    showNotification(t("检测到玉子手机已加载，请勿同时启用扩展版和脚本版。"), 'warning');
     return false;
 }
 
@@ -532,7 +533,7 @@ async function doInitialize() {
         message: '扩展初始化完成',
         context: { version: EXTENSION_VERSION },
     });
-    showNotification(`玉子手机已加载 (v${EXTENSION_VERSION})`, 'success');
+    showNotification(t`玉子手机已加载 (v${EXTENSION_VERSION})`, 'success');
 }
 
 /**
@@ -567,7 +568,7 @@ async function doInitialize() {
             stopPhoneBackgroundServices('initialize-failed');
             destroyQQV2Runtime();
             releaseSingletonGuard();
-            handleError(error, '玉子手机初始化失败');
+            handleError(error, t("玉子手机初始化失败"));
             // 重置初始化状态，允许重试
             resetInitializationState();
         }
@@ -650,9 +651,9 @@ export function destroy() {
             action: 'destroy.complete',
             message: '扩展已卸载',
         });
-        showNotification('玉子手机已卸载', 'info');
+        showNotification(t("玉子手机已卸载"), 'info');
     } catch (error) {
-        handleError(error, '卸载错误');
+        handleError(error, t("卸载错误"));
     } finally {
         setOwnedInstanceStatus('destroyed');
         cancelPendingHomeRefresh('destroy-finally');

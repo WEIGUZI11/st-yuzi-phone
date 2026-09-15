@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { tryRenderContentPreset } from '../content-presets/renderer.js';
 import { resolveContentPresetRouteTarget } from '../content-presets/route-target.js';
@@ -63,7 +64,7 @@ function resolveQQRouteShell(deps = {}) {
 function renderQQRouteFailure(page, shell) {
     page?.replaceChildren?.();
     try {
-        shell?.showToast?.('QQ 暂时无法加载');
+        shell?.showToast?.(t("QQ 暂时无法加载"));
     } catch {
         // Error notification is advisory; the blank QQ shell remains usable.
     }
@@ -80,14 +81,14 @@ function renderQQRouteSkeleton(page) {
     const viewport = create('div', 'yuzi-qq-viewport yuzi-qq-route-skeleton');
     viewport.dataset.qqRouteSkeleton = '1';
     viewport.setAttribute('role', 'status');
-    viewport.setAttribute('aria-label', 'QQ 正在加载');
+    viewport.setAttribute('aria-label', t("QQ 正在加载"));
     viewport.setAttribute('aria-busy', 'true');
 
     const main = create('main', 'yuzi-qq-view yuzi-qq-list-view yuzi-qq-message-root-view');
     const header = create('header', 'yuzi-qq-header');
     header.append(
         create('span', 'yuzi-qq-header-spacer'),
-        create('h1', 'yuzi-qq-title', '消息'),
+        create('h1', 'yuzi-qq-title', t("消息")),
         create('span', 'yuzi-qq-header-actions'),
     );
     const sheet = create('section', 'yuzi-qq-list-sheet yuzi-qq-route-skeleton-list');
@@ -106,7 +107,7 @@ function renderQQRouteSkeleton(page) {
 
     const navigation = create('nav', 'yuzi-qq-nav yuzi-qq-root-tabbar');
     navigation.setAttribute('aria-hidden', 'true');
-    ['消息', '联系人', '助手', '设置'].forEach((label, index) => {
+    [t("消息"), t("联系人"), t("助手"), t("设置")].forEach((label, index) => {
         const item = create('span', `yuzi-qq-nav-item yuzi-qq-root-tab${index === 0 ? ' is-active' : ''}`);
         item.append(
             create('span', 'yuzi-qq-nav-icon yuzi-qq-route-skeleton-nav-icon'),

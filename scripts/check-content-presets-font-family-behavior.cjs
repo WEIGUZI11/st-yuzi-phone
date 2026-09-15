@@ -18,6 +18,7 @@ async function main() {
             this.style = { setProperty: (key, value) => this.values.set(key, value), removeProperty: key => this.values.delete(key) };
         }
         setAttribute(key, value) { this[key] = value; }
+        getAttribute(key) { return this[key] ?? null; }
         querySelector() { return null; }
     }
     globalThis.HTMLElement = Element;

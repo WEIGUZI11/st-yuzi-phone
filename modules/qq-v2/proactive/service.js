@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { buildProactiveQQV2Request, buildQQV2ProactiveSections } from '../prompt/materializer.js';
 import { buildQQV2StickerCatalog } from '../prompt/sticker-catalog.js';
 
@@ -8,7 +9,7 @@ function asText(value, maxLength = 0) {
 
 function requireRepository(repository) {
     if (!repository || typeof repository !== 'object') {
-        throw new TypeError('QQ v2 主动周期需要有效的 repository');
+        throw new TypeError(t("QQ v2 主动周期需要有效的 repository"));
     }
     return repository;
 }
@@ -98,7 +99,7 @@ export function createQQV2ProactiveService(options = {}) {
     if (!requestService
         || typeof requestService.cancelProactive !== 'function'
         || typeof requestService.enqueueProactive !== 'function') {
-        throw new TypeError('QQ v2 主动周期需要主动请求仲裁接口');
+        throw new TypeError(t("QQ v2 主动周期需要主动请求仲裁接口"));
     }
     const configRevisionByScope = new Map();
     const privateOnly = options.privateOnly === true;

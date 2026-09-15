@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import {
     clampNumber,
     estimateBase64Bytes,
@@ -47,14 +48,14 @@ export function pickImageFile(callback, options = {}) {
         }
 
         if (!String(file.type || '').startsWith('image/')) {
-            onError?.('请选择图片文件');
+            onError?.(t("请选择图片文件"));
             cleanup();
             return;
         }
 
         const maxBytes = Math.max(1, maxSizeMB) * 1024 * 1024;
         if (Number(file.size) > maxBytes * 1.8) {
-            onError?.(`图片过大（>${(maxSizeMB * 1.8).toFixed(1)}MB），请压缩后重试`);
+            onError?.(t`图片过大（>${(maxSizeMB * 1.8).toFixed(1)}MB），请压缩后重试`);
             cleanup();
             return;
         }
@@ -63,7 +64,7 @@ export function pickImageFile(callback, options = {}) {
             const rawDataUrl = await fileToDataUrl(file);
             if (isDisposed()) return;
             if (!rawDataUrl) {
-                onError?.('图片读取失败');
+                onError?.(t("图片读取失败"));
                 cleanup();
                 return;
             }
@@ -94,8 +95,8 @@ export function pickImageFile(callback, options = {}) {
             if (isDisposed()) return;
             if (estimateBase64Bytes(best) > maxBytes) {
                 onError?.(compress
-                    ? `图片裁剪压缩后仍超过 ${maxSizeMB}MB，请缩小裁剪范围或换更小图片`
-                    : `图片裁剪后超过 ${maxSizeMB}MB，请缩小裁剪范围或换更小图片`);
+                    ? t`图片裁剪压缩后仍超过 ${maxSizeMB}MB，请缩小裁剪范围或换更小图片`
+                    : t`图片裁剪后超过 ${maxSizeMB}MB，请缩小裁剪范围或换更小图片`);
                 cleanup();
                 return;
             }
@@ -107,7 +108,7 @@ export function pickImageFile(callback, options = {}) {
                 size: Number(file.size) || 0,
             })));
         } catch (error) {
-            onError?.(error?.message || '图片处理失败');
+            onError?.(error?.message || t("图片处理失败"));
         } finally {
             cleanup();
         }

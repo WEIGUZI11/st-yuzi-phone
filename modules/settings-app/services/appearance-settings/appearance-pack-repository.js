@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { estimateBase64Bytes } from '../media-upload.js';
 import { validateAppearanceResourcePack } from './resource-pack-service.js';
 
@@ -59,7 +60,7 @@ function openDb() {
         }
 
         request.onerror = () => reject(request.error);
-        request.onblocked = () => reject(new DOMException('外观包仓库数据库升级被阻塞', 'BlockedError'));
+        request.onblocked = () => reject(new DOMException(t("外观包仓库数据库升级被阻塞"), 'BlockedError'));
         request.onupgradeneeded = () => initializeStores(request.result);
         request.onsuccess = () => {
             const db = request.result;
@@ -95,7 +96,7 @@ function withPackStore(mode, handler) {
         const rejectOnce = (error) => {
             if (settled) return;
             settled = true;
-            reject(error || tx.error || new Error('外观包仓库事务失败'));
+            reject(error || tx.error || new Error(t("外观包仓库事务失败")));
         };
 
         try {
@@ -157,7 +158,7 @@ function createPackId() {
     return `appearance_pack_${randomPart}`.slice(0, 160);
 }
 
-function getPackName(pack, fallback = '未命名美化包') {
+function getPackName(pack, fallback = t("未命名美化包")) {
     return safeString(pack?.packMeta?.name || pack?.name || fallback, 120) || fallback;
 }
 
@@ -222,39 +223,39 @@ export async function listAppearancePacks() {
         const packs = entries
             .map(createEntryMeta)
             .sort((left, right) => Number(right.updatedAt || 0) - Number(left.updatedAt || 0));
-        return createResult(true, '外观包仓库列表已读取', {
+        return createResult(true, t("外观包仓库列表已读取"), {
             packs,
             stats: createStatsFromEntries(entries),
         });
     } catch (error) {
-        return createRepositoryErrorResult('读取外观包仓库失败', error, { packs: [], stats: createStatsFromEntries([]) });
+        return createRepositoryErrorResult(t("读取外观包仓库失败"), error, { packs: [], stats: createStatsFromEntries([]) });
     }
 }
 
 export async function getAppearancePack(id) {
     const safeId = safeString(id, 160);
     if (!safeId) {
-        return createResult(false, '读取失败：外观包 ID 为空', { pack: null, meta: null });
+        return createResult(false, t("读取失败：外观包 ID 为空"), { pack: null, meta: null });
     }
 
     try {
         const entry = await withPackStore('readonly', store => store.get(safeId));
         if (!entry) {
-            return createResult(false, '读取失败：外观包不存在', { pack: null, meta: null });
+            return createResult(false, t("读取失败：外观包不存在"), { pack: null, meta: null });
         }
-        return createResult(true, '外观包已读取', {
+        return createResult(true, t("外观包已读取"), {
             pack: entry.pack,
             meta: createEntryMeta(entry),
         });
     } catch (error) {
-        return createRepositoryErrorResult('读取外观包失败', error, { pack: null, meta: null });
+        return createRepositoryErrorResult(t("读取外观包失败"), error, { pack: null, meta: null });
     }
 }
 
 export async function saveAppearancePack(packInput, options = {}) {
     const validationResult = validateAppearanceResourcePack(packInput);
     if (!validationResult.success || !validationResult.pack) {
-        return createResult(false, validationResult.message || '保存失败：外观包无效', {
+        return createResult(false, validationResult.message || t("保存失败：外观包无效"), {
             errors: validationResult.errors || [],
             warnings: validationResult.warnings || [],
             meta: null,
@@ -271,21 +272,21 @@ export async function saveAppearancePack(packInput, options = {}) {
             const stats = createStatsFromEntries(entries);
 
             if (!existing && stats.count >= MAX_PACK_COUNT) {
-                return createResult(false, `保存失败：仓库最多保存 ${MAX_PACK_COUNT} 个美化包`, {
+                return createResult(false, t`保存失败：仓库最多保存 ${MAX_PACK_COUNT} 个美化包`, {
                     errorType: 'capacity',
                     meta: null,
                     stats,
                 });
             }
             if (entry.totalBytes > MAX_SINGLE_PACK_BYTES) {
-                return createResult(false, `保存失败：单个美化包不能超过 ${Math.round(MAX_SINGLE_PACK_BYTES / 1024 / 1024)}MB`, {
+                return createResult(false, t`保存失败：单个美化包不能超过 ${Math.round(MAX_SINGLE_PACK_BYTES / 1024 / 1024)}MB`, {
                     errorType: 'capacity',
                     meta: null,
                     stats,
                 });
             }
             if (stats.totalBytes - replacedBytes + entry.totalBytes > MAX_TOTAL_PACK_BYTES) {
-                return createResult(false, `保存失败：美化包仓库总容量不能超过 ${Math.round(MAX_TOTAL_PACK_BYTES / 1024 / 1024)}MB`, {
+                return createResult(false, t`保存失败：美化包仓库总容量不能超过 ${Math.round(MAX_TOTAL_PACK_BYTES / 1024 / 1024)}MB`, {
                     errorType: 'capacity',
                     meta: null,
                     stats,
@@ -294,12 +295,12 @@ export async function saveAppearancePack(packInput, options = {}) {
 
             await withPackStore('readwrite', store => store.put(entry));
             const nextEntries = await readAllPacks();
-            return createResult(true, '美化包已保存到仓库，当前外观未自动应用', {
+            return createResult(true, t("美化包已保存到仓库，当前外观未自动应用"), {
                 meta: createEntryMeta(entry),
                 stats: createStatsFromEntries(nextEntries),
             });
         } catch (error) {
-            return createRepositoryErrorResult('保存外观包失败', error, { meta: null });
+            return createRepositoryErrorResult(t("保存外观包失败"), error, { meta: null });
         }
     });
 }
@@ -307,32 +308,32 @@ export async function saveAppearancePack(packInput, options = {}) {
 export async function deleteAppearancePack(id) {
     const safeId = safeString(id, 160);
     if (!safeId) {
-        return createResult(false, '删除失败：外观包 ID 为空', { deletedId: '' });
+        return createResult(false, t("删除失败：外观包 ID 为空"), { deletedId: '' });
     }
 
     try {
         const existing = await withPackStore('readonly', store => store.get(safeId));
         if (!existing) {
-            return createResult(false, '删除失败：外观包不存在', { deletedId: safeId });
+            return createResult(false, t("删除失败：外观包不存在"), { deletedId: safeId });
         }
         await withPackStore('readwrite', store => store.delete(safeId));
         const entries = await readAllPacks();
-        return createResult(true, '美化包已从仓库删除', {
+        return createResult(true, t("美化包已从仓库删除"), {
             deletedId: safeId,
             stats: createStatsFromEntries(entries),
         });
     } catch (error) {
-        return createRepositoryErrorResult('删除外观包失败', error, { deletedId: safeId });
+        return createRepositoryErrorResult(t("删除外观包失败"), error, { deletedId: safeId });
     }
 }
 
 export async function getAppearancePackRepositoryStats() {
     try {
         const entries = await readAllPacks();
-        return createResult(true, '外观包仓库容量统计已读取', {
+        return createResult(true, t("外观包仓库容量统计已读取"), {
             stats: createStatsFromEntries(entries),
         });
     } catch (error) {
-        return createRepositoryErrorResult('读取外观包仓库容量统计失败', error, { stats: createStatsFromEntries([]) });
+        return createRepositoryErrorResult(t("读取外观包仓库容量统计失败"), error, { stats: createStatsFromEntries([]) });
     }
 }

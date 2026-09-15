@@ -110,7 +110,7 @@ assertOrdered(executeBody, [
     'if (!isTheaterInteractionActive(container, options)) return;',
     'state.deleting = false;',
     'requestRenderIfActive(container, options);',
-    "showToastIfActive(container, options, '删除失败：执行过程中发生异常', true);",
+    "showToastIfActive(container, options, t(\"删除失败：执行过程中发生异常\"), true);",
 ], 'executeConfirmedDelete catch lifecycle');
 
 const confirmBody = extractFunctionBody(
@@ -119,7 +119,7 @@ const confirmBody = extractFunctionBody(
     /function\s+confirmDelete\s*\([^)]*\)\s*{/
 );
 assert(confirmBody.includes('if (!isTheaterInteractionActive(container, options)) return;'), 'confirmDelete 必须在打开确认弹窗前检查 active');
-assert(confirmBody.includes("showToastIfActive(container, options, '请先选择要删除的内容', true);"), 'confirmDelete 空选择 toast 必须 active-only');
+assert(confirmBody.includes("showToastIfActive(container, options, t(\"请先选择要删除的内容\"), true);"), 'confirmDelete 空选择 toast 必须 active-only');
 assert(confirmBody.includes('() => executeConfirmedDelete(container, options)'), '确认弹窗回调必须进入 executeConfirmedDelete，让延迟确认再次检查 active');
 
 ['setDeleteMode', 'selectAllCurrent', 'clearSelection', 'toggleSelection'].forEach((name) => {

@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { createAssetRuntime } from './asset-runtime.js';
 import { createContentPresetAppearanceBridge } from './host-appearance.js';
 import { createContentPresetRuntimeContextController } from './runtime-context.js';
@@ -5,15 +6,15 @@ import { importContentPresetModule, invokeContentPresetMount } from './script-ru
 
 function abortError() {
     const error = typeof DOMException === 'function'
-        ? new DOMException('玉子美化展示挂载已取消', 'AbortError')
-        : new Error('玉子美化展示挂载已取消');
+        ? new DOMException(t("玉子美化展示挂载已取消"), 'AbortError')
+        : new Error(t("玉子美化展示挂载已取消"));
     error.name = 'AbortError';
     return error;
 }
 
 function fileText(record, path) {
     const file = path ? record?.files?.[path] : null;
-    if (!file) throw new Error(`展示资源不存在：${path}`);
+    if (!file) throw new Error(t`展示资源不存在：${path}`);
     if (file.encoding !== 'base64') return String(file.content ?? '');
     const binary = atob(file.content);
     return new TextDecoder().decode(Uint8Array.from(binary, char => char.charCodeAt(0)));
@@ -22,7 +23,7 @@ function fileText(record, path) {
 function createStyle(root, options) {
     if (typeof options.createStyleElement === 'function') return options.createStyleElement(root);
     const documentRef = root?.ownerDocument;
-    if (typeof documentRef?.createElement !== 'function') throw new Error('展示根节点不支持创建 CSS 节点');
+    if (typeof documentRef?.createElement !== 'function') throw new Error(t("展示根节点不支持创建 CSS 节点"));
     return documentRef.createElement('style');
 }
 
@@ -30,7 +31,7 @@ function attachStyle(root, style, options) {
     if (typeof options.attachStyle === 'function') return options.attachStyle(root, style);
     if (typeof root?.prepend === 'function') return root.prepend(style);
     if (typeof root?.appendChild === 'function') return root.appendChild(style);
-    throw new Error('展示根节点不支持挂载 CSS 节点');
+    throw new Error(t("展示根节点不支持挂载 CSS 节点"));
 }
 
 function detachStyle(root, style, options) {
@@ -71,7 +72,7 @@ function createInlineActions(display, handlers) {
 }
 
 function createLifecycleSignal(signal, AbortControllerCtor = globalThis.AbortController) {
-    if (typeof AbortControllerCtor !== 'function') throw new Error('当前环境不支持 AbortController');
+    if (typeof AbortControllerCtor !== 'function') throw new Error(t("当前环境不支持 AbortController"));
     const controller = new AbortControllerCtor();
     const abort = () => {
         if (!controller.signal.aborted) controller.abort();
@@ -90,9 +91,9 @@ export function createContentPresetDisplayRuntime(options = {}) {
     const record = options.record;
     const display = options.display;
     const root = options.root;
-    if (!record || !display || !root) throw new Error('展示运行时需要 record、display 与 root');
-    if (!['inline', 'popup', 'barrage'].includes(display.kind)) throw new Error(`不支持的展示类型：${display.kind}`);
-    if (!display.entry?.mount) throw new Error('展示缺少 ES Module mount 入口');
+    if (!record || !display || !root) throw new Error(t("展示运行时需要 record、display 与 root"));
+    if (!['inline', 'popup', 'barrage'].includes(display.kind)) throw new Error(t`不支持的展示类型：${display.kind}`);
+    if (!display.entry?.mount) throw new Error(t("展示缺少 ES Module mount 入口"));
 
     const lifecycle = createLifecycleSignal(options.signal, options.AbortControllerCtor);
     const runtimeDeps = Object.freeze({
@@ -154,7 +155,7 @@ export function createContentPresetDisplayRuntime(options = {}) {
                 const html = display.entry.html ? fileText(record, display.entry.html) : '';
                 const css = display.entry.css ? fileText(record, display.entry.css) : '';
                 if ('innerHTML' in root) root.innerHTML = html ? assetRuntime.rewriteHtml(html, display.entry.html) : '';
-                else if (html) throw new Error('展示根节点不支持写入 HTML');
+                else if (html) throw new Error(t("展示根节点不支持写入 HTML"));
                 if (css) {
                     style = createStyle(root, options);
                     style.textContent = assetRuntime.rewriteCss(css, display.entry.css);

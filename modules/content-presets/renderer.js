@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { acquireCurrentViewingSheet, releaseCurrentViewingSheet, subscribeTableUpdate } from '../phone-core/callbacks.js';
 import { getTableData } from '../phone-core/data-api.js';
 import { registerRoutePageCleanup } from '../phone-core/route-page-lifecycle.js';
@@ -144,7 +145,7 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
         instance.transition('importing');
         const record = await runtimeDeps.getPresetRecord(binding.presetId);
         const item = record?.items?.find(entry => entry.id === binding.itemId);
-        if (!item?.activatable || !runtimeDeps.matchesPresetItem(item, { tableName: initialState.tableName, headers: createTableSnapshot(runtimeDeps.getTableData(), target.sheetKey)?.rawHeaders })) throw new Error('绑定项已失效');
+        if (!item?.activatable || !runtimeDeps.matchesPresetItem(item, { tableName: initialState.tableName, headers: createTableSnapshot(runtimeDeps.getTableData(), target.sheetKey)?.rawHeaders })) throw new Error(t("绑定项已失效"));
         if (!isCurrent()) { instance.dispose(); return true; }
 
         assetRuntime = runtimeDeps.createAssetRuntime(record);

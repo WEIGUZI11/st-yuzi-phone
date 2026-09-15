@@ -48,14 +48,14 @@ assertOrdered(genericRuntime, [
     'const handleTableUpdate = (event) => {',
     'if (hasDirtyDetailDraft()) {',
     'state.setPendingExternalTableUpdate({',
-    "showInlineToast(container, '表格已有外部更新，当前草稿保存或退出编辑后再刷新', true);",
+    "showInlineToast(container, t(\"表格已有外部更新，当前草稿保存或退出编辑后再刷新\"), true);",
     'return;',
     'if (!syncRowsFromSheet()) return;',
 ], 'generic-runtime dirty detail external update');
 assertIncludes(genericRuntime, 'pendingExternalTableUpdate: null,', '普通 external update 同步后必须清理 pending 标记');
 assertIncludes(genericRuntime, 'syncRowsFromSheet,', 'generic-runtime 必须向 detail page 传递 syncRowsFromSheet');
 
-assertIncludes(detailPage, 'showInlineToast(container, \'当前详情行已不存在，已返回列表\', true);', 'detail page 行缺失时必须提示用户');
+assertIncludes(detailPage, "showInlineToast(container, t(\"当前详情行已不存在，已返回列表\"), true);", 'detail page 行缺失时必须提示用户');
 assertIncludes(detailPage, 'syncRowsFromSheet,', 'detail page 必须向 detail edit controller 透传 syncRowsFromSheet');
 
 assertOrdered(detailEdit, [
@@ -63,11 +63,11 @@ assertOrdered(detailEdit, [
     'const synced = typeof syncRowsFromSheet === \'function\' && syncRowsFromSheet();',
     'if (!synced) {',
     'state.returnToListMode();',
-    "showInlineToast(container, '外部表更新同步失败，已返回列表', true);",
+    "showInlineToast(container, t(\"外部表更新同步失败，已返回列表\"), true);",
     'state.syncLockState(getTableLockState(sheetKey));',
     'state.clearPendingExternalTableUpdate?.();',
-    "showInlineToast(container, '外部表更新后当前行已不存在，已返回列表', true);",
-    "showInlineToast(container, '已同步外部表更新');",
+    "showInlineToast(container, t(\"外部表更新后当前行已不存在，已返回列表\"), true);",
+    "showInlineToast(container, t(\"已同步外部表更新\"));",
 ], 'detail edit pending external update consume');
 assertOrdered(detailEdit, [
     'function handleToggleEditMode() {',

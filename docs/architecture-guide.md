@@ -893,6 +893,14 @@ Theater 是“把表格数据投影成场景页面”的子系统。它不是 Ta
 - [`theaterRenderKit`](../modules/phone-theater/core/render-kit.js:62)：提供 scene 渲染共享 helper，例如转义、标签、meta line、删除选择按钮。
 - 场景扩展规范参考 [`theater-scene-extension-spec.md`](reference/theater-scene-extension-spec.md:1)。
 
+#### 内置默认美化挂载
+
+广场、论坛、日记和直播通过 scene 的可选 `mountBuiltin` hook 使用[原生页面运行时](../modules/phone-theater/builtin/runtime.js)，不经过工坊导入或修改绑定。路由仍先尝试当前用户应用的内容预设，只有原有默认渲染分支才进入该 hook。小日历继续使用原场景，并消费全局白天／黑夜配色。
+
+广场、日记及论坛导航复用 `phone-core/navigation-ui.js` 的顶部几何，但论坛列表保持“左右箭头＋发现／关注”的单行导航，详情作者靠左；直播不增加独立标题栏。小日记标题栏使用主题实色背景且不进行背景模糊。字体库覆盖只扩展到内置作用域。图片控件在 detached 路由准备阶段也必须绘制初始状态，不能等待用户进入详情后才同步开关。
+
+页面只读快照保留物理行索引；图片控件复用[共用表格图片宿主](../modules/image-generation/table-image-host.js)，分别管理按钮、提示词字段与稳定图片归属。头像、外观、设置订阅、页面销毁和旧结果失效均由运行时适配，不散落到路由核心。具体字段、布局、存储和测试入口见[内置小剧场美化说明](reference/builtin-theater-beautify.md)。
+
 #### 6.6.1 scene registry 与路由
 
 scene registry 位于 [`modules/phone-theater/scenes/index.js`](../modules/phone-theater/scenes/index.js:1)。注册表当前聚合内置 scene：[`squareScene`](../modules/phone-theater/scenes/square.js:232)、[`forumScene`](../modules/phone-theater/scenes/forum.js:158)、[`liveScene`](../modules/phone-theater/scenes/live.js:354)、[`calendarScene`](../modules/phone-theater/scenes/calendar.js:365)、[`diaryScene`](../modules/phone-theater/scenes/diary.js:294)。
@@ -1571,3 +1579,36 @@ graph TD
 ## 10. 当前文档边界
 
 这份文档记录当前已落地、可维护、可验证的稳定事实，覆盖启动链路、核心运行时、集成层、数据链路、主要 UI 模块、基础设施、样式分层和发布前检查清单。审查台账保存在 [`review-issue-ledger.md`](review-issue-ledger.md:1)，演进规划保存在 [`plans/`](../plans)；未实施计划不写入本架构说明，已实施且影响后续维护的结论必须同步进入本文件或 [`reference/`](reference)。
+
+
+## 系统界面语言（中文 / English）
+
+### 设置与调用边界
+
+- 唯一持久字段为全局设置 `phoneLanguage`，默认 `zh-CN`，可选 `en`。不读取浏览器或酒馆语言，也不按角色、聊天另存设置。
+- 设置入口位于 **界面外观 → 主题与背景 → 语言 / Language**；选项固定显示 **简体中文** 与 **English**。
+- `modules/i18n/index.js` 负责运行时语言快照、系统文案插值和日期显示；英文词典集中在 `modules/i18n/en.js`。没有翻译服务、额外依赖、DOM 全文扫描或历史内容迁移。
+- `modules/settings.js` 在读取设置及语言变更／重置时同步语言，沿用既有保存和设置更新事件。非法语言值沿用 schema 的默认值归一化契约。
+- 渲染处显式使用 `t('系统原文')` 或标签模板（如 t 后接含插值的模板字符串）。中文原文作为词典键，插值内容只展示、不再次翻译；HTML 文本和属性继续由原调用方负责转义。模块级系统显示元数据通过 getter 在读取时翻译，不能在 import 时冻结当前语言。
+
+### 切换与生命周期
+
+- 当前外观页使用现有保留滚动位置的重绘路径，并恢复本页未提交表单；不自动提交其他设置，不刷新酒馆、不切聊天、不取消 QQ / AI 请求。其他页面下次进入时使用新语言。
+- 扩展设置面板原位更新自己的固定标签；悬浮入口复用 bootstrap 的设置更新事件。订阅均随原有面板／事件管理器清理。
+- 手机及扩展面板根节点标记 `lang`。手机壳主页按钮复用既有观察器同步无障碍标签；英文长文字样式只限定小手机自有控件，不修改用户内容预设。
+- 系统日期通过 `formatPhoneDateTime` 按中文／英文显示，保留原时区和 24 小时制；不改保存的时间值，不换算货币。
+
+### 数据不翻译
+
+- 表名、表头、单元格、变量路径、角色名、聊天正文、世界书内容、导入玉子美化页面、预设名称及提示词正文均为来源数据，不能传给通用翻译函数。
+- 内置小剧场名称及内部文案保持原样，仅其调用的小手机共享编辑、删除、确认控件跟随语言。作者 Runtime API、预设格式与导入文件内容不变，不新增作者语言接口。
+- 五套默认提示词及协议、占位符写法不变；只翻译管理标签、说明及操作反馈。草稿默认名称也作为数据保留，不把英文显示标签自动写回。
+- 首页、图标选择器将系统显示名称与原始匹配名称分开。图标键、图标匹配名、路由、错误码、QQ 角色权限值都保持稳定。QQ 禁言选项仅翻译 label，value 保持原协议；人民币可显示 CNY，但提交值仍为人民币。
+- QQ 新系统通知在产生时使用当前语言并保存为正文，切换后不改既有通知。原始外部服务报错不翻译，AI 回复语言由当时的 AI 与用户输入决定。
+
+### 自动回归
+
+- `scripts/check-phone-language-behavior.cjs`：设置默认／回读、非法值回退、同名系统与来源数据隔离、表格 HTML 转义、图标身份与操作错误码。
+- `scripts/check-phone-language-qq.cjs`：真实 QQ runtime / Facade 下的新旧系统通知、原始联系人与默认提示词保护。
+- `scripts/check-phone-language-browser.cjs`：独立 Chromium 临时环境，加载真实 CSS 和 `scripts/fixtures/phone-language-browser.js`，验证即时切换、草稿、滚动、280px 英文布局、预设保存、QQ 控件协议值、面板／悬浮入口清理。不访问真实 AI 或写入真实世界书；可用 `YUZI_TEST_BROWSER` 指定浏览器。
+- 以上纳入 `npm run check`。发布仍须执行 `npm run lint` 与 `npm run build`，扩展版和脚本版共用重建后的 dist；最终实际使用验收由用户进行。

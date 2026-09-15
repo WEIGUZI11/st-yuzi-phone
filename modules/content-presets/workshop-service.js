@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { getTableData } from '../phone-core/data-api.js';
 import { isContentPresetFullPageRuntimeEnabled } from './activation-gate.js';
 import { buildContentPresetCatalog } from './catalog.js';
@@ -66,7 +67,7 @@ function popupBindings(snapshot) { return new Map(snapshot.popupByTable || []); 
 function clearAffected(map, keys) { const next = new Map(map); keys.forEach(key => next.delete(key)); return next; }
 
 export function createUnavailableContentPresetWorkshopService() {
-    const error = new Error('模板工坊将在完整页面运行时启用后可用');
+    const error = new Error(t("模板工坊将在完整页面运行时启用后可用"));
     const snapshot = Object.freeze({ status: 'unavailable', error, metadata: new Map(), pageByTable: new Map(), popupByTable: new Map(), activeByTable: new Map(), revision: 0 });
     const viewModel = Object.freeze({ status: 'unavailable', error, revision: 0, presets: Object.freeze([]), tables: Object.freeze([]) });
     const unavailable = () => Promise.reject(error);
@@ -104,7 +105,7 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
     const setPageActive = (sheetKey, presetId, itemId) => withCommittedMutation(runtimeDeps, async () => {
         const table = (await getViewModel()).tables.find(entry => entry.sheetKey === sheetKey);
         const candidates = table?.pageCandidates || table?.candidates || [];
-        if (!table || !candidates.find(entry => entry.presetId === presetId && entry.itemId === itemId)) throw new Error('目标表或页面美化预设项不可绑定');
+        if (!table || !candidates.find(entry => entry.presetId === presetId && entry.itemId === itemId)) throw new Error(t("目标表或页面美化预设项不可绑定"));
         return { record: await runtimeDeps.setPageActiveBinding(sheetKey, presetId, itemId), affectedSheetKeys: [sheetKey] };
     }, (result, current) => {
         const pageByTable = pageBindings(current); pageByTable.set(sheetKey, result.record);
@@ -123,14 +124,14 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
         const viewModel = await getViewModel();
         const table = viewModel.tables.find(entry => entry.sheetKey === sheetKey);
         const candidate = table?.popupCandidates.find(entry => entry.presetId === presetId);
-        if (!candidate) throw new Error('目标表或弹窗美化来源不可绑定');
+        if (!candidate) throw new Error(t("目标表或弹窗美化来源不可绑定"));
         const needed = new Set([sheetKey]);
         const tableByTarget = target => {
             const matched = viewModel.tables.filter(entry => (
                 entry.tableName === target.tableName
                 && (target.fields || []).every(field => (entry.headers || []).includes(field))
             ));
-            if (matched.length !== 1) throw new Error(`组合展示依赖表不可用：${target.tableName}`);
+            if (matched.length !== 1) throw new Error(t`组合展示依赖表不可用：${target.tableName}`);
             return matched[0];
         };
         for (const descriptor of candidate.displays || []) {
@@ -142,7 +143,7 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
         const bindings = [...needed].map(requiredSheetKey => {
             const requiredTable = viewModel.tables.find(entry => entry.sheetKey === requiredSheetKey);
             const requiredCandidate = requiredTable?.popupCandidates.find(entry => entry.presetId === presetId);
-            if (!requiredCandidate) throw new Error(`组合展示依赖表未匹配同一美化来源：${requiredTable?.tableName || requiredSheetKey}`);
+            if (!requiredCandidate) throw new Error(t`组合展示依赖表未匹配同一美化来源：${requiredTable?.tableName || requiredSheetKey}`);
             return Object.freeze({
                 sheetKey: requiredSheetKey,
                 presetId,
@@ -168,7 +169,7 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
     const setPopupActive = (sheetKey, presetId, options = {}) => withCommittedMutation(runtimeDeps, async () => {
         const plan = await planPopupApplication(sheetKey, presetId);
         if (plan.conflicts.length > 0 && options?.replace !== true) {
-            const error = new Error('组合展示会替换其他表的弹窗美化来源，需要确认');
+            const error = new Error(t("组合展示会替换其他表的弹窗美化来源，需要确认"));
             error.code = 'CONTENT_PRESET_POPUP_REPLACE_CONFIRMATION_REQUIRED';
             error.conflicts = plan.conflicts;
             error.plan = plan;
@@ -200,10 +201,10 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
         async prepareImport(input) { const record = runtimeDeps.importContentPreset(input); return Object.freeze({ record, replacesExisting: !!await runtimeDeps.getPresetRecord(record.id) }); },
         async importPrepared(prepared, allowReplace = false) {
             const record = prepared?.record;
-            if (!record?.id) throw new Error('待导入预设无效');
+            if (!record?.id) throw new Error(t("待导入预设无效"));
             return withCommittedMutation(runtimeDeps, async () => {
                 const existing = await runtimeDeps.getPresetRecord(record.id);
-                if (existing && !allowReplace) { const error = new Error(`预设 ${record.id} 已存在，需要确认覆盖`); error.code = 'CONTENT_PRESET_REPLACE_CONFIRMATION_REQUIRED'; throw error; }
+                if (existing && !allowReplace) { const error = new Error(t`预设 ${record.id} 已存在，需要确认覆盖`); error.code = 'CONTENT_PRESET_REPLACE_CONFIRMATION_REQUIRED'; throw error; }
                 return { ...await runtimeDeps.replacePresetRecord(record), replaced: !!existing };
             }, (result, current) => ({
                 affectedSheetKeys: result.affectedSheetKeys,
@@ -212,7 +213,7 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
         },
         async exportPreset(presetId) {
             const record = await runtimeDeps.getPresetExportRecord(presetId);
-            if (!record) throw new Error(`预设不存在：${presetId}`);
+            if (!record) throw new Error(t`预设不存在：${presetId}`);
             return Object.freeze({ filename: `${record.id}.yuzi-beautify.json`, text: runtimeDeps.serializeContentPreset(record), mimeType: 'application/json' });
         },
         deletePreset: presetId => withCommittedMutation(runtimeDeps, () => runtimeDeps.deletePresetRecord(presetId), (result, current) => {

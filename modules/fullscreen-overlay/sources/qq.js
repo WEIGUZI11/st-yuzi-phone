@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { TABLE_POPUP_MODEL_ID } from '../settings.js';
 import {
     getQQV2Facade,
@@ -76,7 +77,7 @@ export function createQQFullscreenOverlaySourceAdapter(options = {}) {
                         sheetKey: QQ_FULLSCREEN_OVERLAY_SOURCE_KEY,
                         senderName,
                         avatarAssetId: normalizeText(event?.avatarAssetId),
-                        text: `${senderName}${group ? '发送了' : '给你发了'}1条消息`,
+                        text: group ? t`${senderName}发送了1条消息` : t`${senderName}给你发了1条消息`,
                     });
                 })
                 .filter(Boolean));

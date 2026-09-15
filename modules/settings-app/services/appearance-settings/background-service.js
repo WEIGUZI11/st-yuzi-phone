@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import { savePhoneSetting } from '../../../settings.js';
 import { cacheRemove, CACHE_STORES } from '../../../cache-manager.js';
 import { Logger } from '../../../error-handler.js';
@@ -33,28 +34,28 @@ export function setupBgUpload(container, options = {}) {
         pickImageFile(async (dataUrl) => {
             if (disposed) return;
             if (estimateBase64Bytes(dataUrl) > STORAGE_BUDGETS.backgroundImageBytes) {
-                showToast(container, '背景图过大，请缩小裁剪范围或选择更小图片', true);
+                showToast(container, t("背景图过大，请缩小裁剪范围或选择更小图片"), true);
                 return;
             }
 
             const saved = savePhoneSetting('backgroundImage', dataUrl);
             if (saved !== true) {
-                showToast(container, '背景保存失败，请稍后重试', true);
+                showToast(container, t("背景保存失败，请稍后重试"), true);
                 return;
             }
 
             cacheRemove(CACHE_STORES.images, cachedKey).catch(() => {});
-            showToast(container, '背景已更新');
+            showToast(container, t("背景已更新"));
         }, {
             runtime,
             maxSizeMB: 12,
             compress: false,
-            cropTitle: '裁剪背景图',
-            cropDescription: '可自由调整背景可见区域，确认后再保存。',
+            cropTitle: t("裁剪背景图"),
+            cropDescription: t("可自由调整背景可见区域，确认后再保存。"),
             cropPreset: 'background',
             onError: (msg) => {
                 if (disposed) return;
-                showToast(container, msg || '背景图片上传失败', true);
+                showToast(container, msg || t("背景图片上传失败"), true);
             },
         });
     });
@@ -63,7 +64,7 @@ export function setupBgUpload(container, options = {}) {
     addListener(clearBtn, 'click', () => {
         savePhoneSetting('backgroundImage', null);
         cacheRemove(CACHE_STORES.images, cachedKey).catch(() => {});
-        showToast(container, '背景已清除');
+        showToast(container, t("背景已清除"));
     });
 
     return () => {

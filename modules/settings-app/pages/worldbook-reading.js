@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { buildSettingsPageFrame, buildSettingsSectionHtml } from '../layout/primitives.js';
 import { createRuntimeScrollPreserver } from '../../ui-runtime/scroll-preserver-core.js';
@@ -8,11 +9,11 @@ function asArray(value) {
 
 function entryTitle(entry) {
     const value = entry?.value && typeof entry.value === 'object' ? entry.value : {};
-    return String(value.comment ?? value.name ?? '').trim() || `条目 ${entry?.ref?.uid ?? ''}`;
+    return String(value.comment ?? value.name ?? '').trim() || t`条目 ${entry?.ref?.uid ?? ''}`;
 }
 
 function sourceLabel(sourceRole) {
-    return sourceRole === 'primary' ? '主世界书' : '附加世界书';
+    return sourceRole === 'primary' ? t("主世界书") : t("附加世界书");
 }
 
 function buildEntryHtml(entry) {
@@ -52,51 +53,51 @@ function buildWorldbookReadingView(pageState = {}) {
     const selectedCount = enabledEntries.filter((entry) => entry?.selected === true).length;
     let entriesHtml = filteredEntries.length > 0
         ? filteredEntries.map(buildEntryHtml).join('')
-        : `<div class="phone-worldbook-empty">${query ? '未找到匹配的条目' : '当前角色没有可读取的世界书条目'}</div>`;
+        : `<div class="phone-worldbook-empty">${query ? t("未找到匹配的条目") : t("当前角色没有可读取的世界书条目")}</div>`;
     if (pageState.loading === true) {
-        entriesHtml = '<div class="phone-worldbook-loading">正在读取角色世界书...</div>';
+        entriesHtml = `<div class="phone-worldbook-loading">${t("正在读取角色世界书...")}</div>`;
     } else if (String(pageState.error ?? '').trim()) {
         entriesHtml = `<div class="phone-worldbook-error">${escapeHtml(pageState.error)}</div>`;
     }
     return {
         query,
         entriesHtml,
-        statusText: `已选择 ${selectedCount}/${enabledEntries.length} 个未禁用条目`,
+        statusText: t`已选择 ${selectedCount}/${enabledEntries.length} 个未禁用条目`,
     };
 }
 
 export function buildWorldbookReadingPageHtml(pageState = {}) {
     const { query, entriesHtml, statusText } = buildWorldbookReadingView(pageState);
     const blockedKeywordsSectionHtml = buildSettingsSectionHtml({
-        title: '自动排除关键词',
-        desc: '条目 comment 包含任一关键词时自动取消勾选；不检查条目正文。每行一个关键词。',
+        title: t("自动排除关键词"),
+        desc: t("条目 comment 包含任一关键词时自动取消勾选；不检查条目正文。每行一个关键词。"),
         bodyHtml: `
-            <textarea id="phone-worldbook-reading-blocked-keywords" class="phone-settings-textarea" rows="6" spellcheck="false" placeholder="例如：MVU">${escapeHtml(blockedKeywordsText(pageState))}</textarea>
+            <textarea id="phone-worldbook-reading-blocked-keywords" class="phone-settings-textarea" rows="6" spellcheck="false" placeholder="${t`例如：MVU`}">${escapeHtml(blockedKeywordsText(pageState))}</textarea>
             <div class="phone-settings-action phone-settings-action-wrap">
-                <button type="button" class="phone-settings-btn" id="phone-worldbook-reading-blocked-keywords-save">保存排除词</button>
+                <button type="button" class="phone-settings-btn" id="phone-worldbook-reading-blocked-keywords-save">${t`保存排除词`}</button>
             </div>
         `,
     });
     const sectionHtml = buildSettingsSectionHtml({
-        title: '条目范围',
-        desc: '默认读取当前角色主世界书和附加世界书中的所有未禁用条目。',
+        title: t("条目范围"),
+        desc: t("默认读取当前角色主世界书和附加世界书中的所有未禁用条目。"),
         bodyHtml: `
             <label class="phone-ai-preset-segment-field" for="phone-worldbook-reading-search">
-                <span>搜索条目</span>
-                <input id="phone-worldbook-reading-search" class="phone-settings-input" value="${escapeHtmlAttr(query)}" placeholder="输入条目名、书名或 UID">
+                <span>${t`搜索条目`}</span>
+                <input id="phone-worldbook-reading-search" class="phone-settings-input" value="${escapeHtmlAttr(query)}" placeholder="${t`输入条目名、书名或 UID`}">
             </label>
             <div class="phone-settings-action phone-settings-action-wrap">
-                <button type="button" class="phone-settings-btn" id="phone-worldbook-reading-select-all">全选</button>
-                <button type="button" class="phone-settings-btn" id="phone-worldbook-reading-deselect-all">取消全选</button>
+                <button type="button" class="phone-settings-btn" id="phone-worldbook-reading-select-all">${t`全选`}</button>
+                <button type="button" class="phone-settings-btn" id="phone-worldbook-reading-deselect-all">${t`取消全选`}</button>
             </div>
             <div id="phone-worldbook-reading-status" class="phone-worldbook-status">${statusText}</div>
             <div id="phone-worldbook-reading-entries" class="phone-worldbook-entries">${entriesHtml}</div>
         `,
     });
     return buildSettingsPageFrame({
-        title: '读取世界书',
+        title: t("读取世界书"),
         bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open',
-        rightActionHtml: '<button type="button" class="phone-settings-btn phone-settings-btn-ghost phone-settings-nav-action" id="phone-worldbook-reading-refresh">刷新</button>',
+        rightActionHtml: `<button type="button" class="phone-settings-btn phone-settings-btn-ghost phone-settings-nav-action" id="phone-worldbook-reading-refresh">${t("刷新")}</button>`,
         bodyHtml: `${blockedKeywordsSectionHtml}${sectionHtml}`,
     });
 }
@@ -139,7 +140,7 @@ function createWorldbookReadingSession(ctx, paint, paintFilter) {
         } catch (error) {
             if (!isCurrentLoad(token)) return false;
             pageState.loading = false;
-            pageState.error = String(error?.message || '读取世界书失败');
+            pageState.error = String(error?.message || t("读取世界书失败"));
             repaint();
             return false;
         }
@@ -151,7 +152,7 @@ function createWorldbookReadingSession(ctx, paint, paintFilter) {
             await ctx.worldbookReadingCatalog.setBlockedKeywords(value);
         } catch (error) {
             if (!active) return false;
-            pageState.error = String(error?.message || '保存世界书自动排除关键词失败');
+            pageState.error = String(error?.message || t("保存世界书自动排除关键词失败"));
             repaint();
             return false;
         }
@@ -165,7 +166,7 @@ function createWorldbookReadingSession(ctx, paint, paintFilter) {
             await ctx.worldbookReadingCatalog.setSelected(refs, selected);
         } catch (error) {
             if (!active) return false;
-            pageState.error = String(error?.message || '保存世界书读取选择失败');
+            pageState.error = String(error?.message || t("保存世界书读取选择失败"));
             repaint();
             return false;
         }

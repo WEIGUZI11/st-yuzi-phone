@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import { escapeHtml } from '../../utils/dom-escape.js';
 import { qqFailureLog } from '../../qq-v2/request/failure-log.js';
 import { writeToClipboard } from '../../utils/clipboard.js';
@@ -7,23 +8,23 @@ import { createScrollPreserver } from '../ui/settings-scroll-binding.js';
 export function formatFailureLog(entry) {
     return [
         `${entry.source} · ${entry.title}`, entry.time, entry.conversation, entry.model,
-        '本次 AI 原始返回', entry.response || '本次未取得 AI 回复正文',
-        '这次是什么问题', entry.explanation, '你可以怎么做', entry.suggestion,
-        '技术详情', entry.detail || '当前调用通道未提供详细错误信息',
+        t("本次 AI 原始返回"), entry.response || t("本次未取得 AI 回复正文"),
+        t("这次是什么问题"), entry.explanation, t("你可以怎么做"), entry.suggestion,
+        t("技术详情"), entry.detail || t("当前调用通道未提供详细错误信息"),
     ].filter(Boolean).join('\n');
 }
 
 export function buildFailureLogCard(entry) {
-    const response = escapeHtml(entry.response || '本次未取得 AI 回复正文');
+    const response = escapeHtml(entry.response || t("本次未取得 AI 回复正文"));
     return `<article class="yuzi-failure-log" data-log-id="${entry.id}">
         ${buildSettingsSectionHtml({
             title: `${entry.source} · ${entry.title}`,
             desc: [entry.time, entry.conversation, entry.model].filter(Boolean).join(' · '),
-            actionsHtml: `<button type="button" class="phone-settings-btn" data-copy-log="${entry.id}" aria-label="复制本条日志">复制</button>`,
-            bodyHtml: `<details><summary>本次 AI 原始返回</summary><pre>${response}</pre></details>
-                <details><summary>这次是什么问题</summary><p>${escapeHtml(entry.explanation)}</p></details>
-                <details><summary>你可以怎么做</summary><p>${escapeHtml(entry.suggestion)}</p></details>
-                <details><summary>技术详情</summary><pre>${escapeHtml(entry.detail || '当前调用通道未提供详细错误信息')}</pre></details>`,
+            actionsHtml: `<button type="button" class="phone-settings-btn" data-copy-log="${entry.id}" aria-label="${t`复制本条日志`}">${t`复制`}</button>`,
+            bodyHtml: `<details><summary>${t`本次 AI 原始返回`}</summary><pre>${response}</pre></details>
+                <details><summary>${t`这次是什么问题`}</summary><p>${escapeHtml(entry.explanation)}</p></details>
+                <details><summary>${t`你可以怎么做`}</summary><p>${escapeHtml(entry.suggestion)}</p></details>
+                <details><summary>${t`技术详情`}</summary><pre>${escapeHtml(entry.detail || t("当前调用通道未提供详细错误信息"))}</pre></details>`,
         })}
     </article>`;
 }
@@ -54,7 +55,7 @@ export function createLogsPage(ctx) {
             if (!list.querySelector(`[data-log-id="${entry.id}"]`)) list.insertAdjacentHTML('afterbegin', buildFailureLogCard(entry));
         }
         container.querySelector('[data-log-empty]').hidden = snapshot.entries.length > 0;
-        container.querySelector('[data-log-count]').textContent = `${snapshot.entries.length} / 50 条`;
+        container.querySelector('[data-log-count]').textContent = t`${snapshot.entries.length} / 50 条`;
         container.querySelector('[data-log-trimmed]').hidden = !snapshot.trimmed;
         container.querySelector('[data-clear-logs]').disabled = snapshot.entries.length === 0;
         scroll.restoreScroll('logsScrollTop');
@@ -62,15 +63,15 @@ export function createLogsPage(ctx) {
     return {
         mount() {
             container.innerHTML = buildSettingsPageFrame({
-                title: '日志',
+                title: t("日志"),
                 bodyClass: 'phone-app-body phone-settings-scroll yuzi-failure-logs',
                 bodyHtml: buildSettingsSectionHtml({
-                    title: '当前聊天的 QQ 日志',
-                    desc: '仅记录失败，最新的在前。最近 50 条；刷新或切换酒馆聊天后清空。',
-                    actionsHtml: '<button type="button" class="phone-settings-btn" data-clear-logs>清空日志</button>',
+                    title: t("当前聊天的 QQ 日志"),
+                    desc: t("仅记录失败，最新的在前。最近 50 条；刷新或切换酒馆聊天后清空。"),
+                    actionsHtml: `<button type="button" class="phone-settings-btn" data-clear-logs>${t("清空日志")}</button>`,
                     bodyHtml: `<p data-log-count role="status"></p>
-                        <p data-log-trimmed hidden>日志文本已达到内存上限，部分最旧记录已移除。</p>
-                        <p data-log-empty>暂无失败日志。已读不回和正常取消不会记为错误。</p>`,
+                        <p data-log-trimmed hidden>${t`日志文本已达到内存上限，部分最旧记录已移除。`}</p>
+                        <p data-log-empty>${t`暂无失败日志。已读不回和正常取消不会记为错误。`}</p>`,
                 }) + '<div class="yuzi-failure-log-list"></div>',
             });
             pageRuntime.addEventListener(container, 'click', async event => {
@@ -87,9 +88,9 @@ export function createLogsPage(ctx) {
                     try {
                         const copied = await writeToClipboard(formatFailureLog(entry));
                         if (copied === false) throw new Error('clipboard unavailable');
-                        if (!disposed) showToast(container, '日志已复制，请留意其中的对话隐私。', false, pageRuntime);
+                        if (!disposed) showToast(container, t("日志已复制，请留意其中的对话隐私。"), false, pageRuntime);
                     } catch {
-                        if (!disposed) showToast(container, '复制失败，请展开原文后手动复制。', true, pageRuntime);
+                        if (!disposed) showToast(container, t("复制失败，请展开原文后手动复制。"), true, pageRuntime);
                     }
                 }
             });

@@ -639,7 +639,9 @@ const BUILT_IN_PROMPT_PRESETS = Object.freeze([
                 id: 'builtin-group-proactive-output',
                 name: '输出格式',
                 role: 'system',
-                content: QQ_XML_PROTOCOL,
+                content: `${QQ_XML_PROTOCOL}
+
+新建群聊时，owner 只能填写 members 中的 N 人物引用，例如 N1；绝不能填写 __self__。当前用户会由系统自动加入新群，不需要写入 members，也不能作为 AI 新建群的群主。`,
             }),
             Object.freeze({
                 id: 'builtin-group-proactive-output-ack',

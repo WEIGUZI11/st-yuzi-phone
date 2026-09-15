@@ -1,3 +1,4 @@
+import { mount as mountBuiltin } from '../builtin/diary.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { buildTheaterDeleteKey } from '../core/delete-key.js';
 import { getCellByHeader, mapTheaterRows, normalizeText, resolveRowIdentity } from '../core/table-index.js';
@@ -293,6 +294,7 @@ function renderContent(viewModel, uiState = {}, renderKit) {
 
 export const diaryScene = Object.freeze({
     id: 'diary',
+    mountBuiltin,
     appKey: '__theater_diary',
     name: '小日记',
     iconText: '记',

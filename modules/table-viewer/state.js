@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { getTableLockState } from '../phone-core/data-api.js';
 
@@ -151,7 +152,7 @@ export class TableViewerState {
             if (diagnosticKeys.length > 0) {
                 stateLogger.info({
                     action: 'state.change',
-                    message: '表格查看器关键状态变更',
+                    message: t("表格查看器关键状态变更"),
                     context: {
                         changedKeys: diagnosticKeys,
                         updates: Object.fromEntries(diagnosticKeys.map((key) => [key, changedUpdates[key]])),
