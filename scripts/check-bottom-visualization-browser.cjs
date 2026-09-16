@@ -6,11 +6,14 @@ const { pathToFileURL } = require('node:url');
 const { buildSync } = require('esbuild');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yuzi-bottom-browser-'));
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const ciBrowserFlags = process.platform === 'linux' && process.env.CI
+    ? ['--no-sandbox', '--disable-setuid-sandbox']
+    : [];
 
 async function runBrowser(browser, width) {
     const profile = path.join(dir, `profile-${width}`);
     const child = spawn(browser, ['--headless', `--window-size=${width},1000`, '--disable-gpu', '--no-first-run', '--no-default-browser-check',
-        '--remote-debugging-pipe', '--user-data-dir=' + profile,
+        ...ciBrowserFlags, '--remote-debugging-pipe', '--user-data-dir=' + profile,
         ...(process.platform === 'linux' ? ['--disable-dev-shm-usage'] : []), 'about:blank'], { windowsHide: true, stdio: ['ignore','ignore','ignore','pipe','pipe'] });
     let sequence = 0, buffer = '';
     const pending = new Map();

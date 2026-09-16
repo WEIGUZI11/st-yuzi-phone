@@ -5,6 +5,9 @@ const { spawnSync } = require('node:child_process');
 const { buildSync } = require('esbuild');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yuzi-language-browser-'));
 const test = fs.readFileSync(path.join(__dirname, 'fixtures/phone-language-browser.js'), 'utf8');
+const ciBrowserFlags = process.platform === 'linux' && process.env.CI
+    ? ['--no-sandbox', '--disable-setuid-sandbox']
+    : [];
 try {
     const code = buildSync({ stdin: { contents: test, resolveDir: process.cwd(), loader: 'js' }, bundle: true, write: false, format: 'iife', define: { 'import.meta.url': JSON.stringify(require('node:url').pathToFileURL(path.resolve('dist/yuzi-phone.bundle.js')).href) } }).outputFiles[0].text;
     buildSync({ entryPoints: ['style.css'], bundle: true, outfile: path.join(dir, 'style.css'), loader: { '.jpg': 'file' }, logLevel: 'silent' });
@@ -16,6 +19,7 @@ try {
         '--disable-gpu',
         '--no-first-run',
         '--no-default-browser-check',
+        ...ciBrowserFlags,
         ...(process.platform === 'linux' ? ['--disable-dev-shm-usage'] : []),
         '--user-data-dir=' + path.join(dir, `profile-${attempt}`),
         '--dump-dom',

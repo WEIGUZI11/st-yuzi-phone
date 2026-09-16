@@ -36,7 +36,7 @@ const emit = (type, ...args) => [...(events.get(type) || [])].forEach(fn => fn(.
 const patch = values => savePhoneSetting('bottomVisualization', { ...getPhoneSettings().bottomVisualization, ...values });
 const click = selector => { const node = document.querySelector(selector); assert(node, '缺少控件 '+selector); node.click(); };
 async function main() {
-    document.head.insertAdjacentHTML('beforeend', `<style>body{margin:0}#sheld{position:absolute;left:25%;width:50%;height:95vh;top:0;display:flex;flex-direction:column}#chat{flex:1;overflow:auto}#form_sheld{height:45px;flex-shrink:0}#settings-test{position:fixed;left:0;top:0;width:200px}#top-bar{height:30px}@media(max-width:767px){#sheld{left:0;width:100%}#settings-test{display:none}}</style>`);
+    document.head.insertAdjacentHTML('beforeend', `<style>body{margin:0}#sheld{position:absolute;left:25%;width:50%;height:95vh;top:0;display:flex;flex-direction:column}#chat{flex:1;overflow:auto}#form_sheld{height:45px;flex-shrink:0}#settings-test{position:fixed;left:0;top:0;width:200px}#top-bar{height:30px}@media(max-width:767px){html{height:0;-webkit-transform:translateZ(0);transform:translateZ(0)}body{position:fixed;inset:0}#sheld{left:0;width:100%}#settings-test{display:none}}</style>`);
     document.body.innerHTML='<div id="top-bar"></div><div id="left-nav-panel" class="closedDrawer"></div><div id="right-nav-panel" class="closedDrawer"></div><div id="sheld"><div id="chat"><div class="mes" mesid="0"><div class="mes_text">正文</div></div></div><div id="form_sheld"><textarea id="send_textarea"></textarea></div></div><div id="settings-test"></div>';
     startBottomVisualization();
     assert(!document.querySelector('.yuzi-bottom-root'), '默认关闭不创建运行 DOM');
@@ -49,6 +49,23 @@ async function main() {
     assert(document.querySelector('.yuzi-bottom-root'), '开启后挂载');
     assert(toggle.getAttribute('aria-checked')==='true','开关同步开启状态');
     assert([...document.querySelectorAll('.yuzi-bottom-tab')].map(button=>button.textContent.trim()).join('|')==='审核|纪要|选项表', '导航仅显示审核和原始表名，没有图标或勾号');
+    click('.yuzi-bottom-nav [data-action="settings"]'); await sleep();
+    let earlyDialog=document.querySelector('.yuzi-bottom-dialog');
+    assert(earlyDialog?.open, '早期设置弹窗打开');
+    const earlyPosition=earlyDialog.querySelector('[name="position"]');
+    assert(earlyPosition, '早期设置存在位置选择');
+    earlyPosition.value='edge'; earlyPosition.dispatchEvent(new Event('change',{bubbles:true})); await sleep();
+    assert(getPhoneSettings().bottomVisualization.position==='edge', '早期设置保存侧边栏');
+    assert(!document.querySelector('.yuzi-bottom-launch').hidden, '从普通底栏切侧边栏后 Y 可见: '+document.querySelector('.yuzi-bottom-launch')?.hidden);
+    if (innerWidth < 768) {
+        const launchRect = document.querySelector('.yuzi-bottom-launch').getBoundingClientRect();
+        const center = launchRect.top + launchRect.height / 2;
+        assert(launchRect.top >= 0 && launchRect.bottom <= innerHeight, '手机端 Y 必须完整位于视口内：'+JSON.stringify({ top:launchRect.top, bottom:launchRect.bottom, innerHeight }));
+        assert(Math.abs(center - innerHeight / 2) <= 2, '手机端 Y 必须位于视口中线：'+JSON.stringify({ center, expected:innerHeight/2 }));
+    }
+    document.querySelector('.yuzi-bottom-dialog [data-action="dismiss"]')?.click(); await sleep();
+    patch({position:'flow'}); await sleep();
+
     click('.yuzi-bottom-nav [data-sheet="review"]'); await sleep();
     assert(document.querySelector('.tur-update-gap').textContent==='待记录', '审核没有历史记录时展示待记录');
     setReviewState({unupdatedFloorCount:3}); await sleep();
@@ -279,6 +296,7 @@ async function main() {
     assert(!document.querySelector('.yuzi-bottom-dialog'), '点击黑色遮罩关闭设置');
     click('.yuzi-bottom-nav [data-action="settings"]'); await sleep(); dialog=document.querySelector('.yuzi-bottom-dialog');
     const position = dialog.querySelector('[name="position"]'); position.value='fixed'; position.dispatchEvent(new Event('change', { bubbles:true })); await sleep();
+
     assert(dialog.querySelector('[name="layout"]') && dialog.querySelector('[name="cardWidth"]'), '普通布局设置恢复');
     const layoutControl=dialog.querySelector('[name="layout"]'); layoutControl.value='horizontal'; layoutControl.dispatchEvent(new Event('change',{bubbles:true}));
     const regionControl=dialog.querySelector('[name="region"]'); regionControl.value='chat'; regionControl.dispatchEvent(new Event('change',{bubbles:true}));
