@@ -1,3 +1,4 @@
+import { getPhoneSettings, savePhoneSetting, subscribePhoneSettingsUpdates } from '../../settings.js';
 import { buildSettingsHomePageHtml } from '../layout/frame.js';
 
 export function createHomePage(ctx) {
@@ -23,6 +24,13 @@ export function renderHomePage(ctx) {
         ? runtime.addEventListener(target, type, listener, options)
         : () => {};
 
+    const bottomToggle = container.querySelector('#yuzi-bottom-enabled');
+    bindEvent(bottomToggle, 'click', () => {
+        savePhoneSetting('bottomVisualization', { ...getPhoneSettings().bottomVisualization, enabled: bottomToggle.getAttribute('aria-checked') !== 'true' });
+    });
+    runtime?.registerCleanup?.(subscribePhoneSettingsUpdates(() => {
+        if (bottomToggle) bottomToggle.setAttribute('aria-checked', String(getPhoneSettings().bottomVisualization.enabled));
+    }));
     bindEvent(container.querySelector('.phone-nav-back'), 'click', navigateBack);
     container.querySelectorAll('.phone-settings-home-trigger').forEach((button) => {
         bindEvent(button, 'click', () => {

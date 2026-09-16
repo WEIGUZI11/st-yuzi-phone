@@ -73,7 +73,7 @@ function buildFieldSummaryHtml(fields = [], changeType = 'update') {
     }).join('');
 }
 
-function buildChangeItemHtml(change = {}) {
+function buildChangeItemHtml(change = {}, readOnly = false) {
     const typeText = formatChangeType(change.type);
     const rowLabel = t`第 ${formatCount(change.rowIndex) + 1} 行`;
     const title = change.rowTitle || rowLabel;
@@ -90,7 +90,7 @@ function buildChangeItemHtml(change = {}) {
         `;
     }
     return `
-        <button type="button" class="tur-change-item is-${escapeHtmlAttr(change.type || 'update')}" data-action="open-review-change"
+        <${readOnly ? 'article' : 'button type="button"'} class="tur-change-item is-${escapeHtmlAttr(change.type || 'update')}" ${readOnly ? '' : 'data-action="open-review-change"'}
             data-sheet-key="${escapeHtmlAttr(change.sheetKey)}"
             data-row-id="${escapeHtmlAttr(change.rowId || '')}"
             data-row-index="${escapeHtmlAttr(String(change.rowIndex ?? -1))}"
@@ -101,23 +101,23 @@ function buildChangeItemHtml(change = {}) {
                 <small>${escapeHtml(rowLabel)}</small>
             </span>
             <span class="tur-change-fields">${buildFieldSummaryHtml(change.fields, change.type)}</span>
-        </button>
+        </${readOnly ? 'article' : 'button'}>
     `;
 }
 
-function buildTableGroupHtml(table = {}) {
+function buildTableGroupHtml(table = {}, readOnly = false) {
     const changes = Array.isArray(table.changes) ? table.changes : [];
     return `
-        <details class="tur-table-card" data-sheet-key="${escapeHtmlAttr(table.sheetKey || '')}">
-            <summary class="tur-table-summary tur-table-header">
+        <${readOnly ? 'section' : 'details'} class="tur-table-card" data-sheet-key="${escapeHtmlAttr(table.sheetKey || '')}">
+            <${readOnly ? 'header' : 'summary'} class="tur-table-summary tur-table-header">
                 <div>
                     <h3>${escapeHtml(table.tableName || table.sheetKey || t("未命名表格"))}</h3>
                     <p>${t`${formatCount(table.insertCount)} 新增 · ${formatCount(table.updateCount)} 修改 · ${formatCount(table.deleteCount)} 删除`}</p>
                 </div>
                 <span class="tur-table-count">${formatCount(table.changeCount)}</span>
-            </summary>
-            <div class="tur-change-list">${changes.map(buildChangeItemHtml).join('')}</div>
-        </details>
+            </${readOnly ? 'header' : 'summary'}>
+            <div class="tur-change-list">${changes.map(change => buildChangeItemHtml(change, readOnly)).join('')}</div>
+        </${readOnly ? 'section' : 'details'}>
     `;
 }
 
@@ -140,16 +140,18 @@ export function buildTableUpdateReviewPageHtml(state = {}) {
     `;
 }
 
-export function buildTableUpdateReviewContentHtml(state = {}) {
+export function buildTableUpdateReviewContentHtml(state = {}, { readOnly = false } = {}) {
     const tables = Array.isArray(state.tables) ? state.tables : [];
     const statusClass = state.status === 'error' ? 'is-error' : state.changeCount > 0 ? 'is-ready' : 'is-empty';
     const floorText = formatAiReplyFloorText(state.floorId);
+    const gapText = Number.isInteger(state.unupdatedFloorCount) && state.unupdatedFloorCount >= 0
+        ? t`已连续 ${state.unupdatedFloorCount} 楼未更新` : t("待记录");
     const message = state.error?.message || state.message || t("暂无本楼更新");
     return `
         <section class="tur-summary ${statusClass}">
-            <div><span class="tur-kicker">${escapeHtml(floorText)}</span><h2>${escapeHtml(message)}</h2></div>
+            <div class="tur-summary-main"><div class="tur-summary-heading"><span class="tur-kicker">${escapeHtml(floorText)}</span><span class="tur-update-gap">${escapeHtml(gapText)}</span></div><h2>${escapeHtml(message)}</h2></div>
             <div class="tur-metrics"><span>${t`${formatCount(state.tableCount)} 表`}</span><span>${t`${formatCount(state.changeCount)} 更新`}</span></div>
         </section>
-        ${tables.length > 0 ? `<div class="tur-table-list">${tables.map(buildTableGroupHtml).join('')}</div>` : `<div class="tur-empty">${t("当前还没有可审核的本楼表格更新。")}</div>`}
+        ${tables.length > 0 ? `<div class="tur-table-list">${tables.map(table => buildTableGroupHtml(table, readOnly)).join('')}</div>` : `<div class="tur-empty">${t("当前还没有可审核的本楼表格更新。")}</div>`}
     `;
 }

@@ -1,3 +1,4 @@
+import { startBottomVisualization, stopBottomVisualization, suspendBottomVisualization, resumeBottomVisualization } from '../bottom-visualization/index.js';
 import { Logger } from '../error-handler.js';
 import { subscribeTableUpdate } from './callbacks.js';
 import {
@@ -31,6 +32,7 @@ export function applyTableContentReplacementArea(area = {}) {
 }
 
 const defaultDeps = Object.freeze({
+    startBottomVisualization, stopBottomVisualization, suspendBottomVisualization, resumeBottomVisualization,
     startChronicle: () => startChronicleTodayRelationInjection(),
     stopChronicle: () => stopChronicleTodayRelationInjection(),
     startSmallCalendar: () => startSmallCalendarDerivedFieldsInjection(),
@@ -248,6 +250,7 @@ function completePendingBarrier(pending, reason) {
     pending.stage = 'completed';
     clearBarrierResources(pending, reason);
     const started = startDerivedServices(pending.generation, reason);
+    callLifecycleDependency(deps.resumeBottomVisualization, 'bottom-visualization.resume');
     callIsolatedFullscreenOverlayLifecycle(
         () => deps.resumeFullscreenOverlayAfterChatChange(),
         'fullscreen-overlay.chat-change.resume',
@@ -299,6 +302,7 @@ function handleTableUpdateSignal(pending) {
 
 export function startPhoneBackgroundServices(reason = 'enabled') {
     runtime.enabled = true;
+    callLifecycleDependency(deps.startBottomVisualization, 'bottom-visualization.start');
     callIsolatedTableUpdateReviewLifecycle(
         deps.startTableUpdateReview,
         'table-update-review.start',
@@ -321,6 +325,7 @@ export function startPhoneBackgroundServices(reason = 'enabled') {
 
 export function stopPhoneBackgroundServices(reason = 'disabled') {
     runtime.enabled = false;
+    callLifecycleDependency(deps.stopBottomVisualization, 'bottom-visualization.stop');
     runtime.generation += 1;
     cancelPendingBarrier(reason);
     stopDerivedServices(reason);
@@ -339,6 +344,7 @@ export function stopPhoneBackgroundServices(reason = 'disabled') {
 
 export function handlePhoneBackgroundChatChanged(chatId = null) {
     if (!runtime.enabled) return false;
+    callLifecycleDependency(deps.suspendBottomVisualization, 'bottom-visualization.suspend');
 
     runtime.generation += 1;
     const generation = runtime.generation;
@@ -411,6 +417,10 @@ export function __test__setPhoneBackgroundServiceDeps(overrides = {}) {
     stopPhoneBackgroundServices('test-deps-replace');
     deps = {
         ...defaultDeps,
+        startBottomVisualization: () => true,
+        stopBottomVisualization: () => true,
+        suspendBottomVisualization: () => true,
+        resumeBottomVisualization: () => true,
         startFullscreenOverlay: () => true,
         stopFullscreenOverlay: () => true,
         suspendFullscreenOverlayForChatChange: () => true,

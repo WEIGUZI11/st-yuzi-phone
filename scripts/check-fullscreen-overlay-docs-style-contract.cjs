@@ -125,7 +125,9 @@ function testStyleEntryContract() {
     );
     const inputShortcutsIndex = rootImports.indexOf('./styles/17-input-shortcuts.css');
     assert.strictEqual(inputShortcutsIndex, fullscreenOverlayIndex + 1, '输入快捷键设置层位于全屏浮层之后');
-    assert.strictEqual(inputShortcutsIndex, rootImports.length - 1, '输入快捷键是当前最后一个设置层');
+    const bottomIndex = rootImports.indexOf('./styles/18-bottom-visualization.css');
+    assert.strictEqual(bottomIndex, inputShortcutsIndex + 1, '底部可视化位于输入快捷键之后');
+    assert.strictEqual(bottomIndex, rootImports.length - 1, '底部可视化是当前最后一个样式层');
 
     assertContains(
         stylesReadme,

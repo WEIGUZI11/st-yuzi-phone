@@ -1,3 +1,4 @@
+import { normalizeBottomVisualization } from '../bottom-visualization/settings.js';
 import { t } from '../i18n/index.js';
 import { normalizeInputShortcutsSettings } from '../input-shortcuts/config.js';
 import { normalizeFullscreenOverlaySettings } from '../fullscreen-overlay/settings.js';
@@ -121,6 +122,9 @@ export const APPEARANCE_FONT_LIBRARY_LIMITS = Object.freeze({
 });
 
 export const defaultSettings = {
+    bottomVisualization: normalizeBottomVisualization(),
+    bottomVisualizationNavImage: null,
+    bottomVisualizationPanelImage: null,
     inputShortcuts: normalizeInputShortcutsSettings(),
     fullscreenOverlay: normalizeFullscreenOverlaySettings(),
     enabled: true,
@@ -188,6 +192,8 @@ export const REMOVED_SETTING_KEYS = new Set([
 ]);
 
 const validationRules = {
+    bottomVisualizationNavImage: { type: 'string', nullable: true },
+    bottomVisualizationPanelImage: { type: 'string', nullable: true },
     phoneContainerWidth: { ...PHONE_CONTAINER_SIZE_LIMITS.width, type: 'number' },
     phoneContainerHeight: { ...PHONE_CONTAINER_SIZE_LIMITS.height, type: 'number' },
     phoneToggleX: { min: 0, max: 10000, type: 'number', nullable: true },
@@ -689,6 +695,7 @@ export function validateSetting(key, value) {
         return { valid: true, value: undefined, removed: true };
     }
 
+    if (key === 'bottomVisualization') return { valid: true, value: normalizeBottomVisualization(value) };
     if (key === 'inputShortcuts') return { valid: true, value: normalizeInputShortcutsSettings(value) };
     if (key === 'fullscreenOverlay') return { valid: true, value: normalizeFullscreenOverlaySettings(value) };
 
@@ -785,6 +792,7 @@ export function validateSetting(key, value) {
 export function validateSettings(settings) {
     const validated = {
         ...defaultSettings,
+        bottomVisualization: normalizeBottomVisualization(),
         inputShortcuts: normalizeInputShortcutsSettings(),
         fullscreenOverlay: normalizeFullscreenOverlaySettings(),
         imageGeneration: normalizeImageGenerationSettings(defaultSettings.imageGeneration),

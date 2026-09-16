@@ -1309,6 +1309,16 @@ Table Update Review 是系统 App，不绑定单张 sheet。它负责监听表�
 - [`startTableUpdateReviewService()`](../modules/table-update-review/service.js:155)：启动表格净变化监听与审核状态更新。
 - [`bindTableUpdateReviewInteractions()`](../modules/table-update-review/interactions.js:37)：绑定审核页交互，包括进入对应表格行详情。
 
+#### 连续未更新楼层提示
+
+审核摘要在“最近 AI 回复”右侧显示“已连续 N 楼未更新”，没有可靠记录时显示“待记录”。小手机审核与底部可视化复用同一模板及 Store 的 `unupdatedFloorCount`（`null` 表示未知）。
+
+- `update-gap.js` 只记录审核接收窗口内观察到的有效表格更新回调：回调能合并为完整表格快照、当前楼确为 AI 回复时，在回调抵达时记录锚点，避免审核防抖将旧回调误归属下一楼。不依赖净变化条数，零净变化也算更新；非接收窗口中的回调不计。
+- 锚点放在当前聊天 `chatMetadata.yuziTableUpdateReviewAnchor`，复用宿主 `saveMetadataDebounced`；只在锚点改变时保存，重复通知不重复写入。每次从现有 context bridge 读取当前上下文，不缓存上一聊天的 metadata。
+- 数值为锚点之后的 AI 回复数，排除用户/系统消息，不按渲染事件次数累加。消息序号、时间戳与 swipe 标识校验失败时回到未知；不读取或修改数据库内部逐表历史，不轮询。
+- 这是小手机观察到的更新间隔，不是数据库逐表“未记录”数；手动更新可能计入，小手机未运行期间的填表无法靠回调追溯。
+- 回归在 `check-table-update-review-data-pipeline.cjs` 覆盖重复通知、延迟归属、零净变化、窗口关闭、保存恢复、聊天隔离与未知记录；浏览器检查覆盖共用摘要的文字更新及窄屏边界。
+
 #### 6.8.1 页面实例与生命周期
 
 [`renderTableUpdateReview()`](../modules/table-update-review/index.js:112) 每次渲染都会先清理旧页面实例，再通过 `createTableUpdateReviewPageInstance()` 创建新实例。页面实例持有由 [`createRuntimeScope()`](../modules/runtime-manager.js:48) 创建的 runtime，用于事件、订阅和断连观察清理。
@@ -1612,3 +1622,19 @@ graph TD
 - `scripts/check-phone-language-qq.cjs`：真实 QQ runtime / Facade 下的新旧系统通知、原始联系人与默认提示词保护。
 - `scripts/check-phone-language-browser.cjs`：独立 Chromium 临时环境，加载真实 CSS 和 `scripts/fixtures/phone-language-browser.js`，验证即时切换、草稿、滚动、280px 英文布局、预设保存、QQ 控件协议值、面板／悬浮入口清理。不访问真实 AI 或写入真实世界书；可用 `YUZI_TEST_BROWSER` 指定浏览器。
 - 以上纳入 `npm run check`。发布仍须执行 `npm run lint` 与 `npm run build`，扩展版和脚本版共用重建后的 dist；最终实际使用验收由用户进行。
+
+## 底部可视化（只读宿主界面）
+
+底部可视化位于 `modules/bottom-visualization/`，不属于手机 route，也不拥有表格、审核、字体或主题的第二套事实源。设置首页日志下的开关默认关闭；关闭手机窗口不影响它，扩展停用/销毁则完整清理。
+
+- **所有权**：`phone-core/background-services.js` 管理启动/停止及聊天切换屏障。切换时立即销毁当前视图和选项；复用既有“第二次表通知 + 250ms 稳定等待 / 3500ms 超时”后重建。屏障期间设置通知不能重新挂载旧数据。
+- **入口与渲染**：`index.js` 只管理总开关订阅及实例；`runtime.js` 维护当前表、临时排序、收起状态和本聊天内的侧边最近表。数据来自 `getTableData/getSheetKeys/resolveTableViewerContext`；`view.js` 只输出经过转义的只读内容。数据库迟到时有界重试订阅，不建立轮询数据副本。
+- **审核**：直接订阅 Review Store，复用 `buildTableUpdateReviewContentHtml(state, { readOnly: true })`；只有此承载模式输出不可点击的文章/分组。原审核 App 的折叠与详情定位不变。审核始终整体纵向滚动，不受横向卡片设置影响。
+- **定位**：`layout.js` 分开管理导航 dock 与 body 下的覆盖面板：悬浮导航/玉子长条自然位于聊天文档流，固定导航只为自身保留空间；面板始终覆盖正文，开关/调高不增加聊天高度，也不主动写入聊天滚动位置。普通导航始终对齐聊天，只有面板选择聊天宽度、浏览器宽度、聊天左/右空白。侧边空白不足 220px 暂回聊天，不改设置；独立 edge 导航则由屏幕边缘 Y 入口控制大面板与标签轨道同现同隐。高度把手只用于普通聊天/宽屏面板，长按 350ms 后拖动，支持键盘方向键。原生抽屉打开只关闭面板，不迁移或自动恢复。
+- **布局和资源**：纵向卡片完整展开、外层滚动；横向单排、长卡片内部滚动。普通面板、聊天左右侧栏与独立侧边导航均消费同一个布局设置，不再对侧栏强制纵向；审核例外，始终整体纵向滚动。ResizeObserver/限定范围 MutationObserver/视口变化合并到 RAF。关闭面板的悬浮导航和固定导航不订阅正文滚动；只有打开的悬浮普通面板读取 scrollTop，以缓存边界更新 transform/裁切，滚动热路径不测量布局、不改正文、不重建 DOM。节点、导航占位、计时器、订阅均由 Runtime Scope 释放。
+- **滚动接续**：`scroll-chain.js` 只从面板与导航自身的 wheel 发起接续。内部可滚动区优先使用原生滚动；普通底部面板与导航到达所滚方向的边界后，用浏览器平滑滚动接续 `#chat`，同向累计目标、反向从当前位置起步。聊天侧栏面板、独立侧栏面板及标签轨道均在自身边界停止，不带动正文；依据已计算的实际区域判断，窄屏回退到聊天区后恢复接续。正文直接操作、返回内部滚动和运行时停用会取消待完成接续，正文局部监听随 Runtime Scope 清理；支持像素/行/页增量，正文也到边界时停止，不跳顶底。横向、Shift 和 Ctrl/Meta 手势保留浏览器行为。保留内部 overscroll containment，避免错误接到宿主 body；不注册全局滚轮监听，不调用整套定位计算，停用时随 Runtime Scope 清理。
+- **正文选项**：`options.js` 复用 inline-message bridge 定位最新可见 AI 消息，只取第一张选项表；在正文后增加自有节点，不改消息正文或持久数据。追加草稿复用 inline interactions，不发送。生成/发送/聊天切换/目标消息重绘等使旧选项失效，旧消息不会因普通表通知复活。
+- **设置与图片**：`settings.js` 仅归一化该视图配置；`settings-dialog.js` 是宿主原生 dialog，不受视图透明度影响；点击遮罩空白可关闭，内部点击或拖动到外部不误关。下拉框复用手机壳/QQ 的原生表单防宿主主题覆盖规则；设置首页总开关与 QQ 发送键共享按钮式滑块样式，不共享 QQ 业务设置。两张图使用现有 raw picker、图片校验和外观 IndexedDB codec，原图最多 12MB，不裁剪压缩。图片字段 `bottomVisualizationNavImage`、`bottomVisualizationPanelImage` 与布局对象分开，缺失资源引用不因普通布局保存而丢失。它们不加入外观包，也不增加作者 action、内容预设声明、公共主题 API 或制作包格式。
+- **主题**：系统文案走现有 i18n，原始表名/单元格不翻译；字体库、可读字号、主题颜色直接消费手机主设置和共享 CSS 变量。导航 dock、面板、设置 dialog、正文选项及其文字/表单加入现有字体库的限定范围覆盖规则，不只依赖外层继承；保留 SVG、图标及等宽语义元素的排除，不增加作者字体声明或第二份字体配置。导航只显示审核/原始表名，没有图标；收起和设置组利用末行剩余空间靠右排列，只有放不下才换行。不得再存一份底部主题。
+
+回归入口：`node scripts/check-bottom-visualization.cjs` 与 `node scripts/check-bottom-visualization-browser.cjs`。后者用独立 Chromium 临时 profile、真实页面帧和原生指针事件验证 PC/手机界面、35 帧正文滚动的 LayoutCount、面板不挤压正文、宿主强制字体/深色表单覆盖、原生滚轮边界接续、平滑中间帧/累计/反向、两种侧栏滚动隔离、侧栏横纵切换、持久化、上传失败回滚、消息选项和后台生命周期；不接触用户聊天或真实服务。可通过 `YUZI_TEST_BROWSER` 指定 Chromium 路径，`YUZI_BOTTOM_SCREENSHOTS_DIR` 可选保存回归截图。

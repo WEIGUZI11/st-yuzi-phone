@@ -1,3 +1,4 @@
+import { getPhoneSettings } from '../../../settings.js';
 import { t } from '../../../i18n/index.js';
 import { isContentPresetFullPageRuntimeEnabled } from '../../../content-presets/activation-gate.js';
 import {
@@ -28,13 +29,14 @@ export function buildSettingsHomePageHtml({
         : [entries.slice(0, 1), entries.slice(1, 6), entries.slice(6)];
     const bodyHtml = `
         <div class="phone-settings-profile-action-groups">
-            ${groups.filter(group => group.length > 0).map(group => `
+            ${groups.filter(group => group.length > 0).map((group, index, all) => `
                 <div class="phone-settings-profile-action-group">
                     ${group.map(entry => buildSettingsHomeItemHtml({
                         entry,
                         title: SETTINGS_ENTRY_META[entry].title,
                         variant: 'profile-action',
                     })).join('')}
+                    ${index === all.length - 1 ? `<div class="phone-settings-profile-action-trigger yuzi-bottom-enable-row"><span class="phone-settings-profile-action-title">${t('底部可视化')}</span><button type="button" role="switch" id="yuzi-bottom-enabled" class="yuzi-bottom-enable-switch" aria-label="${t('底部可视化')}" aria-checked="${getPhoneSettings().bottomVisualization.enabled}"></button></div>` : ''}
                 </div>
             `).join('')}
         </div>

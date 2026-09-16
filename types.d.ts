@@ -766,7 +766,25 @@ export interface SettingsFullscreenOverlayService {
     readConfig: () => FullscreenOverlaySettings;
 }
 
+/** 独立只读视图；外观继续消费手机主设置。 */
+export interface BottomVisualizationSettings {
+    enabled: boolean;
+    position: 'flow' | 'fixed' | 'edge';
+    layout: 'vertical' | 'horizontal';
+    optionsEnabled: boolean;
+    desktopNav: 'compact' | 'aligned';
+    cardWidth: number;
+    region: 'chat' | 'viewport' | 'side';
+    side: 'left' | 'right';
+    edgeSide: 'left' | 'right';
+    opacity: number;
+    height: number;
+}
+
 export interface PhoneSettings {
+    bottomVisualization: BottomVisualizationSettings;
+    bottomVisualizationNavImage: string | null;
+    bottomVisualizationPanelImage: string | null;
     phoneLanguage: 'zh-CN' | 'en';
     enabled: boolean;
     phoneToggleX: number | null;

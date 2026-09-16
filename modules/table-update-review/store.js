@@ -6,6 +6,7 @@ const EMPTY_REVIEW_STATE = Object.freeze({
     sessionKey: '',
     chatKey: '',
     floorId: -1,
+    unupdatedFloorCount: null,
     createdAt: 0,
     updatedAt: 0,
     tableCount: 0,

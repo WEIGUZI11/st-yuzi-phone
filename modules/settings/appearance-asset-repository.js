@@ -6,6 +6,7 @@ const DB_NAME = 'yuzi-phone-appearance-assets';
 const STORE = 'assets';
 const REF_PREFIX = 'yuzi-appearance:';
 export const APPEARANCE_ASSET_FIELDS = [
+    'bottomVisualizationNavImage', 'bottomVisualizationPanelImage',
     'backgroundImage', 'appIcons', 'phoneToggleCoverImage',
     'appearanceFontLibrary', 'appearanceResourcePool', 'theaterProfiles',
 ];

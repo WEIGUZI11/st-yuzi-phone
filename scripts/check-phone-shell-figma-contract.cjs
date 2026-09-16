@@ -105,11 +105,11 @@ function main() {
         'native phone form focus must use the semantic QQ-skin focus role');
     assert.match(shell, /#yuzi-phone-standalone \.yuzi-phone-shell\s*:is\(input, select, textarea\):disabled\s*\{[\s\S]*?color:\s*var\(--yuzi-phone-form-disabled-text\);[\s\S]*?background-color:\s*var\(--yuzi-phone-form-disabled-surface\);/,
         'native disabled form controls must remain readable in either QQ skin');
-    assert.match(shell, /#yuzi-phone-standalone \.yuzi-phone-shell \.yuzi-qq-app :is\([\s\S]*?input\[type="text"\][\s\S]*?select[\s\S]*?\)\s*\{[\s\S]*?color:\s*var\(--yuzi-phone-form-text\) !important;[\s\S]*?-webkit-text-fill-color:\s*var\(--yuzi-phone-form-text\) !important;[\s\S]*?background-color:\s*var\(--yuzi-phone-form-surface\) !important;[\s\S]*?border-color:\s*var\(--yuzi-phone-form-border\) !important;[\s\S]*?color-scheme:\s*var\(--yuzi-phone-native-control-color-scheme\);/,
-        'QQ text controls must defeat SillyTavern theme rules through shared form roles');
-    assert.match(shell, /#yuzi-phone-standalone \.yuzi-phone-shell \.yuzi-qq-app :is\(input, textarea\)::placeholder\s*\{[\s\S]*?color:\s*var\(--yuzi-phone-form-placeholder\) !important;[\s\S]*?-webkit-text-fill-color:\s*var\(--yuzi-phone-form-placeholder\) !important;/,
+    assert.match(shell, /:is\(#yuzi-phone-standalone \.yuzi-phone-shell \.yuzi-qq-app, \.yuzi-bottom-dialog\) :is\([\s\S]*?input\[type="text"\][\s\S]*?select[\s\S]*?\)\s*\{[\s\S]*?color:\s*var\(--yuzi-phone-form-text\) !important;[\s\S]*?-webkit-text-fill-color:\s*var\(--yuzi-phone-form-text\) !important;[\s\S]*?background-color:\s*var\(--yuzi-phone-form-surface\) !important;[\s\S]*?border-color:\s*var\(--yuzi-phone-form-border\) !important;[\s\S]*?color-scheme:\s*var\(--yuzi-phone-native-control-color-scheme\);/,
+        'QQ and bottom-dialog text controls must defeat SillyTavern theme rules through the same shared form roles');
+    assert.match(shell, /:is\(#yuzi-phone-standalone \.yuzi-phone-shell \.yuzi-qq-app, \.yuzi-bottom-dialog\) :is\(input, textarea\)::placeholder\s*\{[\s\S]*?color:\s*var\(--yuzi-phone-form-placeholder\) !important;[\s\S]*?-webkit-text-fill-color:\s*var\(--yuzi-phone-form-placeholder\) !important;/,
         'QQ placeholders must consume the shared readable placeholder role');
-    assert.match(shell, /#yuzi-phone-standalone \.yuzi-phone-shell \.yuzi-qq-app select option\s*\{[\s\S]*?color:\s*var\(--yuzi-phone-form-text\) !important;[\s\S]*?background-color:\s*var\(--yuzi-phone-form-surface\) !important;/,
+    assert.match(shell, /:is\(#yuzi-phone-standalone \.yuzi-phone-shell \.yuzi-qq-app, \.yuzi-bottom-dialog\) select option\s*\{[\s\S]*?color:\s*var\(--yuzi-phone-form-text\) !important;[\s\S]*?background-color:\s*var\(--yuzi-phone-form-surface\) !important;/,
         'QQ native options must not inherit the SillyTavern page palette');
     assert.doesNotMatch(shell, /\.yuzi-phone-shell \.yuzi-qq-app[^\{]*input\[type="(?:checkbox|radio|range|file|hidden)"\]/,
         'QQ host-theme isolation must not repaint non-text input controls');

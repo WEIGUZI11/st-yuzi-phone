@@ -8,8 +8,12 @@ import {
     onMessageReceived,
     onCharacterMessageRendered,
     onMessageSent,
+    onMessageDeleted,
+    onMessageSwiped,
     onChatChanged,
 } from '../integration/event-bridge.js';
+import { getFreshSillyTavernContext } from '../integration/context-bridge.js';
+import { readUnupdatedFloorCount, recordTableUpdateFloor } from './update-gap.js';
 import { getTavernHelper } from '../integration/tavern-helper-bridge.js';
 import { TABLE_UPDATE_REVIEW_DEBOUNCE_MS } from './constants.js';
 import { createTableUpdateReviewFloorWindow, getCurrentReviewFloorWindow } from './floor-window.js';
@@ -23,7 +27,7 @@ import {
     readCurrentTableSnapshot,
     selectChangedRawTableSnapshot,
 } from './snapshot.js';
-import { resetReviewState, setReviewState } from './store.js';
+import { getReviewState, resetReviewState, setReviewState } from './store.js';
 import { createTableUpdateReviewSession } from './session.js';
 import { publishTableUpdateReviewResult } from './result-channel.js';
 
@@ -56,6 +60,7 @@ function readCurrentChatKey() {
 }
 
 const defaultDeps = Object.freeze({
+    getContext: getFreshSillyTavernContext,
     createRuntimeScope: () => createRuntimeScope('table-update-review-service'),
     createFloorWindow: scope => createTableUpdateReviewFloorWindow(scope),
     createSession: options => createTableUpdateReviewSession(options),
@@ -79,6 +84,8 @@ const defaultDeps = Object.freeze({
     onMessageReceived,
     onCharacterMessageRendered,
     onMessageSent,
+    onMessageDeleted,
+    onMessageSwiped,
     onChatChanged,
 });
 
@@ -104,6 +111,7 @@ function buildErrorPayload(error) {
     return {
         status: 'error',
         message: t("读取本楼表格更新失败"),
+        unupdatedFloorCount: readUnupdatedFloorCount(deps.getContext()),
         error: {
             name: String(error?.name || 'Error'),
             message: String(error?.message || error || t("未知错误")),
@@ -191,6 +199,7 @@ function publishReviewState(reviewState, rawSnapshot = null) {
     const committedState = setReviewState({
         ...reviewState,
         chatKey: currentChatKey,
+        unupdatedFloorCount: readUnupdatedFloorCount(deps.getContext()),
         status: reviewState.changeCount > 0 ? 'ready' : 'empty',
         message: reviewState.changeCount > 0 ? reviewState.message : t("本楼暂无表格更新"),
     });
@@ -298,6 +307,14 @@ function handleTableUpdate(event) {
         lastCompleteRawSnapshot,
     );
     rememberCompleteRawSnapshot(pendingRawSnapshot, { owned: true });
+    const session = reviewSession?.getReviewSessionStatus?.();
+    const context = deps.getContext();
+    // 回调抵达时就记录所属楼，不能等审核防抖后再误记到下一条 AI 回复。
+    if (session?.receivingOpen && deps.isCompleteRawSnapshot(pendingRawSnapshot)
+        && recordTableUpdateFloor(context, session.activeFloor?.floorId)) {
+        setReviewState({ ...getReviewState(), unupdatedFloorCount: readUnupdatedFloorCount(context) });
+    }
+
     scheduleRefresh(String(event?.type || 'table-update'));
 }
 
@@ -408,6 +425,7 @@ function handleGenerationStarted() {
         reviewSession?.beginPreSnapshot('generation-started', readNormalizedSnapshot());
         resetReviewState(t("已捕获 AI 回复前表格基准，等待本楼更新"), {
             chatKey: currentChatKey,
+            unupdatedFloorCount: readUnupdatedFloorCount(deps.getContext()),
         });
     } catch (error) {
         logger.warn({ action: 'generation-started.failed', message: '捕获 AI 回复前快照失败', error });
@@ -424,11 +442,16 @@ function handleAiFloor(payload, reason) {
         );
         resetReviewState(t("已建立最近 AI 楼审核会话，等待表格更新"), {
             chatKey: currentChatKey,
+            unupdatedFloorCount: readUnupdatedFloorCount(deps.getContext()),
         });
     } catch (error) {
         logger.warn({ action: 'ai-floor.failed', message: '建立 AI 楼审核会话失败', error, context: { reason } });
         setReviewState(buildErrorPayload(error));
     }
+}
+
+function handleMessageHistoryChanged() {
+    setReviewState({ ...getReviewState(), unupdatedFloorCount: readUnupdatedFloorCount(deps.getContext()) });
 }
 
 function handleMessageSent() {
@@ -446,6 +469,7 @@ function handleChatChanged(chatId) {
     reviewSession?.resetReviewSession('chat-changed');
     resetReviewState(t("聊天已切换，审核会话已重置"), {
         chatKey: currentChatKey,
+        unupdatedFloorCount: readUnupdatedFloorCount(deps.getContext()),
     });
     if (typeof unsubscribeTableUpdate === 'function') {
         runSubscriptionHealthCheck('chat-changed');
@@ -482,12 +506,15 @@ export function startTableUpdateReviewService(options = {}) {
     registerAsyncCleanup(deps.onMessageReceived((payload) => handleAiFloor(payload, 'message-received')));
     registerAsyncCleanup(deps.onCharacterMessageRendered((payload) => handleAiFloor(payload, 'character-message-rendered')));
     registerAsyncCleanup(deps.onMessageSent(handleMessageSent));
+    registerAsyncCleanup(deps.onMessageDeleted(handleMessageHistoryChanged));
+    registerAsyncCleanup(deps.onMessageSwiped(handleMessageHistoryChanged));
     registerAsyncCleanup(deps.onChatChanged(handleChatChanged));
 
     const subscribed = ensureTableUpdateSubscription();
 
     resetReviewState(t("等待最近 AI 回复触发表格更新"), {
         chatKey: currentChatKey,
+        unupdatedFloorCount: readUnupdatedFloorCount(deps.getContext()),
     });
     logger.debug({
         action: 'service.start',

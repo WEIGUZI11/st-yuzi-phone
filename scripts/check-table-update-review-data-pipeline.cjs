@@ -74,6 +74,8 @@ function createHostEvents() {
         onMessageReceived: subscribe('messageReceived'),
         onCharacterMessageRendered: subscribe('characterMessageRendered'),
         onMessageSent: subscribe('messageSent'),
+        onMessageDeleted: subscribe('messageDeleted'),
+        onMessageSwiped: subscribe('messageSwiped'),
         onChatChanged: subscribe('chatChanged'),
     };
 }
@@ -1332,6 +1334,72 @@ async function checkCrossRealmRawSnapshotPipeline(
     }
 }
 
+async function checkUnupdatedAiFloors(serviceModule, storeModule) {
+    let fakeRuntime = createFakeRuntime();
+    const hostEvents = createHostEvents();
+    let savedMetadata;
+    let context = { chat: [{is_user:false, mes:'第一楼', send_date:'a'}], chatMetadata: {}, saveMetadataDebounced() { savedMetadata=JSON.parse(JSON.stringify(this.chatMetadata)); } };
+    const raw = createRawSnapshot();
+    let notify;
+    const start = () => serviceModule.startTableUpdateReviewService({
+            createRuntimeScope: () => fakeRuntime,
+            createFloorWindow: () => ({ dispose() {} }),
+            getContext: () => context,
+            readRawSnapshot: () => raw,
+            subscribeTableUpdate: callback => { notify=callback; return () => {}; },
+            ...hostEvents,
+        });
+    try {
+        start();
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, null, '无历史记录时未知，不能伪装成零');
+        hostEvents.callbacks.messageReceived(0);
+        notify(raw); fakeRuntime.runNext(500);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 0, '有效更新即建立记录，即使没有净变化');
+        context.chat.push({is_user:true, mes:'继续'}, {is_user:false, mes:'第二楼', send_date:'b'});
+        hostEvents.callbacks.messageReceived(2);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 1, '只计 AI 回复，不计用户楼层');
+        hostEvents.callbacks.characterMessageRendered(2);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 1, '同一楼重复渲染不重复累加');
+        context.chat.push({is_user:false, mes:'第三楼', send_date:'c'});
+        hostEvents.callbacks.messageReceived(3);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 2);
+        notify(raw); fakeRuntime.runNext(500);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 0, '迟到的本楼更新归零');
+        notify(raw);
+        context.chat.push({is_user:false, mes:'第四楼', send_date:'d'});
+        hostEvents.callbacks.messageReceived(4);
+        fakeRuntime.runNext(500);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 1, '旧楼回调的防抖不能把下一楼误标成已更新');
+        context.chat.push({is_system:true, mes:'系统信息'}, {is_user:false, mes:'第五楼', send_date:'e'});
+        hostEvents.callbacks.messageReceived(6);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 2, '系统消息不算 AI 回复');
+        hostEvents.callbacks.messageSent();
+        notify(raw); fakeRuntime.runNext(500);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 2, '接收窗口关闭后的回调不能归零');
+
+        serviceModule.stopTableUpdateReviewService();
+        context = { ...context, chatMetadata: JSON.parse(JSON.stringify(savedMetadata)) };
+        fakeRuntime = createFakeRuntime(); start();
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 2, '重新启动使用已保存的聊天记录');
+        const firstChat = context;
+        context = { ...context, chat:[{is_user:false, mes:'另一聊天', send_date:'z'}], chatMetadata:{} };
+        hostEvents.callbacks.chatChanged('another-chat');
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, null, '切聊天不串用上一聊天的记录');
+        context = firstChat;
+        hostEvents.callbacks.chatChanged('original-chat');
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 2, '切回恢复原聊天记录');
+        context.chat[3].swipe_id=1;
+        hostEvents.callbacks.messageSwiped(3);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, null, '已更新楼切换分支后不冒充已更新');
+        context.chat[3].swipe_id=0;
+        hostEvents.callbacks.messageSwiped(3);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, 2, '切回有记录的分支恢复原间隔');
+        context.chat.splice(3);
+        hostEvents.callbacks.messageDeleted(3);
+        assert.strictEqual(storeModule.getReviewState().unupdatedFloorCount, null, '已更新锚点被删除后显示未知');
+    } finally { serviceModule.stopTableUpdateReviewService(); }
+}
+
 async function main() {
     const previousWindow = global.window;
     const fakeWindow = {};
@@ -1395,6 +1463,14 @@ async function main() {
             resultChannelModule,
             snapshotModule,
         );
+        await checkUnupdatedAiFloors(serviceModule, storeModule);
+        const templates = await import(toModuleUrl('modules/table-update-review/templates.js'));
+        for (const readOnly of [false, true]) {
+            assert.match(templates.buildTableUpdateReviewContentHtml({}, {readOnly}), /待记录/, '两种审核入口都显示未知状态');
+            assert.match(templates.buildTableUpdateReviewContentHtml({unupdatedFloorCount:3}, {readOnly}), /已连续 3 楼未更新/, '共享模板显示连续未更新楼数');
+            assert.match(templates.buildTableUpdateReviewContentHtml({unupdatedFloorCount:0}, {readOnly}), /已连续 0 楼未更新/, '零不是未知');
+        }
+
         console.log('[通过] 表格更新审核数据链与结构化结果通道');
     } finally {
         if (previousWindow === undefined) {

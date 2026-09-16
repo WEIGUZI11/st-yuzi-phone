@@ -45,3 +45,6 @@
 
 /* 11) input shortcut settings */
 @import url('./styles/17-input-shortcuts.css');
+
+/* 12) bottom visualization */
+@import url('./styles/18-bottom-visualization.css');

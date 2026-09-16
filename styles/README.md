@@ -16,6 +16,8 @@
 - `16-fullscreen-overlay.css`：全屏浮层运行时与设置页聚合层，位于图片生成层之后
 - `17-input-shortcuts.css`：输入快捷键设置页的局部布局；表单颜色、焦点与禁用态沿用 Settings 共享样式
 
+- `18-bottom-visualization.css`：独立底部导航、只读面板、侧边轨道、正文选项与原生设置对话框；消费共享主题变量，所有规则限定在 `yuzi-bottom-*` 内。审核内容复用 `phone-base/12-table-update-review.css`，不改变手机审核页的交互。
+
 ## fullscreen-overlay 子目录
 - `fullscreen-overlay/00-runtime.css`：宿主 `body` 下 Yuzi 全屏透明层与滚动弹幕动画，以及正文中的 `.yuzi-phone-inline-table-popup-container`（满宽、零间距、无动画）
 - `fullscreen-overlay/01-settings.css`：小手机“弹幕设置”页面；复用设置页主题变量和控件表面，不扩大宿主选择器

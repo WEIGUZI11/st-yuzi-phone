@@ -4301,7 +4301,7 @@
     background: var(--yuzi-qq-accent);
 }
 
-.yuzi-qq-app .yuzi-qq-send-button-switch {
+:is(.yuzi-qq-app .yuzi-qq-send-button-switch, .yuzi-bottom-enable-switch) {
     appearance: none;
     flex: 0 0 var(--yuzi-qq-send-switch-width);
     inline-size: var(--yuzi-qq-send-switch-width);
@@ -4314,7 +4314,7 @@
     cursor: pointer;
 }
 
-.yuzi-qq-app .yuzi-qq-send-button-switch::before {
+:is(.yuzi-qq-app .yuzi-qq-send-button-switch, .yuzi-bottom-enable-switch)::before {
     content: '';
     display: block;
     inline-size: var(--yuzi-qq-send-switch-thumb);
@@ -4324,16 +4324,16 @@
     transition: transform var(--yuzi-qq-send-switch-duration) ease;
 }
 
-.yuzi-qq-app .yuzi-qq-send-button-switch[aria-checked="true"] {
+:is(.yuzi-qq-app .yuzi-qq-send-button-switch, .yuzi-bottom-enable-switch)[aria-checked="true"] {
     background: var(--yuzi-qq-accent);
 }
 
-.yuzi-qq-app .yuzi-qq-send-button-switch[aria-checked="true"]::before {
+:is(.yuzi-qq-app .yuzi-qq-send-button-switch, .yuzi-bottom-enable-switch)[aria-checked="true"]::before {
     transform: translateX(calc(var(--yuzi-qq-send-switch-width) - var(--yuzi-qq-send-switch-height)));
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .yuzi-qq-app .yuzi-qq-send-button-switch::before { transition: none; }
+    :is(.yuzi-qq-app .yuzi-qq-send-button-switch, .yuzi-bottom-enable-switch)::before { transition: none; }
 }
 
 #yuzi-phone-standalone[lang="en"] .yuzi-qq-image-library-heading::after {
