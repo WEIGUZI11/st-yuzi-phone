@@ -11,6 +11,7 @@ function createHarness({ seed = {}, autoComplete = true, requestError = null, de
         presets: new Map((seed.presets || []).map(value => [value.id, structuredClone(value)])),
         activeByTable: new Map((seed.activeByTable || []).map(value => [value.sheetKey, structuredClone(value)])),
         popupByTable: new Map((seed.popupByTable || []).map(value => [value.sheetKey, structuredClone(value)])),
+        appBindings: new Map((seed.appBindings || []).map(value => [value.sheetKey, structuredClone(value)])),
     };
     const transactions = [];
 
@@ -22,6 +23,7 @@ function createHarness({ seed = {}, autoComplete = true, requestError = null, de
                 presets: cloneMap(committed.presets),
                 activeByTable: cloneMap(committed.activeByTable),
                 popupByTable: cloneMap(committed.popupByTable),
+                appBindings: cloneMap(committed.appBindings),
             };
             this.aborted = false;
             this.completed = false;
@@ -58,11 +60,11 @@ function createHarness({ seed = {}, autoComplete = true, requestError = null, de
                     return request;
                 },
                 delete(key) {
-                    if ((name === 'activeByTable' || name === 'popupByTable') && key === deleteErrorKey) throw new Error('fixture binding delete failed');
+                    if (['activeByTable', 'popupByTable', 'appBindings'].includes(name) && key === deleteErrorKey) throw new Error('fixture binding delete failed');
                     map.delete(key);
                 },
                 index(indexName) {
-                    assert.ok(name === 'activeByTable' || name === 'popupByTable');
+                    assert.ok(['activeByTable', 'popupByTable', 'appBindings'].includes(name));
                     assert.equal(indexName, 'presetId');
                     return {
                         getAll(presetId) {
@@ -94,6 +96,7 @@ function createHarness({ seed = {}, autoComplete = true, requestError = null, de
             committed.presets = cloneMap(this.staged.presets);
             committed.activeByTable = cloneMap(this.staged.activeByTable);
             committed.popupByTable = cloneMap(this.staged.popupByTable);
+            committed.appBindings = cloneMap(this.staged.appBindings);
             this.completed = true;
             this.oncomplete?.();
         }
@@ -166,6 +169,10 @@ const seed = {
         { sheetKey: 'preset-1', presetId: 'preset-2', itemId: 'other-key' },
         { sheetKey: 'sheet-c', presetId: 'preset-2', itemId: 'other' },
     ],
+    appBindings: [
+        { sheetKey: 'qq:theme', presetId: 'preset-1' },
+        { sheetKey: 'qq:popup', presetId: 'preset-2' },
+    ],
 };
 
 async function setup(options = {}) {
@@ -175,7 +182,7 @@ async function setup(options = {}) {
 }
 
 function assertTransaction(tx) {
-    assert.deepEqual(tx.storeNames, ['presets', 'activeByTable', 'popupByTable']);
+    assert.deepEqual(tx.storeNames, ['presets', 'activeByTable', 'popupByTable', 'appBindings']);
     assert.equal(tx.mode, 'readwrite');
 }
 
@@ -248,12 +255,14 @@ async function main() {
             const result = await repository.replacePresetRecord(record);
             assert.equal(harness.transactions.length, 1);
             assertTransaction(harness.lastTransaction);
-            assert.deepEqual(result, { record, affectedSheetKeys: ['sheet-a', 'sheet-b'] });
+            assert.deepEqual(result, { record, affectedSheetKeys: ['sheet-a', 'sheet-b', 'qq:theme'] });
             assert.deepEqual(harness.committed.presets.get('preset-1'), record);
             assert.equal(harness.committed.activeByTable.has('sheet-a'), false);
             assert.equal(harness.committed.activeByTable.has('sheet-b'), false);
             assert.equal(harness.committed.activeByTable.has('preset-1'), true, '不得把 presetId 错当 sheetKey 删除');
             assert.equal(harness.committed.activeByTable.has('sheet-c'), true);
+            assert.equal(harness.committed.appBindings.has('qq:theme'), false);
+            assert.equal(harness.committed.appBindings.has('qq:popup'), true);
         }
 
         {
@@ -280,11 +289,13 @@ async function main() {
             const { harness, repository } = await setup();
             const result = await repository.deletePresetRecord(' preset-1 ');
             assertTransaction(harness.lastTransaction);
-            assert.deepEqual(result, { presetId: 'preset-1', affectedSheetKeys: ['sheet-a', 'sheet-b'] });
+            assert.deepEqual(result, { presetId: 'preset-1', affectedSheetKeys: ['sheet-a', 'sheet-b', 'qq:theme'] });
             assert.equal(harness.committed.presets.has('preset-1'), false);
             assert.equal(harness.committed.activeByTable.has('sheet-a'), false);
             assert.equal(harness.committed.activeByTable.has('sheet-b'), false);
             assert.equal(harness.committed.activeByTable.has('preset-1'), true);
+            assert.equal(harness.committed.appBindings.has('qq:theme'), false);
+            assert.equal(harness.committed.appBindings.has('qq:popup'), true);
         }
 
         {

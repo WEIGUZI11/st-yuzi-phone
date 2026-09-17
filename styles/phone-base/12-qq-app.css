@@ -4339,3 +4339,28 @@
 #yuzi-phone-standalone[lang="en"] .yuzi-qq-image-library-heading::after {
     content: 'Library';
 }
+
+/* Personal library material decorates native controls; it never becomes a hit target. */
+.yuzi-qq-app [data-qq-avatar-frame],
+.yuzi-phone-fullscreen-overlay-message-notification [data-qq-avatar-frame] {
+    position: relative;
+    overflow: visible;
+    isolation: isolate;
+}
+.yuzi-qq-app [data-qq-avatar-frame] > img {
+    border-radius: inherit;
+}
+.yuzi-qq-app [data-qq-avatar-frame]::after,
+.yuzi-phone-fullscreen-overlay-message-notification [data-qq-avatar-frame]::after {
+    content: '';
+    position: absolute;
+    inset: -10%;
+    background: var(--yuzi-qq-avatar-frame-image) center / 100% 100% no-repeat;
+    pointer-events: none;
+    z-index: 1;
+}
+.yuzi-qq-app [data-qq-bubble] {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+    background-clip: padding-box;
+}

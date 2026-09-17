@@ -1,3 +1,4 @@
+import { prepareQQNotificationAppearance } from '../content-presets/qq-popup.js';
 import { getInlineMessageTarget, subscribeInlineMessageInvalidation } from '../integration/inline-message-bridge.js';
 import { createInlineTablePopupRenderer } from './renderers/inline-table-popup.js';
 import { createContentPresetOverlayRenderer } from '../content-presets/overlay-renderer.js';
@@ -89,6 +90,7 @@ const fullscreenOverlayRuntime = createFullscreenOverlayRuntime({
             documentRef: globalThis.document,
             getSettings: () => getSettings() || {},
             acquireMediaRender: acquireQQMediaRender,
+            prepareAppearance: prepareQQNotificationAppearance,
             onError,
         });
         const inlineRenderer = createInlineTablePopupRenderer({

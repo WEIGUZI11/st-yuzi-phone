@@ -22,6 +22,7 @@ const EXPECTED_SCRIPTS = {
   'project:new': 'node tools/project-new.mjs',
   'project:import-tables': 'node tools/project-import-tables.mjs',
   'project:add-item': 'node tools/project-add-item.mjs',
+  'project:add-qq': 'node tools/project-add-qq.mjs',
   'project:skip-table': 'node tools/project-skip-table.mjs',
   'project:status': 'node tools/project-status.mjs',
   'project:check': 'node tools/project-check.mjs',
@@ -87,6 +88,24 @@ const EXPECTED_PROCESS_CONTRACT = {
   },
   "document": "docs/runtime/popup-authoring-workflow.md"
 },
+  qqAuthoring: {
+    "terminology": "QQ 美化",
+    "opening": "要不要美化 QQ 主题或 QQ 通知浮窗",
+    "units": [
+      "theme",
+      "popup",
+      "resources"
+    ],
+    "askThemeAndPopupFirst": true,
+    "refuseSkipsBranch": true,
+    "decorationsOnlyWhenRequested": true,
+    "askDayNightOnce": true,
+    "requireDayNight": false,
+    "simulator": false,
+    "repeatConfirmedChoices": false,
+    "registerCommand": "project:add-qq",
+    "document": "docs/runtime/qq-authoring-workflow.md"
+  },
   hostCapabilities: {
   "readBeforeDiscussion": [
     "docs/runtime/authoring-workflow.md",
@@ -201,12 +220,15 @@ const EXPECTED_RUNTIME_BOUNDARY = {
 };
 
 const REQUIRED_DOCUMENT_FRAGMENTS = new Map([
-  ['docs/runtime/authoring-workflow.md', ['普通用户', '先检查，再讨论', '用户选择图片的稳定标识字段', '即使只有一行也不能省略', '显示尺寸', '完整拼接提示词', '要不要再补充自己的提示词内容', '模拟永远只测试', 'not-run', '当前显示哪一行']],
+  ['docs/runtime/authoring-workflow.md', ['普通用户', '先检查，再讨论', '用户选择图片的稳定标识字段', '即使只有一行也不能省略', '显示尺寸', '完整拼接提示词', '要不要再补充自己的提示词内容', '模拟永远只测试', 'not-run', '当前显示哪一行', "要不要美化 QQ 主题或 QQ 通知浮窗"]],
   ['docs/runtime/host-capabilities.md', ['generateImage', 'readImage', 'getImageGenerationState', 'subscribeImageGeneration', 'promptSuffix', 'context.apiVersion', 'width/height/aspectRatio', 'tables', 'events', 'settings', '当前显示哪一行']],
+  ['prompts/0-总览与启动.md', ["要不要美化 QQ 主题或 QQ 通知浮窗"]],
+  ['prompts/制作提示.md', ["要不要美化 QQ 主题或 QQ 通知浮窗"]],
+  ['docs/runtime/qq-authoring-workflow.md', ['要不要美化 QQ 主题或 QQ 通知浮窗', '用户拒绝就不用管', '同意才进入', '不强制分别做白天／夜间', '不建设 QQ 专用模拟器', '真实小手机', 'project:add-qq', '人物装饰只在用户明确要做时进入', '头像框', '气泡']],
   ['docs/runtime/popup-authoring-workflow.md', ['小手机有三个弹窗接口', '**弹幕**', '**弹窗／浮窗**', '**弹窗／插入正文**', '先问选择哪个弹窗接口', '只能单表', '当前数据由小手机运行时提供', '不得询问用户显示哪条', '要不要加生图按钮？', '图片标识也必须问', '历史记录列表', '组合弹窗是一份作品', 'project:add-display']],
-  ['README.md', ['npm run project:new', 'npm run project:import-tables', 'npm run project:add-item', 'npm run project:skip-table', 'npm run project:status', 'npm run project:check', 'npm run preview', 'npm run tables:cli', 'npm run tables:check', 'npm run tables:test', '制作期模拟', '直接自动派生', '逐表 Markdown', '引导者', '没有编程基础', '主动建议下一步', '直接移除', '不需要运行全仓 `npm run verify`', '当前显示哪一行']],
-  ['AGENTS.md', ['一次只处理当前表', '用户明确', '不得批量', '完成、跳过和未模拟', 'Bundle 不创建、修改或迁移数据库表', '表格输入本身就是执行授权', '不得先要求用户用自然语言说明如何拆表', '流程引导者', '不替用户作决定', '大白话', '建议下一步', '直接从 generated 和制作队列移除', '不要为删表、改字段等日常操作运行全仓', '当前显示哪一行']],
-  ['prompts/1-建项导表与全表盘点.md', ['空白草稿', '完整 chatSheets', '全部表', 'project:import-tables', '不得停在只读检查', '先修改 `tables/source/*.md`']],
+  ['README.md', ['npm run project:new', 'npm run project:import-tables', 'npm run project:add-item', 'npm run project:skip-table', 'npm run project:status', 'npm run project:check', 'npm run preview', 'npm run tables:cli', 'npm run tables:check', 'npm run tables:test', '制作期模拟', '直接自动派生', '逐表 Markdown', '引导者', '没有编程基础', '主动建议下一步', '直接移除', '不需要运行全仓 `npm run verify`', '当前显示哪一行', "要不要美化 QQ 主题或 QQ 通知浮窗", "npm run project:add-qq"]],
+  ['AGENTS.md', ['一次只处理当前表', '用户明确', '不得批量', '完成、跳过和未模拟', 'Bundle 不创建、修改或迁移数据库表', '表格输入本身就是执行授权', '不得先要求用户用自然语言说明如何拆表', '流程引导者', '不替用户作决定', '大白话', '建议下一步', '直接从 generated 和制作队列移除', '不要为删表、改字段等日常操作运行全仓', '当前显示哪一行', "要不要美化 QQ 主题或 QQ 通知浮窗"]],
+  ['prompts/1-建项导表与全表盘点.md', ['空白草稿', '完整 chatSheets', '全部表', 'project:import-tables', '不得停在只读检查', '先修改 `tables/source/*.md`', "要不要美化 QQ 主题或 QQ 通知浮窗"]],
   ['prompts/2-逐表需求与字段合同.md', ['当前表', '字段合同', '用户确认', 'project:skip-table', '大白话', '主动提出具体美化建议']],
   ['prompts/3-逐表设计与实现.md', ['当前表', 'project:add-item', '不进入下一张表', '用户实际会看到', '由用户确认']],
   ['prompts/4-单表检查与模拟.md', ['制作期模拟', '可以跳过', 'preview-status', '当前表', '给出是否建议模拟', '由用户决定']],
@@ -256,7 +278,7 @@ function compareContract(actual, expected, label, errors) {
     }
     rejectUnknownKeys(actual, Object.keys(expected), label, errors);
     for (const [key, value] of Object.entries(expected)) {
-      if (!Object.hasOwn(actual, key)) errors.push(`${label} 缺失字段：${key}`);
+      if (!Object.hasOwn(actual, key)) errors.push(`${label}.${key} 缺失字段`);
       else compareContract(actual[key], value, `${label}.${key}`, errors);
     }
     return;
@@ -454,7 +476,7 @@ export async function validateAiWorkflow(root = path.resolve(fileURLToPath(new U
     errors.push(`无法读取 prompts 目录：${error.message}`);
   }
 
-  const documents = ['README.md', 'AGENTS.md', ...EXPECTED_STAGE_PROMPTS, 'prompts/制作提示.md', 'docs/INDEX.md', 'docs/runtime/authoring-workflow.md', 'docs/runtime/host-capabilities.md', 'docs/runtime/popup-authoring-workflow.md'];
+  const documents = ['README.md', 'AGENTS.md', ...EXPECTED_STAGE_PROMPTS, 'prompts/制作提示.md', 'docs/INDEX.md', 'docs/runtime/authoring-workflow.md', 'docs/runtime/host-capabilities.md', 'docs/runtime/popup-authoring-workflow.md', 'docs/runtime/qq-authoring-workflow.md'];
   for (const relative of documents) {
     const file = await resolveProjectFile(root, relative, '流程文档', errors);
     if (!file) continue;

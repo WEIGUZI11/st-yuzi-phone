@@ -67,6 +67,18 @@ try {
   assert.deepEqual(baseline.errors, [], `当前工作流必须有效：\n${baseline.errors.join('\n')}`);
 
   await expectInvalid(({ workflow }) => {
+    delete workflow.processContract.qqAuthoring;
+  }, /processContract\.qqAuthoring/);
+  await expectInvalid(({ workflow }) => {
+    workflow.processContract.qqAuthoring.askThemeAndPopupFirst = false;
+  }, /qqAuthoring.askThemeAndPopupFirst/);
+  await expectInvalid(({ workflow }) => {
+    workflow.processContract.qqAuthoring.simulator = true;
+  }, /qqAuthoring.simulator/);
+  await expectInvalid(({ workflow }) => {
+    workflow.processContract.qqAuthoring.requireDayNight = true;
+  }, /qqAuthoring.requireDayNight/);
+  await expectInvalid(({ workflow }) => {
     workflow.processContract.popupAuthoring.askInterfaceFirst = false;
   }, /popupAuthoring.askInterfaceFirst/);
   await expectInvalid(({ workflow }) => {

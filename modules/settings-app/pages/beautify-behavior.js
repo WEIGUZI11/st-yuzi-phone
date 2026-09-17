@@ -74,8 +74,12 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
                 const prepared = await service.prepareImport(await file.text());
                 if (isDisposed()) return;
                 const commit = () => run(button, () => service.importPrepared(prepared, prepared.replacesExisting), prepared.replacesExisting ? t("预设已原子覆盖，旧绑定已清除") : t("预设已导入"));
+                const materials = prepared.record.qq?.resources || [];
+                const materialSummary = materials.length ? t`将追加保留 ${materials.length} 个 QQ 素材和 ${prepared.record.qq?.outfits?.length || 0} 套装饰；相同素材不重复入库。` : '';
                 if (prepared.replacesExisting) {
-                    confirm(t("覆盖同 ID 预设？"), t`预设 ${prepared.record.id} 已存在。覆盖会在同一事务中清除所有引用它的表绑定，且不会迁移同 itemId 绑定。`, t("确认覆盖"), commit);
+                    confirm(t("覆盖同 ID 预设？"), t`预设 ${prepared.record.id} 已存在。覆盖会原子清除引用它的表格及 QQ 应用绑定，不删除已收入 QQ 图库的素材。` + materialSummary, t("确认覆盖"), commit);
+                } else if (materials.length) {
+                    confirm(t('导入 QQ 美化素材？'), materialSummary + '\n' + materials.map(item => item.library + ' / ' + item.id).join('\n'), t('确认导入'), commit);
                 } else {
                     await commit();
                 }
@@ -87,6 +91,11 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
     };
 
     const handleApplicationChange = (select) => {
+        const qqKind = select?.dataset?.qqPresetApplication;
+        if (qqKind) {
+            void run(select, () => service.setQQActive(qqKind, select.value), t('QQ 美化应用已更新'));
+            return;
+        }
         const application = String(select?.dataset?.contentPresetApplication || '');
         if (application !== 'page' && application !== 'popup') return;
         const sheetKey = String(select?.dataset?.sheetKey || '');
@@ -129,7 +138,7 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
             const result = await service.exportPreset(presetId);
             downloadTextFile(result.filename, result.text, result.mimeType);
         }, t("预设已导出"));
-        if (action === 'delete') return confirm(t("删除完整预设？"), t`将删除预设 ${presetId}，并原子清除所有引用它的表绑定。`, t("确认删除"), () => run(button, () => service.deletePreset(presetId), t("预设已删除")));
+        if (action === 'delete') return confirm(t("删除完整预设？"), t`将删除预设 ${presetId}，并原子清除引用它的表格及 QQ 应用绑定；已收入 QQ 图库的素材仍保留。`, t("确认删除"), () => run(button, () => service.deletePreset(presetId), t("预设已删除")));
         if (action === 'activate') return void run(button, () => service.setActive(sheetKey, presetId, itemId), t("已设为当前美化"));
         if (action === 'clear') return void run(button, () => service.clearActive(sheetKey), t("该表已恢复默认展示"));
         if (action === 'clear-all-page' || action === 'clear-all') return confirm(t("全部恢复页面默认？"), t("将清除全部表格美化应用，但保留弹窗应用和已导入预设。"), t("确认清除"), () => run(button, () => (service.clearAllPageActive || service.clearAllActive)(), t("全部页面已恢复默认展示")));

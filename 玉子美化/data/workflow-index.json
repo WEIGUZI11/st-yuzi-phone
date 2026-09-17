@@ -20,7 +20,8 @@
       "tables:cli": "node tools/table-source.cjs",
       "tables:check": "node tools/verify-tables.mjs",
       "tables:test": "node tests/table-source-tests.mjs",
-      "project:add-display": "node tools/project-add-display.mjs"
+      "project:add-display": "node tools/project-add-display.mjs",
+      "project:add-qq": "node tools/project-add-qq.mjs"
     }
   },
   "processContract": {
@@ -180,8 +181,8 @@
       "hostSourceRequired": false,
       "userVersionGate": false,
       "batchRelatedQuestions": true,
-  "requireUserImageIdentityChoice": true,
-  "singleRowIdentityExemption": false,
+      "requireUserImageIdentityChoice": true,
+      "singleRowIdentityExemption": false,
       "imageDiscussion": [
         "display-size-and-responsive-ratio",
         "composed-field-and-framing-prompt",
@@ -208,7 +209,7 @@
         "popup"
       ],
       "askCombinationOnlyAfterInline": true,
-  "askInlineImageButton": true,
+      "askInlineImageButton": true,
       "repeatConfirmedChoices": false,
       "combinationUnit": "one-popup",
       "currentDataSelection": {
@@ -222,6 +223,24 @@
         "historyOrRowPickerOnlyWhenExplicitlyRequested": true
       },
       "document": "docs/runtime/popup-authoring-workflow.md"
+    },
+    "qqAuthoring": {
+      "terminology": "QQ 美化",
+      "opening": "要不要美化 QQ 主题或 QQ 通知浮窗",
+      "units": [
+        "theme",
+        "popup",
+        "resources"
+      ],
+      "askThemeAndPopupFirst": true,
+      "refuseSkipsBranch": true,
+      "decorationsOnlyWhenRequested": true,
+      "askDayNightOnce": true,
+      "requireDayNight": false,
+      "simulator": false,
+      "repeatConfirmedChoices": false,
+      "registerCommand": "project:add-qq",
+      "document": "docs/runtime/qq-authoring-workflow.md"
     }
   },
   "runtimeBoundary": {

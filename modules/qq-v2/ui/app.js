@@ -1,3 +1,5 @@
+import { mountQQSkin } from '../../content-presets/qq-skin.js';
+import { decorateQQAvatar, decorateQQBubble } from './appearance.js';
 import { t } from '../../i18n/index.js';
 import { createMediaViewerContent } from '../../ui-runtime/media-viewer-content.js';
 import { createMessageWindow, mergeMessagePage, reconcileMessageScrollAnchor } from './message-window.js';
@@ -974,6 +976,8 @@ export function createQQApp({
 } = {}) {
     if (!facade?.query || !facade?.intent) throw new TypeError('QQ App needs an injected Facade');
 
+    let releaseSkin = () => {};
+    const bubbleMetadata = new Map();
     let root = null;
     let viewport = null;
     let disposed = false;
@@ -1145,6 +1149,23 @@ export function createQQApp({
         viewScrollState.restore(scrollSnapshot, { token: renderEpoch, isCurrent: isActive });
     };
 
+    const applyPersonalFrame = (element, assetId, token = renderEpoch) => {
+        if (!assetId || element.classList.contains('yuzi-qq-group-avatar-member')) return;
+        const session = leaseSessionFor(token)?.avatars;
+        const apply = render => { if (render?.url && isActive(token)) decorateQQAvatar(element, render.url); };
+        const cached = session?.peek(assetId);
+        if (cached) apply(cached); else void session?.load(assetId).then(apply).catch(() => {});
+    };
+    const applyPersonalBubble = (element, assetId, token = renderEpoch) => {
+        if (!assetId) return;
+        const session = leaseSessionFor(token)?.media;
+        if (!session) return;
+        if (!bubbleMetadata.has(assetId)) bubbleMetadata.set(assetId, facade.query.media({ assetId }));
+        void Promise.all([session.load(assetId), bubbleMetadata.get(assetId)]).then(([render, result]) => {
+            if (render?.url && result?.ok && isActive(token)) decorateQQBubble(element, render.url, result.media?.bubble);
+        }).catch(() => { bubbleMetadata.delete(assetId); });
+    };
+
     const avatar = (person, className = 'yuzi-qq-avatar', {
         interactive = false,
         attributes = {},
@@ -1154,6 +1175,7 @@ export function createQQApp({
             : createElement('span', className);
         if (!interactive) element.setAttribute('aria-hidden', 'true');
         element.textContent = initial(person?.formalName || person?.title);
+        applyPersonalFrame(element, person?.avatarFrameAssetId);
         const avatarUrl = asText(person?.avatarUrl);
         if (avatarUrl) {
             const image = createElement('img');
@@ -1292,6 +1314,7 @@ export function createQQApp({
             'aria-label': t("当前用户资料"), 'data-qq-current-profile': '1', title: t("当前用户资料"),
         });
         element.textContent = initial(identity.name || title);
+        applyPersonalFrame(element, profile?.avatarFrameAssetId, token);
         const hostAvatar = asText(identity.avatar);
         if (hostAvatar) {
             const image = createElement('img');
@@ -2324,6 +2347,8 @@ export function createQQApp({
                 formalName: asText(message.senderName) || currentIdentity.formalName,
                 avatarAssetId: asText(message.senderAvatarAssetId) || currentIdentity.avatarAssetId,
                 avatarUrl: currentIdentity.avatarUrl,
+                avatarFrameAssetId: currentIdentity.avatarFrameAssetId,
+                bubbleAssetId: currentIdentity.bubbleAssetId,
             }
             : {
                 formalName: asText(message.senderName) || contactFormalName(conversation),
@@ -2331,6 +2356,8 @@ export function createQQApp({
                     || asText(groupMember?.avatarAssetId)
                     || conversation.avatarAssetId,
                 avatarUrl: conversation.avatarUrl,
+                avatarFrameAssetId: groupChat ? groupMember?.avatarFrameAssetId : conversation.avatarFrameAssetId,
+                bubbleAssetId: groupChat ? groupMember?.bubbleAssetId : conversation.bubbleAssetId,
             };
         const senderAvatar = avatar(
             sender,
@@ -2492,6 +2519,7 @@ export function createQQApp({
             body = createElement('span', 'yuzi-qq-message-bubble yuzi-qq-private-message-bubble');
             body.textContent = message.content;
         }
+        if (message.type === 'text' || message.type === 'voice') applyPersonalBubble(body, sender.bubbleAssetId);
         body.setAttribute('data-qq-message-body', '');
         stack.append(body);
         const lastSelf = [...allMessages].reverse().find((item) => item.senderType === 'self');
@@ -2810,6 +2838,8 @@ export function createQQApp({
         const currentIdentity = {
             formalName: currentProfileName(currentContext),
             avatarAssetId: asText(currentProfile.avatarAssetId),
+            avatarFrameAssetId: currentProfile.avatarFrameAssetId,
+            bubbleAssetId: currentProfile.bubbleAssetId,
             avatarUrl: asText(currentContext.user?.avatar),
         };
         if (conversation.backgroundAssetId) {
@@ -3255,6 +3285,8 @@ export function createQQApp({
             { library: 'avatar', title: t("头像") },
             { library: 'profile-background', title: t("资料背景") },
             { library: 'chat-background', title: t("聊天背景") },
+            { library: 'avatar-frame', title: t('头像框') },
+            { library: 'bubble', title: t('气泡') },
             { library: 'sticker', title: t("表情仓库"), sticker: true },
         ];
         const results = await Promise.all(stores.map(({ library, sticker }) => (
@@ -4680,7 +4712,7 @@ export function createQQApp({
     const confirmImageLibraryPackImport = (source) => {
         const content = createElement('div', 'yuzi-qq-confirm-copy');
         const copy = createElement('p');
-        copy.textContent = t("导入会追加头像、资料背景、聊天背景和表情；相同资源 ID 会自动添加 (1)、(2)。");
+        copy.textContent = t("导入会追加头像、资料背景、聊天背景和表情，也会追加头像框、气泡和套装；已配套的头像框与气泡会一起保留。相同资源 ID 会自动添加 (1)、(2)。");
         const status = createElement('p', 'yuzi-qq-form-error');
         content.append(copy, status);
         const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
@@ -4699,7 +4731,7 @@ export function createQQApp({
             clearImageLibrarySelection();
             clearOverlay();
             const imported = asObject(result.imported);
-            shell.showToast?.(t`已导入：头像 ${asInteger(imported.avatars)}，资料背景 ${asInteger(imported.profileBackgrounds)}，聊天背景 ${asInteger(imported.chatBackgrounds)}，表情 ${asInteger(imported.stickers)}`, false);
+            shell.showToast?.(t`已导入：头像 ${asInteger(imported.avatars)}，头像框 ${asInteger(imported.avatarFrames)}，气泡 ${asInteger(imported.bubbles)}，套装 ${asInteger(imported.outfits)}，资料背景 ${asInteger(imported.profileBackgrounds)}，聊天背景 ${asInteger(imported.chatBackgrounds)}，表情 ${asInteger(imported.stickers)}`, false);
             await render();
         });
         showDialog({
@@ -5179,6 +5211,7 @@ export function createQQApp({
             viewport.addEventListener('scroll', handleConversationListScroll, true);
             window.addEventListener('yuzi-phone-resize-start', handlePhoneResizeStart);
             root.replaceChildren(viewport);
+            releaseSkin = mountQQSkin(root, 'theme', report);
             void render().catch(report);
             return this;
         },
@@ -5239,6 +5272,8 @@ export function createQQApp({
                 avatarRenderLeases.dispose(),
                 stickerRenderLeases.dispose(),
             ]);
+            releaseSkin();
+            bubbleMetadata.clear();
             root?.classList.remove('yuzi-qq-app');
             root?.replaceChildren();
             root = null;

@@ -1,7 +1,11 @@
+import { normalizeBubbleStyle, normalizeOutfits, QQ_OUTFIT_SLOTS } from './appearance-contract.js';
+import { sha256Text } from './content-hash.js';
 import { t } from '../../i18n/index.js';
 const IMAGE_LIBRARY_KEY = 'imageLibraryAssets';
 const STICKERS_KEY = 'qq-v2.resources.stickers';
 const IMAGE_LIBRARIES = Object.freeze({
+    avatarFrames: Object.freeze({ library: 'avatar-frame', kind: 'avatar-frame' }),
+    bubbles: Object.freeze({ library: 'bubble', kind: 'bubble' }),
     avatars: Object.freeze({ library: 'avatar', kind: 'avatar' }),
     profileBackgrounds: Object.freeze({ library: 'profile-background', kind: 'profile-background' }),
     chatBackgrounds: Object.freeze({ library: 'chat-background', kind: 'background' }),
@@ -101,6 +105,8 @@ async function exportImageAsset(asset, usedIds, readMedia) {
         mimeType,
         createdAt: Math.max(0, Number(asset.createdAt) || 0),
         dataUrl: await blobToDataUrl(blob, mimeType),
+        ...(asset.bubble ? { bubble: asset.bubble } : {}),
+        ...(asset.origin ? { origin: asset.origin } : {}),
     };
 }
 
@@ -130,10 +136,11 @@ function parsePack(input) {
     if (Number(pack.schemaVersion) !== QQ_IMAGE_LIBRARY_PACK_SCHEMA_VERSION) {
         throw new Error(t`图片资料包 schemaVersion 必须是 ${QQ_IMAGE_LIBRARY_PACK_SCHEMA_VERSION}`);
     }
-    const libraries = pack.libraries;
+    const libraries = { ...pack.libraries };
     if (!libraries || typeof libraries !== 'object' || Array.isArray(libraries)) {
         throw new Error(t("图片资料包缺少 libraries"));
     }
+    for (const key of ['avatarFrames', 'bubbles']) { if (libraries[key] === undefined) libraries[key] = []; }
     for (const key of [...Object.keys(IMAGE_LIBRARIES), 'stickers']) {
         if (!Array.isArray(libraries[key])) throw new Error(t`图片资料包 libraries.${key} 必须是数组`);
     }
@@ -152,6 +159,8 @@ function importImageAsset(raw, key, index, usedIds) {
         conversationId: '',
         kind: definition.kind,
         library: definition.library,
+        ...(source.origin ? { origin: asText(source.origin, 256) } : {}),
+        ...(definition.library === 'bubble' && source.bubble !== undefined ? { bubble: normalizeBubbleStyle(source.bubble) } : {}),
         blob,
         mimeType,
         createdAt: Math.max(0, Number(source.createdAt) || 0),
@@ -187,7 +196,8 @@ function normalizeImportedLibraries(input) {
     }
     const usedStickerIds = new Set();
     const stickers = libraries.stickers.map((raw, index) => importSticker(raw, index, usedStickerIds));
-    return { images, stickers };
+    const raw = typeof input === 'string' ? JSON.parse(input) : input;
+    return { images, stickers, outfits: normalizeOutfits(raw.outfits, images) };
 }
 
 export function createQQImageLibraryPackService(options = {}) {
@@ -196,7 +206,26 @@ export function createQQImageLibraryPackService(options = {}) {
         ? (key) => stateStore.readMedia(key)
         : async () => null;
 
-    return Object.freeze({
+    const service = {
+        async importBeautifyPreset(record) {
+            const libraries = { avatars: [], profileBackgrounds: [], chatBackgrounds: [], stickers: [], avatarFrames: [], bubbles: [] };
+            const remapped = new Map();
+            for (const resource of record.qq?.resources || []) {
+                const key = Object.keys(IMAGE_LIBRARIES).find(key => IMAGE_LIBRARIES[key].library === resource.library);
+                const file = record.files?.[resource.file];
+                if (!key || !file || file.encoding !== 'base64') throw new Error('QQ 美化图片资源无效');
+                const origin = await sha256Text(JSON.stringify([record.id, resource.id, resource.library, resource.bubble || null, file.mimeType, file.content]));
+                const id = 'beautify-' + origin;
+                remapped.set(resource.id, id);
+                libraries[key].push({ id, origin, mimeType: file.mimeType, dataUrl: 'data:' + file.mimeType + ';base64,' + file.content, ...(resource.bubble ? { bubble: resource.bubble } : {}) });
+            }
+            const outfits = [];
+            for (const source of record.qq?.outfits || []) {
+                const slots = Object.fromEntries(Object.keys(QQ_OUTFIT_SLOTS).filter(slot => source[slot]).map(slot => [slot, remapped.get(source[slot])]));
+                outfits.push({ id: 'beautify-' + await sha256Text(JSON.stringify([record.id, source.id, slots])), ...slots });
+            }
+            return service.importPack({ format: QQ_IMAGE_LIBRARY_PACK_FORMAT, schemaVersion: 1, libraries, outfits });
+        },
         async exportPack() {
             const state = await stateStore.read();
             const assets = Object.values(asObject(state.sharedResources?.[IMAGE_LIBRARY_KEY]));
@@ -206,6 +235,7 @@ export function createQQImageLibraryPackService(options = {}) {
             const libraries = {};
             const usedImageIds = new Set();
             for (const [key, definition] of Object.entries(IMAGE_LIBRARIES)) {
+                if (['avatarFrames', 'bubbles'].includes(key) && !assets.some(asset => asset.library === definition.library)) continue;
                 libraries[key] = await Promise.all(assets
                     .filter((asset) => asset?.library === definition.library)
                     .sort((left, right) => Number(right.createdAt || 0) - Number(left.createdAt || 0))
@@ -220,6 +250,7 @@ export function createQQImageLibraryPackService(options = {}) {
                 schemaVersion: QQ_IMAGE_LIBRARY_PACK_SCHEMA_VERSION,
                 exportedAt: new Date().toISOString(),
                 libraries,
+                ...(Object.keys(state.sharedResources?.imageLibraryOutfits || {}).length ? { outfits: Object.values(state.sharedResources.imageLibraryOutfits) } : {}),
             };
         },
         async importPack(input) {
@@ -230,11 +261,23 @@ export function createQQImageLibraryPackService(options = {}) {
                 }
                 const images = asObject(state.sharedResources[IMAGE_LIBRARY_KEY]);
                 const usedImageIds = new Set(Object.keys(images));
+                const remapped = new Map();
                 Object.values(imported.images).forEach((asset) => {
+                    const existing = asset.origin && Object.values(images).find(value => value.origin === asset.origin);
+                    if (existing) { remapped.set(asset.assetId, existing.assetId); return; }
                     const assetId = appendableId(asset.assetId, usedImageIds);
                     images[assetId] = { ...asset, assetId };
+                    remapped.set(asset.assetId, assetId);
                 });
                 state.sharedResources[IMAGE_LIBRARY_KEY] = images;
+                const outfits = state.sharedResources.imageLibraryOutfits ||= {};
+                const outfitIds = new Set(Object.keys(outfits));
+                for (const outfit of imported.outfits) {
+                    const slots = Object.fromEntries(Object.keys(QQ_OUTFIT_SLOTS).filter(slot => outfit[slot]).map(slot => [slot, remapped.get(outfit[slot])]));
+                    if (outfits[outfit.id] && Object.entries(slots).every(([slot, assetId]) => outfits[outfit.id][slot] === assetId)) continue;
+                    const id = appendableId(outfit.id, outfitIds);
+                    outfits[id] = { id, ...slots };
+                }
 
                 const stickerState = asObject(state.sharedResources[STICKERS_KEY]);
                 const stickers = Array.isArray(stickerState.stickers) ? stickerState.stickers : [];
@@ -253,12 +296,18 @@ export function createQQImageLibraryPackService(options = {}) {
                     stickers: [...stickers, ...appendedStickers],
                 };
             });
+            const avatarFrames = Object.values(imported.images).filter((asset) => asset.library === 'avatar-frame').length;
+            const bubbles = Object.values(imported.images).filter((asset) => asset.library === 'bubble').length;
             return {
                 avatars: Object.values(imported.images).filter((asset) => asset.library === 'avatar').length,
                 profileBackgrounds: Object.values(imported.images).filter((asset) => asset.library === 'profile-background').length,
                 chatBackgrounds: Object.values(imported.images).filter((asset) => asset.library === 'chat-background').length,
+                ...(avatarFrames ? { avatarFrames } : {}),
+                ...(bubbles ? { bubbles } : {}),
+                ...(imported.outfits.length ? { outfits: imported.outfits.length } : {}),
                 stickers: imported.stickers.length,
             };
         },
-    });
+    };
+    return Object.freeze(service);
 }

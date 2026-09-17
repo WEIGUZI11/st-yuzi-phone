@@ -30,9 +30,6 @@ jobs:
         run: npm run lint
 
       - name: Run contract checks
-        run: npm run check
-
-      - name: Run contract checks
         run: npm run check:ci
 
       - name: Verify table sources

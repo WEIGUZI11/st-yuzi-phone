@@ -104,7 +104,15 @@ export function buildBeautifyTemplatePageHtml(viewModel = {}) {
             return `<article class="phone-settings-card"><div class="phone-settings-card-title">${escapeHtml(table.tableName || table.sheetKey)}</div><div class="phone-settings-form">${applications}</div></article>`;
         }).join('')
         : `<div class="phone-settings-note">${t("没有可配置的真实表。")}</div>`;
+    const qq = viewModel.qq || { bindings: {}, presets: [] };
+    const qqHtml = ['theme', 'popup'].map(kind => {
+        const label = kind === 'theme' ? t('主题应用') : t('弹窗应用');
+        const fallback = kind === 'theme' ? t('默认主题（保留个人装饰）') : t('内置通知样式');
+        const options = (qq.presets || []).filter(preset => preset.qq?.[kind]).map(preset => `<option value="${escapeHtmlAttr(preset.id)}"${qq.bindings?.[kind] === preset.id ? ' selected' : ''}>${escapeHtml(preset.name)}</option>`).join('');
+        return `<label class="phone-settings-field-inline"><span>${label}</span><select class="phone-settings-select" data-qq-preset-application="${kind}" aria-label="QQ ${label}"><option value="">${fallback}</option>${options}</select></label>`;
+    }).join('');
     const bodyHtml = `${statusHtml}
+        ${buildSettingsSectionHtml({ title: 'QQ', desc: t('主题与通知独立应用；恢复默认不清除个人装饰。'), bodyHtml: qqHtml })}
         ${buildSettingsSectionHtml({ title: t("完整预设"), bodyHtml: `<div class="phone-settings-action"><button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="import">${t`导入预设`}</button></div>${presetCardsHtml}` })}
         ${buildSettingsSectionHtml({ title: t("表格应用"), desc: t("导入后，请分别选择页面和弹窗应用。"), bodyHtml: `${tableCardsHtml}<div class="phone-settings-action"><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-page">${t`全部恢复页面默认`}</button><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-popup">${t`全部清空弹窗应用`}</button></div>` })}`;
     return buildSettingsPageFrame({

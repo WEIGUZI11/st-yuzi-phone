@@ -1,3 +1,4 @@
+import { normalizeQQPreset } from './qq-contract.js';
 import { t } from '../i18n/index.js';
 import { isTrustedContentPresetRecord } from './format.js';
 import { normalizeDisplayMetadata, normalizePageItemHostCapabilities } from './display-contract.js';
@@ -72,8 +73,9 @@ export function normalizeContentPresetBundle(bundle) {
             activatable: true,
         });
     }) : [];
-    const manifest = Object.freeze({ id: presetId, name: sourceManifest.name, version: sourceManifest.version, author: sourceManifest.author, items: Array.isArray(sourceManifest.items) ? sourceManifest.items : [], ...(isV3 ? { displays: Array.isArray(sourceManifest.displays) ? sourceManifest.displays : [] } : {}) });
-    const record = Object.freeze({ id: presetId, name: text(sourceManifest.name) || presetId, version: text(sourceManifest.version), author: text(sourceManifest.author), format: bundle.format, formatVersion: bundle.formatVersion, apiVersion: bundle.apiVersion, manifest, files: Object.freeze(files), items: Object.freeze(items), ...(isV3 ? { displays: Object.freeze(displays) } : {}), issues: Object.freeze(issues), importedAt: new Date().toISOString() });
+    const qq = isV3 && sourceManifest.qq ? normalizeQQPreset(sourceManifest.qq, files) : undefined;
+    const manifest = Object.freeze({ ...(qq ? { qq } : {}), id: presetId, name: sourceManifest.name, version: sourceManifest.version, author: sourceManifest.author, items: Array.isArray(sourceManifest.items) ? sourceManifest.items : [], ...(isV3 ? { displays: Array.isArray(sourceManifest.displays) ? sourceManifest.displays : [] } : {}) });
+    const record = Object.freeze({ ...(qq ? { qq } : {}), id: presetId, name: text(sourceManifest.name) || presetId, version: text(sourceManifest.version), author: text(sourceManifest.author), format: bundle.format, formatVersion: bundle.formatVersion, apiVersion: bundle.apiVersion, manifest, files: Object.freeze(files), items: Object.freeze(items), ...(isV3 ? { displays: Object.freeze(displays) } : {}), issues: Object.freeze(issues), importedAt: new Date().toISOString() });
     if (!isTrustedContentPresetRecord(record)) throw new Error(t("玉子美化预设缺少有效的 ES Module mount(context) 导出或能力声明不完整"));
     return record;
 }

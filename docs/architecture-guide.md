@@ -1620,7 +1620,6 @@ graph TD
 
 - `scripts/check-phone-language-behavior.cjs`：设置默认／回读、非法值回退、同名系统与来源数据隔离、表格 HTML 转义、图标身份与操作错误码。
 - `scripts/check-phone-language-qq.cjs`：真实 QQ runtime / Facade 下的新旧系统通知、原始联系人与默认提示词保护。
-- `scripts/check-phone-language-browser.cjs`：独立 Chromium 临时环境，加载真实 CSS 和 `scripts/fixtures/phone-language-browser.js`，验证即时切换、草稿、滚动、280px 英文布局、预设保存、QQ 控件协议值、面板／悬浮入口清理。不访问真实 AI 或写入真实世界书；可用 `YUZI_TEST_BROWSER` 指定浏览器。
 - 以上纳入 `npm run check`。发布仍须执行 `npm run lint` 与 `npm run build`，扩展版和脚本版共用重建后的 dist；最终实际使用验收由用户进行。
 
 ## 底部可视化（只读宿主界面）
@@ -1637,4 +1636,4 @@ graph TD
 - **设置与图片**：`settings.js` 仅归一化该视图配置；`settings-dialog.js` 是宿主原生 dialog，不受视图透明度影响；点击遮罩空白可关闭，内部点击或拖动到外部不误关。下拉框复用手机壳/QQ 的原生表单防宿主主题覆盖规则；设置首页总开关与 QQ 发送键共享按钮式滑块样式，不共享 QQ 业务设置。两张图使用现有 raw picker、图片校验和外观 IndexedDB codec，原图最多 12MB，不裁剪压缩。图片字段 `bottomVisualizationNavImage`、`bottomVisualizationPanelImage` 与布局对象分开，缺失资源引用不因普通布局保存而丢失。它们不加入外观包，也不增加作者 action、内容预设声明、公共主题 API 或制作包格式。
 - **主题**：系统文案走现有 i18n，原始表名/单元格不翻译；字体库、可读字号、主题颜色直接消费手机主设置和共享 CSS 变量。导航 dock、面板、设置 dialog、正文选项及其文字/表单加入现有字体库的限定范围覆盖规则，不只依赖外层继承；保留 SVG、图标及等宽语义元素的排除，不增加作者字体声明或第二份字体配置。导航只显示审核/原始表名，没有图标；收起和设置组利用末行剩余空间靠右排列，只有放不下才换行。不得再存一份底部主题。
 
-回归入口：`node scripts/check-bottom-visualization.cjs` 与 `node scripts/check-bottom-visualization-browser.cjs`。后者用独立 Chromium 临时 profile、真实页面帧和原生指针事件验证 PC/手机界面、35 帧正文滚动的 LayoutCount、面板不挤压正文、宿主强制字体/深色表单覆盖、原生滚轮边界接续、平滑中间帧/累计/反向、两种侧栏滚动隔离、侧栏横纵切换、持久化、上传失败回滚、消息选项和后台生命周期；不接触用户聊天或真实服务。可通过 `YUZI_TEST_BROWSER` 指定 Chromium 路径，`YUZI_BOTTOM_SCREENSHOTS_DIR` 可选保存回归截图。
+回归入口：`node scripts/check-bottom-visualization.cjs`。真实浏览器中的布局、滚动和交互由用户手动验收。

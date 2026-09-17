@@ -21,11 +21,12 @@
     "tables:check": "node tools/verify-tables.mjs",
     "tables:test": "node tests/table-source-tests.mjs",
     "check": "node tools/check-preset.mjs examples/basic-preset.json examples/tables.json",
-    "test": "node tests/run-tests.mjs && node tests/workflow-validator-tests.mjs && node tests/schema-tests.mjs && node tests/project-workflow-tests.mjs && node tests/display-workflow-tests.mjs && node tests/display-bundle-tests.mjs && node tests/display-authoring-tests.mjs && node tests/page-item-host-capabilities-tests.mjs && node tests/table-source-tests.mjs && node tests/preview-session-tests.mjs && node tests/preview-runtime-tests.mjs && node tests/reference-pages-tests.mjs && node tests/publish-gates-tests.mjs && node tests/independence-tests.mjs && node tests/preview-image-actions-tests.mjs",
+    "test": "node tests/run-tests.mjs && node tests/workflow-validator-tests.mjs && node tests/schema-tests.mjs && node tests/project-workflow-tests.mjs && node tests/qq-workflow-tests.mjs && node tests/display-workflow-tests.mjs && node tests/display-bundle-tests.mjs && node tests/display-authoring-tests.mjs && node tests/page-item-host-capabilities-tests.mjs && node tests/table-source-tests.mjs && node tests/preview-session-tests.mjs && node tests/preview-runtime-tests.mjs && node tests/reference-pages-tests.mjs && node tests/publish-gates-tests.mjs && node tests/independence-tests.mjs && node tests/preview-image-actions-tests.mjs",
     "inspect": "node tools/inspect-tables.mjs examples/tables.json",
     "pack": "node tools/pack-preset.mjs examples/project.json output/basic-preset.json",
     "readback": "node tools/readback-preset.mjs examples/project.json output/basic-preset.json",
-    "verify": "npm run workflow:check && npm run lint && npm run tables:check && npm test && npm run check && npm run pack -- --dry-run --overwrite && npm run readback"
+    "verify": "npm run workflow:check && npm run lint && npm run tables:check && npm test && npm run check && npm run pack -- --dry-run --overwrite && npm run readback",
+    "project:add-qq": "node tools/project-add-qq.mjs"
   },
   "devDependencies": {
     "ajv": "^6.12.6",

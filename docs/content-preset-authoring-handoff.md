@@ -9,8 +9,10 @@
 作者说明随 `玉子美化/docs/runtime/` 交付：
 
 - `authoring-workflow.md`：先检查能力再集中讨论；画框显示尺寸/比例、完整拼接提示词、可选用户补充；模拟永远只测试。
+- `qq-authoring-workflow.md`：QQ 主题、QQ 通知浮窗、人物装饰素材与纯 QQ 项目的登记、检查和真实宿主验收边界。
 - `host-capabilities.md` 与 `.d.ts`：声明、调用、返回值、错误与生命周期。
 - `玉子美化/examples/image-avatar/`：最小声明和独立页面示例。
+- `玉子美化/examples/qq-beautify/`：不伪造表格的 QQ-only format v3 源码示例，包含双模式主题、通知样式和头像框＋气泡套装。
 
 维护者修改内容预设 actions、画布声明、外观桥接或提示词拼接时，同时更新这些文件和相应检查。不要重复维护一份不同步的作者文档，也不要要求作者到 modules 里推测签名。
 
@@ -22,9 +24,12 @@
 
 字体声明映射到 `--yuzi-content-preset-font-family`，不把作者引向手机内部设置服务。
 
+QQ 美化通过 `manifest.qq` 和制作端 `project:add-qq` 登记，不借用普通表格 item 或 display。QQ 主题与 QQ 通知浮窗是两项独立工坊绑定；头像框、气泡、资料背景和聊天背景属于追加保留的人物图库素材，主题恢复默认或预设删除不负责删除它们。通知 CSS 只改变现有 QQ 主动消息浮窗的外观，不接管来源、调度、位置、交互、动画或生命周期。制作包不提供 QQ 专用模拟器；自动检查只证明声明、素材、打包和回读合同，真实 QQ 页面和通知效果由真实小手机验收。
+
 ## 检查与职责
 
 - `node scripts/check-beautify-authoring-handoff.cjs`：作者示例可被宿主识别，公开动作有配套说明/类型。
+- 同一检查还会构建 `examples/qq-beautify/`，验证纯 QQ 包能通过制作端严格检查，并由宿主导入、导出和回读。
 - `node scripts/check-content-presets-default-image-generation-host.cjs`：提示词附加描述抵达现有生图组合链（测试替身，不进行真实生成）。
 - `node scripts/check-content-presets-page-host-capabilities.cjs`：声明的导入、导出、回读与坏参数。
 - 在玉子美化目录运行自己的 `npm run verify`：不引用父目录模块、测试图片与模拟状态、流程要求、声明与打包。

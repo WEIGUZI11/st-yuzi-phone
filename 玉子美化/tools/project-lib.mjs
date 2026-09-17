@@ -15,6 +15,7 @@ import {
   resolveProjectFile,
 } from './lib.mjs';
 import { assertSchema, validateSchema } from './schema-validator.mjs';
+import { normalizeQQManifest } from './qq-contract.mjs';
 
 const require = createRequire(import.meta.url);
 const WORKFLOW_FILE = 'workflow-state.json';
@@ -124,6 +125,7 @@ function emptyWorkflow(id) {
       generatedSha256: null,
     },
     queue: [],
+    qq: { status: 'not-configured', completedAt: null },
     currentTable: null,
     confirmation: { confirmed: false, confirmedAt: null, summaryHash: null },
   };
@@ -199,7 +201,10 @@ function newQueueEntry(table) {
 
 function derivePhase(state) {
   if (state.confirmation.confirmed) return 'confirmed';
-  if (state.queue.length === 0) return state.tables.generatedFile ? 'tables-imported' : 'empty';
+  if (state.queue.length === 0) {
+    if (state.qq?.status === 'completed') return 'ready';
+    return state.tables.generatedFile ? 'tables-imported' : 'empty';
+  }
   if (state.queue.every(entry => entry.status === 'completed' || entry.status === 'skipped')) return 'ready';
   if (state.queue.every(entry => entry.status === 'pending')) return 'tables-imported';
   return 'working';
@@ -283,6 +288,7 @@ function summaryPayload(project, state) {
   return {
     projectId: project.manifest.id,
     generatedSha256: state.tables.generatedSha256,
+    ...(project.manifest.qq ? { qq: { state: state.qq || null, manifest: project.manifest.qq } } : {}),
     queue: state.queue.map(entry => ({
       sheetKey: entry.sheetKey,
       tableName: entry.tableName,
@@ -333,7 +339,7 @@ export async function createProject({ projectsDir = 'projects', id, name, versio
     await fs.mkdir(path.join(staging, 'assets'), { recursive: true });
     await writeFileExclusive(path.join(staging, 'project.json'), jsonText(project));
     await writeFileExclusive(path.join(staging, WORKFLOW_FILE), jsonText(state));
-    await writeFileExclusive(path.join(staging, 'README.md'), `# ${displayName}\n\n这是一个玉子美化源码草稿。先导入 chatSheets，再逐表制作。\n`);
+    await writeFileExclusive(path.join(staging, 'README.md'), `# ${displayName}\n\n这是一个玉子美化源码草稿。可以导入 chatSheets 逐表制作，也可以直接登记 QQ 主题、通知样式或人物装饰素材。\n`);
     await writeFileExclusive(path.join(staging, 'notes', 'requirements.md'), '# 逐表需求\n');
     await writeFileExclusive(path.join(staging, 'notes', 'data-contract.md'), '# 字段合同\n');
     await writeFileExclusive(path.join(staging, 'notes', 'ui-spec.md'), '# 页面设计\n');
@@ -691,6 +697,73 @@ export async function addProjectDisplay({
   return result;
 }
 
+export async function addProjectQQ({
+  projectFile,
+  theme = undefined,
+  popup = undefined,
+  assets = undefined,
+  resources = undefined,
+  outfits = undefined,
+  replace = false,
+  dryRun = false,
+} = {}) {
+  const context = await loadWorkflowProject(projectFile);
+  const project = structuredClone(context.project);
+  const state = structuredClone(context.state);
+  if (project.manifest.qq && !replace) throw new Error('项目已经登记 QQ 美化；如需整体重做请显式使用 --replace');
+  const raw = {
+    ...(theme !== undefined ? { theme } : {}),
+    ...(popup !== undefined ? { popup } : {}),
+    ...(assets !== undefined ? { assets } : {}),
+    ...(resources !== undefined ? { resources } : {}),
+    ...(outfits !== undefined ? { outfits } : {}),
+  };
+  const qq = normalizeQQManifest(raw, { normalizePath: normalizePackagePath });
+  const packagePaths = [
+    qq.theme?.css, qq.theme?.darkCss, qq.popup?.css, qq.popup?.darkCss,
+    ...(qq.assets || []),
+    ...(qq.resources || []).map(resource => resource.file),
+  ].filter(Boolean);
+  assertUniqueNormalized(packagePaths, 'QQ 源码路径');
+  await assertSourceFiles(context, packagePaths);
+
+  project.files ||= {};
+  project.mimeTypes ||= {};
+  project.encodings ||= {};
+  const oldPaths = new Set([
+    project.manifest.qq?.theme?.css, project.manifest.qq?.theme?.darkCss,
+    project.manifest.qq?.popup?.css, project.manifest.qq?.popup?.darkCss,
+    ...(project.manifest.qq?.assets || []),
+    ...(project.manifest.qq?.resources || []).map(resource => resource.file),
+  ].filter(Boolean));
+  project.manifest.qq = qq;
+  for (const packagePath of packagePaths) {
+    project.files[packagePath] = packagePath;
+    const metadata = inferFileMetadata(packagePath);
+    project.mimeTypes[packagePath] = metadata.mimeType;
+    project.encodings[packagePath] = metadata.encoding;
+  }
+  const referenced = new Set([
+    ...packagePaths,
+    ...project.manifest.items.flatMap(item => [item.entry?.mount, item.entry?.html, item.entry?.css, ...(item.assets || [])]),
+    ...(project.manifest.displays || []).flatMap(display => [display.entry?.mount, display.entry?.html, display.entry?.css, ...(display.assets || [])]),
+  ].filter(Boolean));
+  for (const packagePath of oldPaths) {
+    if (referenced.has(packagePath)) continue;
+    delete project.files[packagePath];
+    delete project.mimeTypes[packagePath];
+    delete project.encodings[packagePath];
+  }
+  state.qq = { status: 'completed', completedAt: nowIso() };
+  resetConfirmation(state);
+  updatePhase(state);
+  assertSchema('project', project, 'project.json');
+  assertSchema('workflow', state, WORKFLOW_FILE);
+  const result = { ok: true, dryRun, qq, phase: state.phase };
+  if (!dryRun) await writeProjectPair(context, project, state);
+  return result;
+}
+
 export async function skipProjectTable({ projectFile, table, reason = '', resume = false, dryRun = false } = {}) {
   const context = await loadWorkflowProject(projectFile);
   const current = await readCurrentTables(context);
@@ -764,15 +837,17 @@ async function checkLoadedWorkflowProject(context, { mode = 'draft', requireConf
   errors.push(...projectStructure.errors.map(value => `project.json Schema：${value}`));
   errors.push(...stateStructure.errors.map(value => `${WORKFLOW_FILE} Schema：${value}`));
   await validateProjectMappings(context.project, context.root, errors);
+  const hasQQ = Boolean(context.project.manifest.qq);
+  const hasTableRenderables = context.project.manifest.items.length + (context.project.manifest.displays || []).length > 0;
   let current = null;
   try {
-    current = await readCurrentTables(context, { allowMissing: mode === 'draft' });
+    current = await readCurrentTables(context, { allowMissing: mode === 'draft' || (hasQQ && !hasTableRenderables) });
   } catch (error) {
     errors.push(error.message);
   }
   const state = structuredClone(context.state);
   if (!current) {
-    if (mode === 'release') errors.push('发布检查要求已导入 generated chatSheets');
+    if (mode === 'release' && (!hasQQ || hasTableRenderables)) errors.push('包含表格页面或展示时，发布检查要求已导入 generated chatSheets');
     if (state.queue.length !== 0) errors.push('generated chatSheets 缺失，但制作队列不为空');
   } else {
     const reconciliation = reconcileState(state, current.tables);
@@ -882,10 +957,12 @@ async function checkLoadedWorkflowProject(context, { mode = 'draft', requireConf
       }
     }
   }
+  if (hasQQ && state.qq?.status !== 'completed') errors.push('QQ 美化已登记但制作状态未完成');
+  if (!hasQQ && state.qq?.status === 'completed') errors.push('制作状态声明 QQ 已完成，但 project.json 未登记 QQ 美化');
   if (mode === 'release') {
     if (!context.project.manifest.id.trim()) errors.push('发布检查要求 manifest.id');
-    if (context.project.manifest.items.length + (context.project.manifest.displays || []).length === 0) errors.push('发布检查要求至少一个完整页面或正文展示');
-    if (state.queue.length === 0) errors.push('发布检查要求非空制作队列');
+    if (!hasTableRenderables && !hasQQ) errors.push('发布检查要求至少一个完整页面、展示或 QQ 美化能力');
+    if (state.queue.length === 0 && !hasQQ) errors.push('没有 QQ 美化时，发布检查要求非空制作队列');
     if (requireConfirmation) {
       if (!state.confirmation.confirmed) errors.push('发布前需要用户确认完成、跳过和未模拟项汇总');
       const expected = workflowSummaryHash(context.project, state);

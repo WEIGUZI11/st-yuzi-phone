@@ -43,8 +43,11 @@ export async function assertProjectRelease(projectFile) {
   if (!result.ok) throw new Error(formatErrors('源码项目未通过发布门禁', result.errors));
 
   const context = await loadWorkflowProject(projectFile);
-  const tablesFile = context.project.tablesFile;
-  if (!GENERATED_TABLES_FILE.test(tablesFile)) {
+  const pureQQ = Boolean(context.project.manifest.qq)
+    && context.project.manifest.items.length === 0
+    && (context.project.manifest.displays || []).length === 0;
+  const tablesFile = pureQQ ? null : context.project.tablesFile;
+  if (!pureQQ && !GENERATED_TABLES_FILE.test(tablesFile)) {
     throw new Error(formatErrors('源码项目未通过发布门禁', [
       `project.json.tablesFile 必须指向项目内 tables/generated/ 下的 chatSheets JSON，当前为：${tablesFile}`,
     ]));

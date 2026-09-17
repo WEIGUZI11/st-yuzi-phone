@@ -353,6 +353,9 @@
           "items": {
             "$ref": "#/definitions/display"
           }
+        },
+        "qq": {
+          "$ref": "#/definitions/qq"
         }
       }
     },
@@ -396,6 +399,132 @@
           "append-input",
           "image-generate"
         ]
+      }
+    },
+    "qqStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "css"
+      ],
+      "properties": {
+        "css": {
+          "$ref": "#/definitions/packagePath"
+        },
+        "darkCss": {
+          "$ref": "#/definitions/packagePath"
+        }
+      }
+    },
+    "qqBubbleStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "padding": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "slice": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "textColor": {
+          "type": "string",
+          "pattern": "^#(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$"
+        }
+      }
+    },
+    "qqResource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "library",
+        "file"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/nonEmptyString"
+        },
+        "library": {
+          "enum": [
+            "avatar-frame",
+            "bubble",
+            "profile-background",
+            "chat-background"
+          ]
+        },
+        "file": {
+          "$ref": "#/definitions/packagePath"
+        },
+        "bubble": {
+          "$ref": "#/definitions/qqBubbleStyle"
+        }
+      }
+    },
+    "qqOutfit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "avatarFrame",
+        "bubble"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/nonEmptyString"
+        },
+        "avatarFrame": {
+          "$ref": "#/definitions/nonEmptyString"
+        },
+        "bubble": {
+          "$ref": "#/definitions/nonEmptyString"
+        },
+        "profileBackground": {
+          "$ref": "#/definitions/nonEmptyString"
+        },
+        "chatBackground": {
+          "$ref": "#/definitions/nonEmptyString"
+        }
+      }
+    },
+    "qq": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "theme": {
+          "$ref": "#/definitions/qqStyle"
+        },
+        "popup": {
+          "$ref": "#/definitions/qqStyle"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/qqResource"
+          }
+        },
+        "outfits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/qqOutfit"
+          }
+        },
+        "assets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/packagePath"
+          }
+        }
       }
     }
   }

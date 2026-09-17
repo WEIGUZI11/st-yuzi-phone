@@ -1,3 +1,4 @@
+import { normalizeQQPreset } from './qq-contract.js';
 import { t } from '../i18n/index.js';
 import {
     CONTENT_PRESET_API_VERSION,
@@ -64,7 +65,7 @@ function isRawDisplay(display) {
         && (display.assets === undefined || Array.isArray(display.assets));
 }
 function isRawManifest(manifest, v3) {
-    return hasOnlyKeys(manifest, v3 ? ['id', 'name', 'version', 'author', 'items', 'displays'] : ['id', 'name', 'version', 'author', 'items'])
+    return hasOnlyKeys(manifest, v3 ? ['id', 'name', 'version', 'author', 'items', 'displays', 'qq'] : ['id', 'name', 'version', 'author', 'items'])
         && Array.isArray(manifest.items)
         && manifest.items.every(item => isRawItem(item, v3))
         && (!v3 || (Array.isArray(manifest.displays) && manifest.displays.every(isRawDisplay)));
@@ -113,7 +114,7 @@ export function isContentPresetBundle(value) {
 
 export function isTrustedContentPresetRecord(value) {
     if (!hasOnlyKeys(value, isV3(value)
-        ? ['id', 'name', 'version', 'author', 'format', 'formatVersion', 'apiVersion', 'manifest', 'files', 'items', 'displays', 'issues', 'importedAt']
+        ? ['id', 'name', 'version', 'author', 'format', 'formatVersion', 'apiVersion', 'manifest', 'files', 'items', 'displays', 'qq', 'issues', 'importedAt']
         : ['id', 'name', 'version', 'author', 'format', 'formatVersion', 'apiVersion', 'manifest', 'files', 'items', 'issues', 'importedAt'])
         || value.format !== CONTENT_PRESET_FORMAT
         || !isSupportedVersion(value)
@@ -125,6 +126,9 @@ export function isTrustedContentPresetRecord(value) {
         || typeof value.importedAt !== 'string') return false;
     const files = value.files;
     if (!isObject(files) || !Object.entries(files).every(([path, file]) => isNormalizedPackagePath(path) && file.path === path && isTrustedFile(file))) return false;
+    if (value.qq !== undefined || value.manifest.qq !== undefined) {
+        try { if (JSON.stringify(normalizeQQPreset(value.qq, files)) !== JSON.stringify(normalizeQQPreset(value.manifest.qq, files))) return false; } catch { return false; }
+    }
     const itemIds = new Set();
     if (!value.items.every(item => trustedItem(item, files, itemIds, isV3(value)))) return false;
     if (!isV3(value)) return true;

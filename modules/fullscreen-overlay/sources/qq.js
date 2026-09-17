@@ -34,6 +34,7 @@ function toSourceEvent(conversation) {
         conversationKind,
         senderName,
         avatarAssetId: conversationKind === 'group' ? '' : normalizeText(conversation?.avatarAssetId),
+        ...(conversationKind !== 'group' && conversation?.avatarFrameAssetId ? { avatarFrameAssetId: normalizeText(conversation.avatarFrameAssetId) } : {}),
     });
 }
 
@@ -77,6 +78,7 @@ export function createQQFullscreenOverlaySourceAdapter(options = {}) {
                         sheetKey: QQ_FULLSCREEN_OVERLAY_SOURCE_KEY,
                         senderName,
                         avatarAssetId: normalizeText(event?.avatarAssetId),
+                        ...(!group && event?.avatarFrameAssetId ? { avatarFrameAssetId: normalizeText(event.avatarFrameAssetId) } : {}),
                         text: group ? t`${senderName}发送了1条消息` : t`${senderName}给你发了1条消息`,
                     });
                 })

@@ -1,0 +1,24 @@
+{
+  "format": "yuzi-beautify-workflow",
+  "version": 1,
+  "projectId": "qq-sakura-example",
+  "phase": "ready",
+  "tables": {
+    "originalFile": null,
+    "sourceDir": null,
+    "generatedFile": null,
+    "originalSha256": null,
+    "generatedSha256": null
+  },
+  "queue": [],
+  "qq": {
+    "status": "completed",
+    "completedAt": "2026-09-17T00:00:00.000Z"
+  },
+  "currentTable": null,
+  "confirmation": {
+    "confirmed": false,
+    "confirmedAt": null,
+    "summaryHash": null
+  }
+}

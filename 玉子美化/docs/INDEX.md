@@ -48,3 +48,4 @@ Runtime v1 只提供当前单表冻结快照、订阅、包内资源解析和四
 这些资料随制作包交付，普通用户不需要小手机源码。
 
 - [弹窗制作：先选三个弹窗接口，只有插入正文可多表组合](./runtime/popup-authoring-workflow.md)
+- [QQ 美化：先问要不要美化 QQ 主题或 QQ 通知浮窗](./runtime/qq-authoring-workflow.md)

@@ -4,9 +4,10 @@ export const CONTENT_PRESET_API_VERSION = 2;
 export const LEGACY_CONTENT_PRESET_FORMAT_VERSION = 2;
 export const LEGACY_CONTENT_PRESET_API_VERSION = 1;
 export const CONTENT_PRESET_DB_NAME = 'yuzi-phone-template-workshop-v2';
-export const CONTENT_PRESET_DB_VERSION = 2;
+export const CONTENT_PRESET_DB_VERSION = 3;
 export const CONTENT_PRESET_STORES = Object.freeze({
     presets: 'presets',
+    appBindings: 'appBindings',
     activeByTable: 'activeByTable', // v1 的页面绑定存储，名称保留以无损兼容旧用户数据。
     popupByTable: 'popupByTable',
 });

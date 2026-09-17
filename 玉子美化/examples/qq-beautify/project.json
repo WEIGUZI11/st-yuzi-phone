@@ -1,0 +1,72 @@
+{
+  "tablesFile": "tables/generated/tables.json",
+  "manifest": {
+    "id": "qq-sakura-example",
+    "name": "QQ 樱花示例",
+    "version": "1.0.0",
+    "author": "Yuzi",
+    "items": [],
+    "displays": [],
+    "qq": {
+      "theme": {
+        "css": "qq/theme.css",
+        "darkCss": "qq/theme-dark.css"
+      },
+      "popup": {
+        "css": "qq/popup.css"
+      },
+      "assets": [
+        "assets/decor.png"
+      ],
+      "resources": [
+        {
+          "id": "sakura-frame",
+          "library": "avatar-frame",
+          "file": "assets/frame.png"
+        },
+        {
+          "id": "sakura-bubble",
+          "library": "bubble",
+          "file": "assets/bubble.png",
+          "bubble": {
+            "padding": 12,
+            "slice": 18,
+            "radius": 16,
+            "textColor": "#4a2540"
+          }
+        }
+      ],
+      "outfits": [
+        {
+          "id": "sakura",
+          "avatarFrame": "sakura-frame",
+          "bubble": "sakura-bubble"
+        }
+      ]
+    }
+  },
+  "files": {
+    "qq/theme.css": "qq/theme.css",
+    "qq/theme-dark.css": "qq/theme-dark.css",
+    "qq/popup.css": "qq/popup.css",
+    "assets/decor.png": "assets/decor.png",
+    "assets/frame.png": "assets/frame.png",
+    "assets/bubble.png": "assets/bubble.png"
+  },
+  "mimeTypes": {
+    "qq/theme.css": "text/css",
+    "qq/theme-dark.css": "text/css",
+    "qq/popup.css": "text/css",
+    "assets/decor.png": "image/png",
+    "assets/frame.png": "image/png",
+    "assets/bubble.png": "image/png"
+  },
+  "encodings": {
+    "qq/theme.css": "text",
+    "qq/theme-dark.css": "text",
+    "qq/popup.css": "text",
+    "assets/decor.png": "base64",
+    "assets/frame.png": "base64",
+    "assets/bubble.png": "base64"
+  }
+}

@@ -343,6 +343,8 @@ function cloneConversation(conversation, storyTime = '') {
         personId: kind === 'private' ? asText(source.personId || person.personId, 256) : '',
         groupId: kind === 'group' ? asText(source.groupId || group?.groupId, 256) : '',
         avatarAssetId: asText(source.avatarAssetId || person.avatarAssetId, 256),
+        ...((source.avatarFrameAssetId || person.avatarFrameAssetId) ? { avatarFrameAssetId: asText(source.avatarFrameAssetId || person.avatarFrameAssetId, 256) } : {}),
+        ...((source.bubbleAssetId || person.bubbleAssetId) ? { bubbleAssetId: asText(source.bubbleAssetId || person.bubbleAssetId, 256) } : {}),
         backgroundAssetId: asText(source.backgroundAssetId, 256),
         remark: asText(source.remark, 120),
         profileBackgroundAssetId: asText(source.profileBackgroundAssetId || person.profileBackgroundAssetId, 256),
@@ -437,6 +439,8 @@ function clonePerson(person) {
         personId: asText(source.personId || source.id, 256),
         formalName: asText(source.formalName || source.name, 256),
         avatarAssetId: asText(source.avatarAssetId, 256),
+        ...(source.avatarFrameAssetId ? { avatarFrameAssetId: asText(source.avatarFrameAssetId, 256) } : {}),
+        ...(source.bubbleAssetId ? { bubbleAssetId: asText(source.bubbleAssetId, 256) } : {}),
         signature: asText(source.signature, 1000),
         gender: asText(source.gender, 120),
         birthday: asText(source.birthday, 120),
@@ -447,6 +451,8 @@ function cloneProfile(profile) {
     const source = asObject(profile);
     return Object.freeze({
         avatarAssetId: asText(source.avatarAssetId, 256),
+        ...(source.avatarFrameAssetId ? { avatarFrameAssetId: asText(source.avatarFrameAssetId, 256) } : {}),
+        ...(source.bubbleAssetId ? { bubbleAssetId: asText(source.bubbleAssetId, 256) } : {}),
         signature: asText(source.signature, 1000),
         gender: asText(source.gender, 120),
         birthday: asText(source.birthday, 120),
@@ -464,6 +470,7 @@ function cloneMedia(media) {
         mimeType: asText(source.mimeType, 128),
         size: Math.max(0, Math.trunc(asNumber(source.blob?.size ?? source.size))),
         library: asText(source.library, 64),
+        ...(source.bubble ? { bubble: Object.freeze({ ...source.bubble }) } : {}),
         createdAt: Math.max(0, Math.trunc(asNumber(source.createdAt))),
     });
 }
@@ -891,6 +898,11 @@ export function createQQV2Facade(options = {}) {
                     return { ok: true, result: { ...result, conversation: cloneConversation(result.conversation) } };
                 } catch (error) { return failed(error); }
             },
+            async importBeautifyPreset(input = {}) {
+                if (typeof runtime.importBeautifyPreset !== 'function') return unavailable('importBeautifyPreset');
+                try { return Object.freeze({ ok: true, imported: await runtime.importBeautifyPreset({ preset: input.preset }) }); }
+                catch (error) { return failed(error); }
+            },
             async importImageLibraryPack(input = {}) {
                 if (typeof runtime.importImageLibraryPack !== 'function') return unavailable('importImageLibraryPack');
                 const source = String(input.source ?? '');
@@ -904,6 +916,9 @@ export function createQQV2Facade(options = {}) {
                             avatars: Math.max(0, Math.trunc(asNumber(imported.avatars))),
                             profileBackgrounds: Math.max(0, Math.trunc(asNumber(imported.profileBackgrounds))),
                             chatBackgrounds: Math.max(0, Math.trunc(asNumber(imported.chatBackgrounds))),
+                            ...(Object.hasOwn(imported, 'avatarFrames') ? { avatarFrames: Math.max(0, Math.trunc(asNumber(imported.avatarFrames))) } : {}),
+                            ...(Object.hasOwn(imported, 'bubbles') ? { bubbles: Math.max(0, Math.trunc(asNumber(imported.bubbles))) } : {}),
+                            ...(Object.hasOwn(imported, 'outfits') ? { outfits: Math.max(0, Math.trunc(asNumber(imported.outfits))) } : {}),
                             stickers: Math.max(0, Math.trunc(asNumber(imported.stickers))),
                         }),
                     });

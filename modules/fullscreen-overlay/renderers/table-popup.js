@@ -254,13 +254,14 @@ export function createTablePopupRenderer(options = {}) {
         return null;
     };
 
-    const tryEmit = (item, batch, settings) => {
+    const tryEmit = (item, batch, settings, appearance) => {
         if (activeRecords.size >= settings.maxConcurrent) return null;
         const layer = getLayer();
         if (!layer) return null;
         const viewport = readViewport();
         const card = createCard(item, settings, viewport);
         const element = card.element;
+        appearance?.apply(element, card.avatar);
         layer.appendChild(element);
         const measured = element.getBoundingClientRect?.() || {};
         const width = Math.max(1, Number(measured.width) || Math.min(viewport.width * 0.88, 560));
@@ -304,6 +305,7 @@ export function createTablePopupRenderer(options = {}) {
                 if (record.finished) return;
                 record.finished = true;
                 record.timer?.cancel();
+                appearance?.dispose();
                 if (record.releaseMedia) {
                     try {
                         Promise.resolve(record.releaseMedia()).catch(() => {});
@@ -343,16 +345,22 @@ export function createTablePopupRenderer(options = {}) {
     };
 
     const waitForEmission = async (item, batch, signal, playGeneration) => {
+        let appearance = null;
+        if (options.prepareAppearance) {
+            try { appearance = await options.prepareAppearance(item, batch); }
+            catch (error) { onError(error, { action: 'notification-appearance.load', sourceId: batch?.sourceId }); }
+        }
         while (!disposed && generation === playGeneration && !signal?.aborted) {
             if (paused) {
-                if (!await waitForStateChange(signal, playGeneration)) return null;
+                if (!await waitForStateChange(signal, playGeneration)) break;
                 continue;
             }
             const settings = normalizeTablePopupRuntimeSettings(getSettings());
-            const record = tryEmit(item, batch, settings);
+            const record = tryEmit(item, batch, settings, appearance);
             if (record) return { record, settings };
-            if (!await waitForStateChange(signal, playGeneration)) return null;
+            if (!await waitForStateChange(signal, playGeneration)) break;
         }
+        appearance?.dispose();
         return null;
     };
 

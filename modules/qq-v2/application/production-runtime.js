@@ -1649,6 +1649,13 @@ export function createQQV2ProductionRuntime(options = {}) {
             }
             return { apiPresets, promptPresets, imageGenerationPresets, stickers };
         },
+        async importBeautifyPreset({ preset }) {
+            const result = await imageLibraryPacks.importBeautifyPreset(preset);
+            const scopeId = currentScopeId();
+            if (scopeId) await ensureScope(scopeId);
+            await notifySubscribers();
+            return result;
+        },
         exportImageLibraryPack: () => imageLibraryPacks.exportPack(),
         async importImageLibraryPack({ source } = {}) {
             const result = await imageLibraryPacks.importPack(source);

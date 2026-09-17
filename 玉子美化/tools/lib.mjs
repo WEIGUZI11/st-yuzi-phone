@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
+import { normalizeQQManifest } from './qq-contract.mjs';
 import { assertSchema, validateSchema } from './schema-validator.mjs';
 
 export const FORMAT = 'yuzi-beautify-preset';
@@ -258,7 +259,7 @@ export function validateBundle(bundle, { strict = true, tables = null } = {}) {
   if (!isV2 && !isV3) errors.push(`仅支持 formatVersion/apiVersion ${VERSION}/${API_VERSION} 或 ${DISPLAY_VERSION}/${DISPLAY_API_VERSION}`);
   if (!isObject(bundle?.manifest)) errors.push('manifest 必须是对象');
   if (!isObject(bundle?.files)) errors.push('files 必须是对象');
-  rejectUnknownKeys(bundle?.manifest, ['id', 'name', 'version', 'author', 'items', 'displays'], 'manifest', errors);
+  rejectUnknownKeys(bundle?.manifest, ['id', 'name', 'version', 'author', 'items', 'displays', 'qq'], 'manifest', errors);
   const files = isObject(bundle?.files) ? bundle.files : {};
   const normalizedFiles = new Set();
   for (const [filePath, file] of Object.entries(files)) {
@@ -278,9 +279,12 @@ export function validateBundle(bundle, { strict = true, tables = null } = {}) {
   const items = Array.isArray(bundle?.manifest?.items) ? bundle.manifest.items : [];
   const displays = Array.isArray(bundle?.manifest?.displays) ? bundle.manifest.displays : [];
   if (strict && !String(bundle?.manifest?.id || '').trim()) errors.push('严格模式要求 manifest.id');
-  if (strict && items.length + displays.length === 0) errors.push('严格模式要求至少一个页面或展示');
+  const hasQQ = isObject(bundle?.manifest?.qq);
+  if (strict && items.length + displays.length === 0 && !hasQQ) errors.push('严格模式要求至少一个页面、展示或 QQ 美化能力');
   if (isV2 && items.length === 0) errors.push('v2 严格模式要求至少一个 item');
   if (!isV3 && displays.length > 0) errors.push('v2 不支持 displays');
+  if (!isV3 && hasQQ) errors.push('v2 不支持 QQ 美化能力');
+  if (hasQQ) { try { normalizeQQManifest(bundle.manifest.qq, { normalizePath: normalizePackagePath, files }); } catch (error) { errors.push(error.message); } }
   const ids = new Set();
   for (const [index, item] of items.entries()) {
     const prefix = `items[${index}]`;
@@ -392,11 +396,16 @@ export async function loadSourceProject(projectFile) {
   return { projectPath, root: path.dirname(projectPath), project };
 }
 
-export async function loadProjectTables(projectFile) {
+export async function loadProjectTables(projectFile, { allowMissing = false } = {}) {
   const { projectPath, root, project } = await loadSourceProject(projectFile);
-  const tablesPath = await resolveProjectFile(root, project.tablesFile, 'tablesFile');
-  const tablesDocument = await readJson(tablesPath);
-  return { projectPath, root, project, tablesPath, tablesDocument, tables: normalizeTables(tablesDocument) };
+  try {
+    const tablesPath = await resolveProjectFile(root, project.tablesFile, 'tablesFile');
+    const tablesDocument = await readJson(tablesPath);
+    return { projectPath, root, project, tablesPath, tablesDocument, tables: normalizeTables(tablesDocument) };
+  } catch (error) {
+    if (allowMissing && error?.code === 'ENOENT') return { projectPath, root, project, tablesPath: null, tablesDocument: null, tables: [] };
+    throw error;
+  }
 }
 
 function canonicalManifest(manifest = {}) {
@@ -406,6 +415,7 @@ function canonicalManifest(manifest = {}) {
     name: manifest.name,
     version: manifest.version,
     author: manifest.author,
+    ...(manifest.qq ? { qq: structuredClone(manifest.qq) } : {}),
     items: (Array.isArray(manifest.items) ? manifest.items : []).map(item => ({
       ...item,
       id: item.id,
@@ -911,7 +921,8 @@ function inlineLocalCssImports(entryPath, files, currentPath = entryPath, stack 
 }
 
 export async function buildBundle(projectFile) {
-  const { project, root, tables } = await loadProjectTables(projectFile);
+  const { project, root, tables, tablesPath } = await loadProjectTables(projectFile, { allowMissing: true });
+  if (!tablesPath && !project.manifest.qq) throw new Error('未导入表格；纯 QQ 项目必须先登记 QQ 美化能力');
   const fileEntries = [];
   const sourcePaths = new Map();
   const packagePaths = new Set();
@@ -940,7 +951,8 @@ export async function buildBundle(projectFile) {
     files[cssPath] = { ...files[cssPath], content: rebaseImportedCssReferences(inlined, cssPath, cssPath) };
   }
   const sortedFiles = Object.fromEntries(Object.entries(files).sort(([a], [b]) => compareCodeUnits(a, b)));
-  const usesV3 = (manifest.displays || []).length > 0
+  const usesV3 = Boolean(manifest.qq)
+    || (manifest.displays || []).length > 0
     || manifest.items.some(item => item.integrations || item.imageGeneration);
   if (usesV3) manifest.displays ||= [];
   const bundle = {

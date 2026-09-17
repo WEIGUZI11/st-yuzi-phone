@@ -45,6 +45,7 @@ export function openContentPresetRepository(factory = globalThis.indexedDB) {
             // activeByTable 是 v1 已存在的页面绑定表；升级时不迁移、不重写旧用户记录。
             ensureBindingStore(db, transaction, CONTENT_PRESET_STORES.activeByTable);
             ensureBindingStore(db, transaction, CONTENT_PRESET_STORES.popupByTable);
+            ensureBindingStore(db, transaction, CONTENT_PRESET_STORES.appBindings);
         };
         request.onsuccess = () => {
             const db = request.result;
@@ -288,13 +289,14 @@ function removeAllPresetBindings(tx, presetId) {
     return Promise.all([
         removePresetBindings(tx, presetId, CONTENT_PRESET_STORES.activeByTable),
         removePresetBindings(tx, presetId, CONTENT_PRESET_STORES.popupByTable),
+        removePresetBindings(tx, presetId, CONTENT_PRESET_STORES.appBindings),
     ]).then(groups => [...new Set(groups.flat())]);
 }
 
 export async function replacePresetRecord(record) {
     if (!isTrustedContentPresetRecord(record)) throw new Error(t("预设记录不符合玉子美化 Runtime API 合同"));
     const db = await openContentPresetRepository();
-    return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable], 'readwrite', tx => {
+    return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable, CONTENT_PRESET_STORES.appBindings], 'readwrite', tx => {
         tx.objectStore(CONTENT_PRESET_STORES.presets).put(record);
         return removeAllPresetBindings(tx, record.id).then(affectedSheetKeys => ({ record, affectedSheetKeys }));
     });
@@ -331,10 +333,33 @@ export async function deletePresetRecord(presetId) {
     const id = text(presetId);
     if (!id) throw new Error(t("预设 ID 不能为空"));
     const db = await openContentPresetRepository();
-    return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable], 'readwrite', tx => {
+    return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable, CONTENT_PRESET_STORES.appBindings], 'readwrite', tx => {
         tx.objectStore(CONTENT_PRESET_STORES.presets).delete(id);
         return removeAllPresetBindings(tx, id).then(affectedSheetKeys => ({ presetId: id, affectedSheetKeys }));
     });
 }
 
 export async function getPresetExportRecord(presetId) { return getPresetRecord(presetId); }
+
+// App bindings share the preset repository, never the physical-table catalog.
+export async function loadQQBindings() {
+    const db = await openContentPresetRepository();
+    const records = await runTransaction(db, [CONTENT_PRESET_STORES.appBindings], 'readonly', tx => requestResult(tx.objectStore(CONTENT_PRESET_STORES.appBindings).getAll()));
+    return Object.fromEntries(['theme', 'popup'].map(kind => [kind, records.find(record => record.sheetKey === 'qq:' + kind)?.presetId || '']));
+}
+export async function setQQBinding(kind, presetId = '') {
+    if (!['theme', 'popup'].includes(kind)) throw new Error('QQ 应用类型无效');
+    const id = text(presetId); const sheetKey = 'qq:' + kind;
+    const db = await openContentPresetRepository();
+    return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.appBindings], 'readwrite', async tx => {
+        const store = tx.objectStore(CONTENT_PRESET_STORES.appBindings);
+        if (!id) { store.delete(sheetKey); return; }
+        const preset = await requestResult(tx.objectStore(CONTENT_PRESET_STORES.presets).get(id));
+        if (!isTrustedContentPresetRecord(preset) || !preset.qq?.[kind]) throw new Error('预设不提供对应 QQ 美化能力');
+        store.put({ sheetKey, presetId: id });
+    });
+}
+export async function getActiveQQPreset(kind) {
+    const bindings = await loadQQBindings();
+    return bindings[kind] ? getPresetRecord(bindings[kind]) : null;
+}

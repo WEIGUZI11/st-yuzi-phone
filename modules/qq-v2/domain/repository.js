@@ -1,3 +1,4 @@
+import { assignPersonAppearance, fillScopeAppearance, outfitChatBackground } from './appearance.js';
 import { t } from '../../i18n/index.js';
 import { assistantCharacterLibrary, assistantCharacterView } from './assistant-characters.js';
 import { createEmptyQQV2State } from '../storage/state-store.js';
@@ -14,6 +15,8 @@ const SHARED_WORLDBOOK_ENABLED_KEY = 'worldbookInjectionEnabled';
 const SHARED_IMAGE_LIBRARY_KEY = 'imageLibraryAssets';
 const IMAGE_LIBRARY_KINDS = Object.freeze({
     avatar: 'avatar',
+    'avatar-frame': 'avatar-frame',
+    bubble: 'bubble',
     'chat-background': 'background',
     'profile-background': 'profile-background',
 });
@@ -61,6 +64,8 @@ function normalizeQQProfile(value) {
     const profile = value && typeof value === 'object' ? value : {};
     return {
         avatarAssetId: asText(profile.avatarAssetId, 256),
+        ...(profile.avatarFrameAssetId ? { avatarFrameAssetId: asText(profile.avatarFrameAssetId, 256) } : {}),
+        ...(profile.bubbleAssetId ? { bubbleAssetId: asText(profile.bubbleAssetId, 256) } : {}),
         signature: asText(profile.signature, 1000),
         gender: asText(profile.gender, 120),
         birthday: asText(profile.birthday, 120),
@@ -423,7 +428,7 @@ function chooseImageLibraryAssetId(state, library, random) {
 }
 
 function createPrivatePerson(state, scope, formalName, random) {
-    return {
+    const person = {
         personId: createId('person'),
         scopeId: scope.scopeId,
         formalName,
@@ -432,8 +437,11 @@ function createPrivatePerson(state, scope, formalName, random) {
         signature: '',
         gender: '',
         birthday: '',
-        profileBackgroundAssetId: chooseImageLibraryAssetId(state, 'profile-background', random),
+        profileBackgroundAssetId: '',
     };
+    assignPersonAppearance(state, person, random);
+    person.profileBackgroundAssetId ||= chooseImageLibraryAssetId(state, 'profile-background', random);
+    return person;
 }
 
 function createPrivateConversation(state, scope, person, random) {
@@ -445,7 +453,7 @@ function createPrivateConversation(state, scope, person, random) {
         groupId: '',
         status: 'active',
         remark: '',
-        backgroundAssetId: chooseImageLibraryAssetId(state, 'chat-background', random),
+        backgroundAssetId: outfitChatBackground(state, person) || chooseImageLibraryAssetId(state, 'chat-background', random),
         unreadCount: 0,
         nextSequence: 1,
         lastSequence: 0,
@@ -1152,6 +1160,7 @@ export function createQQV2Repository(options = {}) {
                 const scope = getScope(state, scopeId, true);
                 const normalized = normalizeHostMetadata(hostMetadata, scope.scopeId);
                 if (normalized) scope.hostMetadata = normalized;
+                fillScopeAppearance(state, scope, random);
                 return copyScope(state, scope);
             });
         },
@@ -1955,6 +1964,10 @@ export function createQQV2Repository(options = {}) {
                 const deleted = new Set(deletedAssetIds);
                 scopes.forEach((scope) => {
                     ensureScopeQQV2State(scope);
+                    for (const person of [scope.selfProfile, ...Object.values(scope.people)]) {
+                        if (deleted.has(person.avatarFrameAssetId)) delete person.avatarFrameAssetId;
+                        if (deleted.has(person.bubbleAssetId)) delete person.bubbleAssetId;
+                    }
                     if (deleted.has(scope.selfProfile.avatarAssetId)) scope.selfProfile.avatarAssetId = '';
                     if (deleted.has(scope.selfProfile.profileBackgroundAssetId)) scope.selfProfile.profileBackgroundAssetId = '';
                     Object.values(scope.people).forEach((person) => {
@@ -1971,6 +1984,12 @@ export function createQQV2Repository(options = {}) {
                 });
                 for (const character of Object.values(state.sharedResources.assistantCharacters || {})) {
                     if (deleted.has(character.avatarAssetId)) character.avatarAssetId = '';
+                }
+                const outfits = state.sharedResources.imageLibraryOutfits || {};
+                for (const [id, outfit] of Object.entries(outfits)) {
+                    if (deleted.has(outfit.avatarFrame) || deleted.has(outfit.bubble)) { delete outfits[id]; continue; }
+                    if (deleted.has(outfit.profileBackground)) delete outfit.profileBackground;
+                    if (deleted.has(outfit.chatBackground)) delete outfit.chatBackground;
                 }
                 deletedAssetIds.forEach((assetId) => delete libraryAssets[assetId]);
                 return { deletedAssetIds };

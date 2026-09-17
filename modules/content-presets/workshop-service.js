@@ -1,3 +1,4 @@
+import { importQQPresetResources } from './qq-resources.js';
 import { t } from '../i18n/index.js';
 import { getTableData } from '../phone-core/data-api.js';
 import { isContentPresetFullPageRuntimeEnabled } from './activation-gate.js';
@@ -9,6 +10,8 @@ import { enqueueContentPresetMutation } from './mutation-coordinator.js';
 import { convergeCurrentContentPresetRoute } from './route-convergence.js';
 import { contentPresetScrollRegistry } from './scroll-registry.js';
 import {
+    loadQQBindings,
+    setQQBinding,
     clearAllPageActiveBindings,
     clearAllPopupActiveBindings,
     clearPageActiveBinding,
@@ -24,6 +27,9 @@ import {
 } from './repository.js';
 
 const DEFAULT_WORKSHOP_DEPS = Object.freeze({
+    importQQPresetResources,
+    loadQQBindings,
+    setQQBinding,
     buildContentPresetCatalog,
     clearAllPageActiveBindings,
     clearAllPopupActiveBindings,
@@ -74,6 +80,7 @@ export function createUnavailableContentPresetWorkshopService() {
     return Object.freeze({
         getSnapshot: () => snapshot, subscribe: () => () => {}, getViewModel: async () => viewModel,
         prepareImport: unavailable, importPrepared: unavailable, exportPreset: unavailable, deletePreset: unavailable,
+        setQQActive: unavailable,
         setPageActive: unavailable, clearPageActive: unavailable, clearAllPageActive: unavailable,
         setPopupActive: unavailable, clearPopupActive: unavailable, clearAllPopupActive: unavailable,
         // v2 公开方法仅代表页面应用。
@@ -99,6 +106,7 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
         const index = runtimeDeps.getContentPresetIndexSnapshot();
         return Object.freeze({
             status: index.status, error: index.error, revision: index.revision, presets: Object.freeze(presets),
+            qq: { bindings: presets.some(preset => preset.qq) ? await runtimeDeps.loadQQBindings() : { theme: '', popup: '' }, presets: presets.filter(preset => preset.qq) },
             tables: runtimeDeps.buildContentPresetCatalog(rawData || {}, presets, pageBindings(index), popupBindings(index)),
         });
     };
@@ -195,6 +203,10 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
     }, (result, current) => ({ affectedSheetKeys: result.affectedSheetKeys, indexPatch: { popupByTable: clearAffected(popupBindings(current), result.affectedSheetKeys) } }));
 
     return Object.freeze({
+        setQQActive: (kind, presetId) => withCommittedMutation(runtimeDeps, async () => {
+            await runtimeDeps.setQQBinding(kind, presetId);
+            return { affectedSheetKeys: ['qq:' + kind] };
+        }, result => ({ affectedSheetKeys: result.affectedSheetKeys, indexPatch: {} })),
         getSnapshot: runtimeDeps.getContentPresetIndexSnapshot,
         subscribe: runtimeDeps.subscribeContentPresetIndex,
         getViewModel,
@@ -205,7 +217,13 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
             return withCommittedMutation(runtimeDeps, async () => {
                 const existing = await runtimeDeps.getPresetRecord(record.id);
                 if (existing && !allowReplace) { const error = new Error(t`预设 ${record.id} 已存在，需要确认覆盖`); error.code = 'CONTENT_PRESET_REPLACE_CONFIRMATION_REQUIRED'; throw error; }
-                return { ...await runtimeDeps.replacePresetRecord(record), replaced: !!existing };
+                // Resource imports are append-only and idempotent; retry is safe if preset persistence fails.
+                if (record.qq?.resources?.length) await runtimeDeps.importQQPresetResources(record);
+                try { return { ...await runtimeDeps.replacePresetRecord(record), replaced: !!existing }; }
+                catch (error) {
+                    if (record.qq?.resources?.length) throw new Error('QQ 素材已保留，但预设保存失败；可安全重试：' + error.message, { cause: error });
+                    throw error;
+                }
             }, (result, current) => ({
                 affectedSheetKeys: result.affectedSheetKeys,
                 indexPatch: { status: 'ready', error: null, metadata: replaceMetadata(current, record), pageByTable: clearAffected(pageBindings(current), result.affectedSheetKeys), popupByTable: clearAffected(popupBindings(current), result.affectedSheetKeys) },
