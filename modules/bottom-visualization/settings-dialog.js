@@ -32,12 +32,13 @@ export function openBottomSettings(owner) {
             ${select('position', '导航盘位置', [['flow', '悬浮底部'], ['fixed', '固定底部'], ['edge', '侧边栏']])}
             ${select('layout', '布局模式', [['vertical', '纵向滚动'], ['horizontal', '横向滚动']])}
             ${edge ? select('edgeSide', '侧边栏位置', [['left', '左侧'], ['right', '右侧']]) : `
-                ${innerWidth >= 768 ? select('desktopNav', 'PC 导航布局', [['compact', '紧凑'], ['aligned', '对齐']]) + select('region', '面板区域', [['chat', '对齐聊天'], ['viewport', '铺满浏览器'], ['side', '左右侧栏']]) + (config.region === 'side' ? select('side', '侧栏位置', [['left', '左侧'], ['right', '右侧']]) : '') : ''}`}
+                ${innerWidth >= 768 || config.position === 'fixed' ? select('desktopNav', innerWidth >= 768 ? 'PC 导航布局' : '导航布局', [['compact', '紧凑'], ['aligned', '对齐']]) : ''}
+                ${innerWidth >= 768 ? select('region', '面板区域', [['chat', '对齐聊天'], ['viewport', '铺满浏览器'], ['side', '左右侧栏']]) + (config.region === 'side' ? select('side', '侧栏位置', [['left', '左侧'], ['right', '右侧']]) : '') : ''}`}
             ${select('optionsEnabled', '选项面板', [[false, '禁用'], [true, '启用']])}
             ${range('cardWidth', '卡片宽度', 200, 500, 10, 'px')}
             ${range('opacity', '透明度', 20, 100, 5, '%')}
             ${edge ? '' : image('bottomVisualizationNavImage', '导航盘背景图片')}
-            ${image('bottomVisualizationPanelImage', '面板背景图片')}
+            ${image('bottomVisualizationPanelImage', edge ? '导入背景' : '面板背景图片')}
             <p class="yuzi-bottom-setting-error" role="status">${html(error)}</p>`;
         if (focused) dialog.querySelector(`[name="${focused}"]`)?.focus();
     }

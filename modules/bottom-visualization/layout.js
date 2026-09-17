@@ -2,6 +2,7 @@ import { savePhoneSetting, getPhoneSettings } from '../settings.js';
 
 // 导航与覆盖面板分开：flow 导航留在文档流，面板永远不参与聊天高度。
 export function createBottomLayout(scope, root, close, refreshRegion) {
+    const edgeBackground = root.querySelector('.yuzi-bottom-edge-background');
     const panel = root.querySelector('.yuzi-bottom-panel');
     const dock = root.querySelector('.yuzi-bottom-dock');
     const nav = dock.querySelector('.yuzi-bottom-nav');
@@ -35,8 +36,11 @@ export function createBottomLayout(scope, root, close, refreshRegion) {
         pending = false;
         if (!config || scope.isDisposed()) return;
         const chat = document.querySelector('#chat');
-        if (!chat) { root.hidden = true; dock.hidden = true; return; }
-        root.hidden = false; dock.hidden = config.position === 'edge' && nav.hidden;
+        if (!chat) { root.hidden = true; dock.hidden = true; edgeBackground.hidden = true; return; }
+        root.hidden = false;
+        const edge = config.position === 'edge';
+        dock.hidden = edge && nav.hidden;
+        edgeBackground.hidden = !edge || nav.hidden;
         if (anchor.parentElement !== chat || chat.lastElementChild !== anchor) chat.append(anchor);
         const isFlow = config.position === 'flow';
         const parent = isFlow ? anchor : root;
@@ -70,6 +74,7 @@ export function createBottomLayout(scope, root, close, refreshRegion) {
             const rail = Math.min(112, Math.max(72, width * .12));
             const left = config.edgeSide === 'left', h = Math.max(0, bottom - top - 8);
             set(dock, 'bottom', 'auto');
+            box(edgeBackground, 0, top, width, h);
             box(dock, left ? 0 : width - rail, top, rail, h);
             box(panel, left ? rail : 8, top, width - rail - 8, h);
             const count = nav.querySelectorAll('[data-sheet]').length;
@@ -79,7 +84,8 @@ export function createBottomLayout(scope, root, close, refreshRegion) {
             const base = Math.min(bottom, composerTop, chatRect.bottom);
             if (!isFlow) {
                 set(dock, 'left', `${rect.left}px`); set(dock, 'width', `${rect.width}px`);
-                set(dock, 'top', 'auto'); set(dock, 'bottom', `${innerHeight - base + 4}px`); set(dock, 'height', 'auto');
+                // root 的 inset:0 覆盖实际 fixed 定位参照；宿主 html 有 transform 时不能假定底边是 innerHeight。
+                set(dock, 'top', 'auto'); set(dock, 'bottom', `${root.getBoundingClientRect().bottom - base + 4}px`); set(dock, 'height', 'auto');
             }
             const dockRect = dock.getBoundingClientRect();
             // 固定导航只给自身留空间；面板开关和调高不改变它。

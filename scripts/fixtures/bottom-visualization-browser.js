@@ -21,6 +21,22 @@ async function wheelOn(node, deltaY, deltaX=0) {
     window.__bottomWheel={x:rect.left+Math.min(45,rect.width/2),y:rect.top+Math.min(70,rect.height/2),deltaY,deltaX};
     await until(()=>!window.__bottomWheel);
 }
+async function pointerClick(selector) {
+    const node=document.querySelector(selector), rect=node.getBoundingClientRect();
+    const x=rect.left+rect.width/2, y=rect.top+rect.height/2;
+    assert(node.contains(document.elementFromPoint(x,y)), '控件必须在屏幕上实际可点：'+selector);
+    window.__bottomGesture={x,y,hold:20,dy:0};
+    await until(()=>!window.__bottomGesture);
+    await sleep();
+}
+function checkFixedDock() {
+    const rect=document.querySelector('.yuzi-bottom-dock').getBoundingClientRect();
+    const composer=document.querySelector('#form_sheld').getBoundingClientRect();
+    assert(rect.height>0 && rect.top>=0 && rect.bottom<=innerHeight, '固定导航必须完整位于视口内：'+JSON.stringify({top:rect.top,bottom:rect.bottom,height:innerHeight}));
+    assert(Math.abs(composer.top-rect.bottom-4)<=1, '固定导航紧邻输入区上沿，不留下原导航大小的空洞');
+    const reserved=document.querySelector('.yuzi-bottom-anchor').getBoundingClientRect();
+    assert(Math.abs(reserved.height-rect.height-8)<=1, '只保留当前导航或收起长条自身所需的空间');
+}
 const events = new Map();
 const host = { extensionSettings: {}, saveSettingsDebounced() {}, chat: [{ mes: '正文', is_user: false }],
     eventSource: { on(type, fn) { if (!events.has(type)) events.set(type, new Set()); events.get(type).add(fn); },
@@ -63,9 +79,47 @@ async function main() {
         assert(launchRect.top >= 0 && launchRect.bottom <= innerHeight, '手机端 Y 必须完整位于视口内：'+JSON.stringify({ top:launchRect.top, bottom:launchRect.bottom, innerHeight }));
         assert(Math.abs(center - innerHeight / 2) <= 2, '手机端 Y 必须位于视口中线：'+JSON.stringify({ center, expected:innerHeight/2 }));
     }
+    const edgeImage='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InJlZCIvPjwvc3ZnPg==';
+    savePhoneSetting('bottomVisualizationPanelImage', edgeImage); await sleep();
+    assert(document.querySelector('[data-image="bottomVisualizationPanelImage"]')?.textContent.includes('导入背景'), '侧边栏设置将面板背景改名为导入背景');
+    click('[data-action="launch"]'); await sleep();
+    const edgeBackground=document.querySelector('.yuzi-bottom-edge-background');
+    assert(edgeBackground && !edgeBackground.hidden, '侧边栏展开时显示导航盘与面板的共享背景层');
+    assert(edgeBackground.style.backgroundImage.includes('data:image/svg+xml'), '共享背景层使用导入的背景图片');
+    const backgroundRect=edgeBackground.getBoundingClientRect();
+    const navRect=document.querySelector('.yuzi-bottom-nav').getBoundingClientRect();
+    const panelRect=document.querySelector('.yuzi-bottom-panel').getBoundingClientRect();
+    assert(backgroundRect.left <= Math.min(navRect.left,panelRect.left) && backgroundRect.right >= Math.max(navRect.right,panelRect.right), '共享背景覆盖导航盘和面板的组合区域');
+    click('[data-action="close"]'); await sleep();
+    savePhoneSetting('bottomVisualizationPanelImage', null); await sleep();
     document.querySelector('.yuzi-bottom-dialog [data-action="dismiss"]')?.click(); await sleep();
     patch({position:'flow'}); await sleep();
 
+    patch({position:'fixed'}); await sleep();
+    checkFixedDock();
+    if (innerWidth<768) {
+        // 模拟宿主定位参照整体偏移，不能只修复恰好位于 y=0 的页面。
+        document.documentElement.style.position='relative';
+        document.documentElement.style.top='-24px';
+        window.dispatchEvent(new Event('resize')); await sleep();
+        checkFixedDock();
+        document.documentElement.style.position=''; document.documentElement.style.top='';
+        window.dispatchEvent(new Event('resize')); await sleep();
+    }
+    const fixedChat=document.querySelector('#chat'), reservedHeight=fixedChat.scrollHeight;
+    await pointerClick('.yuzi-bottom-nav [data-sheet="review"]');
+    const fixedPanel=document.querySelector('.yuzi-bottom-panel').getBoundingClientRect();
+    assert(fixedPanel.height>0 && fixedPanel.top>=0 && fixedPanel.bottom<=innerHeight, '固定导航展开的面板在视口内');
+    assert(fixedChat.scrollHeight===reservedHeight, '固定导航打开面板不增加正文占位');
+    await pointerClick('.yuzi-bottom-panel [data-action="close"]');
+    await pointerClick('.yuzi-bottom-nav [data-action="settings"]');
+    assert(document.querySelector('.yuzi-bottom-dialog')?.open, '固定导航的设置按钮能被真实指针打开');
+    await pointerClick('.yuzi-bottom-dialog [data-action="dismiss"]');
+    await pointerClick('.yuzi-bottom-nav [data-action="collapse"]');
+    checkFixedDock();
+    await pointerClick('.yuzi-bottom-bar');
+    checkFixedDock();
+    patch({position:'flow'}); await sleep();
     click('.yuzi-bottom-nav [data-sheet="review"]'); await sleep();
     assert(document.querySelector('.tur-update-gap').textContent==='待记录', '审核没有历史记录时展示待记录');
     setReviewState({unupdatedFloorCount:3}); await sleep();
@@ -90,9 +144,36 @@ async function main() {
         const mobilePanel=document.querySelector('.yuzi-bottom-panel');
         assert(mobilePanel.dataset.region==='chat', '手机强制对齐聊天');
         assert(mobilePanel.getBoundingClientRect().width<=innerWidth, '手机不横向溢出');
-        assert(getComputedStyle(document.querySelector('.yuzi-bottom-nav')).gridTemplateColumns.split(' ').length===3, '手机导航固定三列');
         click('.yuzi-bottom-nav [data-action="settings"]'); await sleep();
-        assert(!document.querySelector('.yuzi-bottom-dialog [name="region"], .yuzi-bottom-dialog [name="desktopNav"]'), '手机隐藏 PC 专用设置');
+        let navLayout=document.querySelector('.yuzi-bottom-dialog [name="desktopNav"]');
+        assert(navLayout && navLayout.closest('label').querySelector('span').textContent==='导航布局', '手机固定底部开放导航布局设置');
+        assert(navLayout.value==='compact', '手机固定底部复用默认紧凑设置');
+        assert(!document.querySelector('.yuzi-bottom-dialog [name="region"]'), '手机仍隐藏 PC 面板区域');
+        const mobileNav=document.querySelector('.yuzi-bottom-nav');
+        assert(getComputedStyle(mobileNav).display==='flex', '手机固定底部紧凑布局按内容排列');
+        navLayout.value='aligned'; navLayout.dispatchEvent(new Event('change',{bubbles:true})); await sleep();
+        assert(getPhoneSettings().bottomVisualization.desktopNav==='aligned', '手机布局保存到与 PC 共用的字段');
+        assert(getComputedStyle(mobileNav).display==='grid' && getComputedStyle(mobileNav).gridTemplateColumns.split(' ').length===3, '手机固定底部对齐布局使用三列');
+        checkFixedDock();
+        click('.yuzi-bottom-dialog [data-action="dismiss"]');
+        await pointerClick('.yuzi-bottom-nav [data-action="settings"]');
+        navLayout=document.querySelector('.yuzi-bottom-dialog [name="desktopNav"]');
+        assert(navLayout.value==='aligned', '重新打开设置保留对齐选择');
+        navLayout.value='compact'; navLayout.dispatchEvent(new Event('change',{bubbles:true})); await sleep();
+        assert(getComputedStyle(mobileNav).display==='flex', '切回紧凑立即生效');
+        const shortWidth=mobileNav.querySelector('[data-sheet="sheet_test"]').getBoundingClientRect().width;
+        raw.sheet_test.name='很长的表格名称'.repeat(40); updates.forEach(fn=>fn(raw)); await sleep();
+        const longTab=mobileNav.querySelector('[data-sheet="sheet_test"]').getBoundingClientRect(), navBounds=mobileNav.getBoundingClientRect();
+        assert(longTab.width>shortWidth && longTab.left>=navBounds.left && longTab.right<=navBounds.right, '紧凑表名按内容宽度排列，长表名不撑出导航');
+        assert(longTab.top>mobileNav.querySelector('[data-sheet="review"]').getBoundingClientRect().top, '紧凑导航放不下时自动换行');
+        raw.sheet_test.name='纪要'; updates.forEach(fn=>fn(raw)); await sleep();
+        let mobilePosition=document.querySelector('.yuzi-bottom-dialog [name="position"]');
+        mobilePosition.value='flow'; mobilePosition.dispatchEvent(new Event('change',{bubbles:true})); await sleep();
+        assert(!document.querySelector('.yuzi-bottom-dialog [name="desktopNav"]') && getComputedStyle(mobileNav).gridTemplateColumns.split(' ').length===3, '手机悬浮底部仍隐藏导航布局并保持原三列');
+        mobilePosition=document.querySelector('.yuzi-bottom-dialog [name="position"]');
+        mobilePosition.value='fixed'; mobilePosition.dispatchEvent(new Event('change',{bubbles:true})); await sleep();
+        assert(document.querySelector('.yuzi-bottom-dialog [name="desktopNav"]').value==='compact', '切回固定底部保留共用布局选择');
+        checkFixedDock();
         click('.yuzi-bottom-dialog [data-action="dismiss"]');
         assert(getPhoneSettings().bottomVisualization.region==='viewport', '手机保留 PC 区域配置');
         patch({position:'edge',edgeSide:'left'}); await sleep();
@@ -102,6 +183,7 @@ async function main() {
         click('.yuzi-bottom-nav [data-action="settings"]'); await sleep();
         const mobileLayout=document.querySelector('.yuzi-bottom-dialog [name="layout"]');
         assert(mobileLayout, '手机独立侧栏同样可以选择布局');
+        assert(!document.querySelector('.yuzi-bottom-dialog [name="desktopNav"]'), '手机侧边栏不开放底部导航布局');
         mobileLayout.value='vertical'; mobileLayout.dispatchEvent(new Event('change',{bubbles:true}));
         click('.yuzi-bottom-dialog [data-action="dismiss"]'); await sleep();
         assert(document.querySelector('.yuzi-bottom-content').classList.contains('is-vertical'), '侧边切换纵向立即生效');

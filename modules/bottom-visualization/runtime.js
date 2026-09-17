@@ -18,7 +18,8 @@ export function createBottomVisualization() {
     const scope = createRuntimeScope('bottom-visualization');
     const root = document.createElement('div');
     root.className = 'yuzi-bottom-root';
-    root.innerHTML = `<section class="yuzi-bottom-panel" hidden><header class="yuzi-bottom-heading"></header><div class="yuzi-bottom-content"></div></section><div class="yuzi-bottom-dock"><nav class="yuzi-bottom-nav"></nav><button type="button" class="yuzi-bottom-bar" data-action="expand" hidden>玉子 <span aria-hidden="true">⌃</span></button></div><button type="button" class="yuzi-bottom-launch" data-action="launch" aria-label="${t('展开')}" hidden>Y</button>`;
+    root.innerHTML = `<div class="yuzi-bottom-edge-background" aria-hidden="true" hidden></div><section class="yuzi-bottom-panel" hidden><header class="yuzi-bottom-heading"></header><div class="yuzi-bottom-content"></div></section><div class="yuzi-bottom-dock"><nav class="yuzi-bottom-nav"></nav><button type="button" class="yuzi-bottom-bar" data-action="expand" hidden>玉子 <span aria-hidden="true">⌃</span></button></div><button type="button" class="yuzi-bottom-launch" data-action="launch" aria-label="${t('展开')}" hidden>Y</button>`;
+    const edgeBackground = root.querySelector('.yuzi-bottom-edge-background');
     const panel = root.querySelector('.yuzi-bottom-panel');
     const dock = root.querySelector('.yuzi-bottom-dock');
     const nav = root.querySelector('.yuzi-bottom-nav');
@@ -71,9 +72,12 @@ export function createBottomVisualization() {
         launch.setAttribute('aria-label', t('展开'));
         root.style.setProperty('--yuzi-phone-bottom-card-width', `${config.cardWidth}px`);
         const background = value => typeof value === 'string' && /^data:image\//i.test(value) ? 'url(' + JSON.stringify(value) + ')' : '';
+        const panelBackground = background(settings.bottomVisualizationPanelImage);
+        root.dataset.edgeBackground = config.position === 'edge' && panelBackground ? 'true' : 'false';
+        edgeBackground.style.backgroundImage = config.position === 'edge' ? panelBackground : '';
         nav.style.backgroundImage = config.position === 'edge' ? '' : background(settings.bottomVisualizationNavImage);
         bar.style.backgroundImage = background(settings.bottomVisualizationNavImage);
-        panel.style.backgroundImage = background(settings.bottomVisualizationPanelImage);
+        panel.style.backgroundImage = config.position === 'edge' ? '' : panelBackground;
         layout.update(config);
         render(true);
         options.update(raw, settings);

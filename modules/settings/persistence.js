@@ -199,6 +199,7 @@ export function createSettingsPersistenceTools(options = {}) {
             }
 
             let hasInvalid = false;
+            const changedKeys = [];
             entries.forEach(([key, value]) => {
                 const result = validateSetting(key, value);
                 if (result.removed) {
@@ -214,8 +215,10 @@ export function createSettingsPersistenceTools(options = {}) {
                     });
                 }
                 settings[key] = result.value;
-                onSettingChanged?.(key);
+                changedKeys.push(key);
             });
+            // 订阅者读取设置时可能替换当前对象；整批写完再通知，避免后续写入落到旧对象。
+            changedKeys.forEach(key => onSettingChanged?.(key));
 
             if (hasInvalid) {
                 showNotification?.(t("部分设置已按默认规则修正"), 'warning');
