@@ -1,4 +1,5 @@
 import { savePhoneSetting, getPhoneSettings } from '../settings.js';
+import { isManagedTauriTavernChatSurface } from '../integration/tauritavern-chat-surface.js';
 
 // 导航与覆盖面板分开：flow 导航留在文档流，面板永远不参与聊天高度。
 export function createBottomLayout(scope, root, close, refreshRegion) {
@@ -18,11 +19,19 @@ export function createBottomLayout(scope, root, close, refreshRegion) {
         set(node, 'width', `${Math.max(0, w)}px`); set(node, 'height', `${Math.max(0, h)}px`);
     };
     function region() {
-        if (config.position === 'edge') return 'edge';
+        const layoutConfig = resolveLayoutConfig(config);
+        if (layoutConfig.position === 'edge') return 'edge';
         if (innerWidth < 768) return 'chat';
         const rect = document.querySelector('#sheld')?.getBoundingClientRect();
-        if (config.region === 'side' && (!rect || (config.side === 'left' ? rect.left : innerWidth - rect.right) < 220)) return 'chat';
-        return config.region;
+        if (layoutConfig.region === 'side' && (!rect || (layoutConfig.side === 'left' ? rect.left : innerWidth - rect.right) < 220)) return 'chat';
+        return layoutConfig.region;
+    }
+    function resolveLayoutConfig(value) {
+        if (!value) return value;
+        if (value.position === 'flow' && isManagedTauriTavernChatSurface()) {
+            return { ...value, position: 'fixed' };
+        }
+        return value;
     }
     // 滚动热路径只读 scrollTop，写合成位移/裁切；不量尺寸、不改正文、不重建 DOM。
     function followScroll() {
@@ -35,20 +44,29 @@ export function createBottomLayout(scope, root, close, refreshRegion) {
     function measure() {
         pending = false;
         if (!config || scope.isDisposed()) return;
+        const layoutConfig = resolveLayoutConfig(config);
         const chat = document.querySelector('#chat');
-        if (!chat) { root.hidden = true; dock.hidden = true; edgeBackground.hidden = true; return; }
+        if (!chat) {
+            anchor.remove();
+            root.hidden = true; dock.hidden = true; edgeBackground.hidden = true;
+            return;
+        }
         root.hidden = false;
-        const edge = config.position === 'edge';
+        const edge = layoutConfig.position === 'edge';
         dock.hidden = edge && nav.hidden;
         edgeBackground.hidden = !edge || nav.hidden;
-        if (anchor.parentElement !== chat || chat.lastElementChild !== anchor) chat.append(anchor);
-        const isFlow = config.position === 'flow';
+        const isFlow = layoutConfig.position === 'flow';
+        if (isFlow) {
+            if (anchor.parentElement !== chat || chat.lastElementChild !== anchor) chat.append(anchor);
+        } else {
+            anchor.remove();
+        }
         const parent = isFlow ? anchor : root;
         if (dock.parentElement !== parent) parent.append(dock);
         for (const surface of [root, dock]) {
-            data(surface, 'position', config.position);
-            data(surface, 'side', config.position === 'edge' ? config.edgeSide : config.side);
-            data(surface, 'desktopNav', config.desktopNav);
+            data(surface, 'position', layoutConfig.position);
+            data(surface, 'side', layoutConfig.position === 'edge' ? layoutConfig.edgeSide : layoutConfig.side);
+            data(surface, 'desktopNav', layoutConfig.desktopNav);
         }
         if (isFlow) {
             set(dock, 'left', ''); set(dock, 'top', ''); set(dock, 'bottom', '');
@@ -64,15 +82,15 @@ export function createBottomLayout(scope, root, close, refreshRegion) {
         const regionChanged = panel.dataset.region && panel.dataset.region !== area;
         data(panel, 'region', area);
         panel.querySelector('[data-action="resize"]')?.toggleAttribute('hidden', area === 'side' || area === 'edge');
-        const horizontal = content.dataset.review !== 'true' && config.layout === 'horizontal';
+        const horizontal = content.dataset.review !== 'true' && layoutConfig.layout === 'horizontal';
         content.classList.toggle('is-horizontal', horizontal);
         content.classList.toggle('is-vertical', !horizontal);
         releaseScroll?.(); releaseScroll = null; flow = null;
         set(panel, 'transform', ''); set(panel, 'clipPath', '');
-        if (config.position === 'edge') {
+        if (layoutConfig.position === 'edge') {
             set(anchor, 'height', '0px');
             const rail = Math.min(112, Math.max(72, width * .12));
-            const left = config.edgeSide === 'left', h = Math.max(0, bottom - top - 8);
+            const left = layoutConfig.edgeSide === 'left', h = Math.max(0, bottom - top - 8);
             set(dock, 'bottom', 'auto');
             box(edgeBackground, 0, top, width, h);
             box(dock, left ? 0 : width - rail, top, rail, h);
@@ -95,7 +113,7 @@ export function createBottomLayout(scope, root, close, refreshRegion) {
                 box(panel, left ? 0 : rect.right, top, left ? rect.left : width - rect.right, bottom - top - 8);
             } else if (!panel.hidden) {
                 const min = Math.max(top, chatRect.top);
-                const requested = innerHeight * config.height / 100;
+                const requested = innerHeight * layoutConfig.height / 100;
                 const above = Math.max(0, dockRect.top - min - 8), below = Math.max(0, base - dockRect.bottom - 8);
                 // 短正文上方没有空间时向下覆盖，不能压住导航或把标题/关闭按钮裁掉。
                 const downward = isFlow && above < Math.min(requested, 160) && below > above;

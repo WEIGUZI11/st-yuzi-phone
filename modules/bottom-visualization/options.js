@@ -1,6 +1,7 @@
 import { getInlineMessageTarget, subscribeInlineMessageInvalidation } from '../integration/inline-message-bridge.js';
 import { createContentPresetInlineInteractions } from '../content-presets/inline-interactions.js';
 import { getAppearanceFontFamily } from '../settings-app/services/appearance-settings/font-library-service.js';
+import { isManagedTauriTavernChatSurface } from '../integration/tauritavern-chat-surface.js';
 import { getOptionTexts } from './view.js';
 import { t } from '../i18n/index.js';
 
@@ -27,7 +28,7 @@ export function createBottomOptions(scope) {
     scope.registerCleanup(() => observer.disconnect());
     return {
         update(raw, settings) {
-            if (!settings.bottomVisualization.optionsEnabled) { clear(); return; }
+            if (!settings.bottomVisualization.optionsEnabled || isManagedTauriTavernChatSurface()) { clear(); return; }
             const latest = getInlineMessageTarget();
             if (!latest || sameMessage(latest, blocked)) { clear(); return; }
             const texts = getOptionTexts(raw);

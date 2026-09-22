@@ -3,6 +3,17 @@ async function main() {
     const host = { extensionSettings: {}, saveSettingsDebounced() {} };
     global.window = Object.assign(new EventTarget(), { getContext: () => host, setTimeout, clearTimeout });
     const settings = await import('../modules/settings.js');
+    const chatSurface = await import('../modules/integration/tauritavern-chat-surface.js');
+    assert.equal(chatSurface.isManagedTauriTavernChatSurface(), false, '普通环境不应启用 ChatSurface 兼容模式');
+    window.__TAURITAVERN__ = {
+        api: {
+            chatSurface: {
+                isManagedOwnershipRequired: () => true,
+            },
+        },
+    };
+    assert.equal(chatSurface.isManagedTauriTavernChatSurface(), true, '应识别 TauriTavern 虚拟聊天模式');
+    delete window.__TAURITAVERN__;
     const initial = settings.getPhoneSettings().bottomVisualization;
     assert.equal(initial?.enabled, false, '底部可视化默认关闭');
     assert.equal(initial.layout, 'vertical');
