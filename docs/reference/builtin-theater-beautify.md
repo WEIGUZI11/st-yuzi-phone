@@ -29,13 +29,15 @@
 
 广场仅在对应描述有效时显示对应画布，双画布独立生成。内置页面先组合指定字段并扫描现有姓名映射，再追加构图说明，随后进入共享的可选 Tag 转换与智慧姬流程。不额外读取标题、评论等字段，不把提示词中的尺寸文字当作接口强制尺寸参数。
 
+广场的 image／video 和论坛列表／详情的 cover 在没有图片时保留原占位比例；生成或回读到图片后，展示画布按图片原本的宽高比增长，不再用固定比例和 `cover` 裁切。长图由页面正常滚动查看，广场同帖的两张图片各自适配。直播仍是固定舞台背景，不参与这项展示调整。
+
 生图设置的 `enabled` 是总开关；`qqEnabled` 默认 true，保持旧配置行为；`theaterEnabled.square/forum/live` 默认 false，分别控制三个内置场景。作者画布仍使用原 `tableDisplayEnabledBySheetKey` 设置，不改变旧开关含义。关闭入口不会隐藏或删除已经生成的图片。
 
 [图片控件](../../modules/phone-theater/builtin/image-controller.js)让论坛两处画布共享请求状态和结果，返回列表时释放旧详情画布。控制器必须在 detached 路由准备阶段绘制开关、图标与缓存图片，不以 `isConnected` 跳过首次绘制；生命周期和聊天作用域保护保持生效。生图入口沿用 QQ 的 Font Awesome 魔法棒／重生成图标及忙碌状态，背景透明，不显示文字胶囊。旧读取晚到不得覆盖新生成的结果；表格更新后重新绑定当前内容，不持有旧行闭包；失败保留旧图。直播生成后隐藏标题、标签、概述及默认人形，保留主播栏、弹幕和底部操作栏，不增加图片查看弹窗。
 
 图片归属使用聊天作用域、物理表、稳定内容标识和画布。广场优先使用帖子 ID，缺失时使用账号／标题／时间组合；论坛使用账号／标题／时间／分区组合；直播使用直播间名。空的可选身份字段编码进组合标识，不使用行位置或提示词作身份。身份重复时拒绝生成；身份字段改变会成为新归属，不猜测或自动迁移旧图。
 
-广场和论坛通过[共享图片查看内容](../../modules/ui-runtime/media-viewer-content.js)复用 QQ 的图片／描述组件，并挂载到已有的小手机临时层；边框、标题栏和卡片底不再围住图片。
+广场和论坛通过[共享图片查看内容](../../modules/ui-runtime/media-viewer-content.js)复用 QQ 的图片组件，并挂载到已有的小手机临时层；边框、标题栏和卡片底不再围住图片。这个无边框预览将长图完整缩放到可见区域，图片替代文字仍保留，但不显示底部描述；QQ 自己的查看界面不变。直播没有点击背景图的预览入口。
 
 ## 广场外观与头像
 
@@ -48,6 +50,6 @@
 - `node scripts/check-theater-builtin-behavior.cjs`：倒序与原行身份、独立画布字段、可选身份字段。
 - `node scripts/check-theater-image-host-behavior.cjs`：公开共享服务的提示词组合、持久回读和开关。
 - `node scripts/check-theater-image-settings-behavior.cjs`：QQ 独立开关与三个表格默认关闭。
-- `node scripts/check-theater-builtin-pages.cjs`：真实 Chromium DOM／样式测试，覆盖 detached 首次挂载的三个场景开关矩阵、运行中关闭开关、魔法棒／加载／重生成状态、头像按钮并排、宿主字体干扰、论坛单行导航／详情作者靠左、直播无新增标题且原操作可用、日记标题栏日夜实色无模糊与 Home 安全区、双画布、论坛双视图同步与详情清理、晚到读取、直播更新、预览清理和日历夜间正文／标签对比度。自动发现 Edge／Chrome／Chromium，也可用 `YUZI_TEST_BROWSER` 指定浏览器。使用独立临时 profile，不连接个人浏览器，不调用真实生图。可将 `YUZI_TEST_STYLES` 指向候选或正式 bundle CSS，使用同一组行为测试验证构建后的样式。
+- `node scripts/check-theater-builtin-pages.cjs`：真实 Chromium DOM／样式测试，覆盖 detached 首次挂载的三个场景开关矩阵、运行中关闭开关、魔法棒／加载／重生成状态、头像按钮并排、宿主字体干扰、论坛单行导航／详情作者靠左、直播无新增标题且原操作可用、日记标题栏日夜实色无模糊与 Home 安全区、双画布、广场横竖图和论坛列表／详情随图比例、论坛双视图同步与详情清理、晚到读取、直播更新、长图预览不裁切／不显示底部描述、预览清理和日历夜间正文／标签对比度。自动发现 Edge／Chrome／Chromium，也可用 `YUZI_TEST_BROWSER` 指定浏览器。使用独立临时 profile，不连接个人浏览器，不调用真实生图。可将 `YUZI_TEST_STYLES` 指向候选或正式 bundle CSS，使用同一组行为测试验证构建后的样式。
 
 以上脚本由现有 `npm run check` / `check:ci` 发现；仍需运行 lint、回归和 build。最终视觉验收由用户进行。

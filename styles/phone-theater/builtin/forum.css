@@ -526,6 +526,10 @@
   padding: 0;
   border: 0;
 }
+.yuzi-theater-forum-cover[data-has-image=true],
+.yuzi-theater-forum-hero[data-has-image=true] {
+  aspect-ratio: auto !important;
+}
 .yuzi-theater-forum-top {
   padding-top: 0;
 }

@@ -339,6 +339,7 @@
 }
 .yuzi-theater-square-media {
   filter: none;
+  align-items: start;
 }
 .yuzi-theater-square-media .yuzi-theater-square-media-item {
   position: relative;
@@ -347,6 +348,9 @@
   padding: 0;
   border: 0;
   overflow: hidden;
+}
+.yuzi-theater-square-media .yuzi-theater-square-media-item[data-has-image=true] {
+  aspect-ratio: auto;
 }
 .yuzi-theater-square-content {
   padding-bottom: calc(8px + var(--yuzi-theater-home-clearance));

@@ -4830,6 +4830,7 @@ export function createQQApp({
         };
         const values = {
             activeApiPresetId: value('activeApiPresetId'),
+            assistantReplyPresetId: value('assistantReplyPresetId'),
             privateReplyPresetId: value('privateReplyPresetId'),
             privateProactivePresetId: value('privateProactivePresetId'),
             groupReplyPresetId: value('groupReplyPresetId'),

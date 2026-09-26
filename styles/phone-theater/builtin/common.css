@@ -22,6 +22,11 @@
   border-radius: 0;
   cursor: zoom-in;
 }
+.yuzi-phone-theater-builtin [data-has-image=true] > .yuzi-phone-theater-generated-image {
+  position: static;
+  height: auto;
+  object-fit: contain;
+}
 .yuzi-phone-theater-image-note {
   display: grid;
   place-items: center;
@@ -89,14 +94,14 @@
 }
 .yuzi-phone-frameless-preview .yuzi-qq-image-viewer {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   width: 100%;
   height: 100%;
   max-height: 100%;
   inline-size: 100%;
   block-size: 100%;
-  gap: 12px;
+  gap: 0;
   padding: 40px 12px;
   box-sizing: border-box;
   border: 0;
@@ -106,6 +111,7 @@
   pointer-events: none;
 }
 .yuzi-phone-frameless-preview .yuzi-qq-image-viewer-visual {
+  position: relative;
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -115,6 +121,10 @@
   border-radius: 0;
 }
 .yuzi-phone-frameless-preview .yuzi-qq-image-viewer-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
@@ -123,16 +133,7 @@
   pointer-events: auto;
 }
 .yuzi-phone-frameless-preview .yuzi-qq-image-viewer-description {
-  margin: 0;
-  max-height: 100px;
-  overflow: auto;
-  white-space: pre-wrap;
-  padding: 8px 12px;
-  color: white;
-  background: rgba(0, 0, 0, .3);
-  font-family: var(--yuzi-phone-font-family,sans-serif);
-  font-size: calc(13px * var(--yuzi-phone-readable-text-scale,1));
-  pointer-events: auto;
+  display: none;
 }
 
 /* Share the standard phone navigation tokens, not copied status-bar offsets. */

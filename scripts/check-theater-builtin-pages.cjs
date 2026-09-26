@@ -14,6 +14,11 @@ import {mount as mountDiary} from './modules/phone-theater/builtin/diary.js';
 import {getPhoneSettings} from './modules/settings.js';
 import {applyAppearanceFontLibrary} from './modules/settings-app/services/appearance-settings/font-library-service.js';
 import {mount as mountForum} from './modules/phone-theater/builtin/forum.js';
+const fixtureImage=(width,height)=>'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'"><rect width="100%" height="100%" fill="teal"/></svg>');
+function assertImageFrame(frame,ratio,label) {
+ const image=frame.querySelector('img'), box=frame.getBoundingClientRect(), picture=image.getBoundingClientRect();
+ if(frame.dataset.hasImage!=='true' || image.hidden || Math.abs(box.width/box.height-ratio)>.03 || Math.abs(box.height-picture.height)>1 || getComputedStyle(image).objectFit!=='contain')throw Error(label+'应按原图比例撑开画布，不裁切图片');
+}
 function assertHomeClearance(root,selector) {
  root.style.setProperty('--yuzi-phone-home-indicator-hit-height','48px');
  if(parseFloat(getComputedStyle(root.querySelector(selector)).paddingBottom)<48)throw Error('小剧场底部应跟随 Home 安全区：'+selector);
@@ -85,6 +90,17 @@ function assertStandardNav(root,label) {
  const generated=root.querySelector('[data-image-canvas="image"] img');
  if(!generated || generated.hidden || !generated.src.endsWith('/test.png')) throw Error('生图完成后必须在对应画布展示');
  if(!generate.querySelector('.fa-rotate') || generate.getAttribute('aria-busy')!=='false')throw Error('生成后切换重新生成图标并结束忙碌态');
+ root.classList.add('yuzi-phone-theater-builtin');
+ const squareFrames=[...root.querySelectorAll('.yuzi-theater-square-media-item')];
+ if(Math.abs(squareFrames[1].getBoundingClientRect().width/squareFrames[1].getBoundingClientRect().height-2)>.03)throw Error('未生成的广场画布应保留占位比例');
+ generated.src=fixtureImage(300,800);await generated.decode();
+ assertImageFrame(squareFrames[0],300/800,'广场竖图');
+ squareFrames[1].querySelector('[data-theater-generate]').click();await new Promise(resolve=>setTimeout(resolve,25));
+ const wide=squareFrames[1].querySelector('img');wide.src=fixtureImage(800,300);await wide.decode();
+ generated.src=fixtureImage(300,800);await generated.decode();
+ assertImageFrame(squareFrames[1],800/300,'广场横图');
+ assertImageFrame(squareFrames[0],300/800,'同帖另一张广场竖图');
+ root.classList.remove('yuzi-phone-theater-builtin');
  finishInitialRead(null); await new Promise(resolve=>setTimeout(resolve,0));
  if(generated.hidden)throw Error('晚到的旧图读取不能清掉刚生成的图片');
  config.imageGeneration.theaterEnabled.square=false; imageController.updateSettings();
@@ -117,11 +133,16 @@ function assertStandardNav(root,label) {
  if(root.querySelectorAll('[data-image-canvas="cover"]').length!==2) throw Error('论坛两处画布必须共享帖子');
  const detailBottom=root.querySelector('.yuzi-theater-forum-detail-bottom');
  if(Math.abs(detailBottom.getBoundingClientRect().bottom-root.getBoundingClientRect().bottom)>1)throw Error('短帖详情操作栏应靠底部安全区，不悬在正文之后');
- const hero=root.querySelector('.yuzi-theater-forum-hero');
- if(Math.abs(hero.getBoundingClientRect().width/hero.getBoundingClientRect().height - 1.6)>.02) throw Error('论坛详情画布必须为16:10');
- hero.querySelector('[data-theater-generate]').click();await new Promise(resolve=>setTimeout(resolve,25));
- const forumPictures=[...root.querySelectorAll('[data-image-canvas="cover"] img')];
- if(forumPictures.length!==2 || forumPictures.some(img=>img.hidden || !img.src.endsWith('/forum.png')))throw Error('论坛列表和详情必须同步显示生成结果');
+  const hero=root.querySelector('.yuzi-theater-forum-hero');
+ if(Math.abs(hero.getBoundingClientRect().width/hero.getBoundingClientRect().height - 1.6)>.02) throw Error('未生成的论坛详情画布应保留占位比例');
+  hero.querySelector('[data-theater-generate]').click();await new Promise(resolve=>setTimeout(resolve,25));
+  const forumPictures=[...root.querySelectorAll('[data-image-canvas="cover"] img')];
+  if(forumPictures.length!==2 || forumPictures.some(img=>img.hidden || !img.src.endsWith('/forum.png')))throw Error('论坛列表和详情必须同步显示生成结果');
+ root.classList.add('yuzi-phone-theater-builtin');
+ for(const image of forumPictures){image.src=fixtureImage(300,800);await image.decode();}
+ assertImageFrame(root.querySelector('.yuzi-theater-forum-cover'),300/800,'论坛列表竖图');
+ assertImageFrame(hero,300/800,'论坛详情竖图');
+ root.classList.remove('yuzi-phone-theater-builtin');
  root.querySelector('[data-detail-back]').click();
  if(!root.querySelector('#yuzi-theater-forum-detail').hidden || root.querySelector('#yuzi-theater-forum-detail').childElementCount)throw Error('返回列表应释放旧详情画布，不能保留旧记录入口');
  forumImages.dispose(); forumAbort.abort(); forumDispose();
@@ -197,11 +218,16 @@ function assertStandardNav(root,label) {
      stop();detached.remove();
    }
  }
- const layerHost=document.createElement('div');document.body.append(layerHost);registerPhoneTemporaryLayerHost(layerHost);
- const close=showImageViewerDialog({imagePath:'/user/images/yuzi-phone-generated/test.png',altText:'说明',frameless:true});
- if(layerHost.querySelector('.phone-image-viewer-header'))throw Error('广场论坛图片查看不应新增有框标题栏');
- if(!layerHost.querySelector('.yuzi-qq-image-viewer-image'))throw Error('图片查看必须复用 QQ 的内容组件');
- close();if(layerHost.children.length)throw Error('关闭预览应释放遮罩');
+ const layerHost=document.createElement('div');layerHost.style.cssText='position:relative;width:400px;height:800px';document.body.append(layerHost);registerPhoneTemporaryLayerHost(layerHost);
+ const close=showImageViewerDialog({imagePath:fixtureImage(300,800),altText:'说明',frameless:true});
+  if(layerHost.querySelector('.phone-image-viewer-header'))throw Error('广场论坛图片查看不应新增有框标题栏');
+ const preview=layerHost.querySelector('.yuzi-qq-image-viewer-image');
+ if(!preview)throw Error('图片查看必须复用 QQ 的内容组件');
+ await preview.decode();
+ const visual=layerHost.querySelector('.yuzi-qq-image-viewer-visual');
+ if(preview.getBoundingClientRect().height>visual.getBoundingClientRect().height+1 || getComputedStyle(preview).objectFit!=='contain')throw Error('长图预览不能超过可见区域被裁掉');
+ if(getComputedStyle(layerHost.querySelector('.yuzi-qq-image-viewer-description')).display!=='none')throw Error('有图片的广场论坛预览不应显示底部描述');
+  close();if(layerHost.children.length)throw Error('关闭预览应释放遮罩');
  const calendar=document.createElement('div');calendar.className='phone-app-page phone-theater-page';calendar.dataset.theaterScene='calendar';document.body.append(calendar);
  document.documentElement.setAttribute('data-yuzi-phone-theme','light');
  if(getComputedStyle(calendar).color!=='rgb(37, 54, 69)')throw Error('日历白天应采用蓝灰文字');
@@ -218,8 +244,8 @@ function assertStandardNav(root,label) {
 `;
 try {
  const code=buildSync({stdin:{contents:test,resolveDir:process.cwd(),loader:'js'},bundle:true,write:false,format:'iife',define:{'import.meta.url':JSON.stringify(require('node:url').pathToFileURL(path.resolve('dist/yuzi-phone.bundle.js')).href)}}).outputFiles[0].text;
- const navStyles=['styles/phone-base/00-phone-tokens.css','styles/phone-base/06-layout-nav-core.css'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
- const styles=process.env.YUZI_TEST_STYLES ? fs.readFileSync(process.env.YUZI_TEST_STYLES,'utf8') : navStyles+['common','square','forum','diary','live'].map(id=>fs.readFileSync('styles/phone-theater/builtin/'+id+'.css','utf8')).join('\n') + fs.readFileSync('styles/phone-theater/calendar.css','utf8');
+  const baseStyles=['styles/phone-base/00-phone-tokens.css','styles/phone-base/06-layout-nav-core.css','styles/phone-base/07-settings-modern.css','styles/phone-base/12-qq-app.css'].map(file=>fs.readFileSync(file,'utf8')).join('\n');
+  const styles=process.env.YUZI_TEST_STYLES ? fs.readFileSync(process.env.YUZI_TEST_STYLES,'utf8') : baseStyles+['common','square','forum','diary','live'].map(id=>fs.readFileSync('styles/phone-theater/builtin/'+id+'.css','utf8')).join('\n') + fs.readFileSync('styles/phone-theater/calendar.css','utf8');
  fs.writeFileSync(path.join(dir,'test.html'),'<html><head><style>'+styles+'</style></head><body><script>'+code.replace(/<\/script/gi,'<\\/script')+'</script></body></html>');
  const browser=[process.env.YUZI_TEST_BROWSER,'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Google/Chrome/Application/chrome.exe','/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser','/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find(file=>file && fs.existsSync(file));
  if(!browser)throw Error('需要 Chromium 浏览器进行真实页面回归；可通过 YUZI_TEST_BROWSER 指定路径');

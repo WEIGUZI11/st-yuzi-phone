@@ -108,16 +108,16 @@ function buildChangeItemHtml(change = {}, readOnly = false) {
 function buildTableGroupHtml(table = {}, readOnly = false) {
     const changes = Array.isArray(table.changes) ? table.changes : [];
     return `
-        <${readOnly ? 'section' : 'details'} class="tur-table-card" data-sheet-key="${escapeHtmlAttr(table.sheetKey || '')}">
-            <${readOnly ? 'header' : 'summary'} class="tur-table-summary tur-table-header">
+        <details class="tur-table-card" data-sheet-key="${escapeHtmlAttr(table.sheetKey || '')}">
+            <summary class="tur-table-summary tur-table-header">
                 <div>
                     <h3>${escapeHtml(table.tableName || table.sheetKey || t("未命名表格"))}</h3>
                     <p>${t`${formatCount(table.insertCount)} 新增 · ${formatCount(table.updateCount)} 修改 · ${formatCount(table.deleteCount)} 删除`}</p>
                 </div>
                 <span class="tur-table-count">${formatCount(table.changeCount)}</span>
-            </${readOnly ? 'header' : 'summary'}>
+            </summary>
             <div class="tur-change-list">${changes.map(change => buildChangeItemHtml(change, readOnly)).join('')}</div>
-        </${readOnly ? 'section' : 'details'}>
+        </details>
     `;
 }
 

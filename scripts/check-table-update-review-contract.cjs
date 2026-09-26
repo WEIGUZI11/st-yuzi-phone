@@ -110,7 +110,14 @@ async function main() {
     const rendered = buildTableUpdateReviewContentHtml({ tables: [{ tableName: '纪要', changes: [{ type: 'update' }] }] });
     check(results, 'templates', '手机审核页继续输出可折叠分组和可点击变更', rendered.includes('<details') && rendered.includes('<summary') && rendered.includes('data-action="open-review-change"'));
     const readonly = buildTableUpdateReviewContentHtml({ tables: [{ tableName: '纪要', changes: [{ type: 'update' }] }] }, { readOnly: true });
-    check(results, 'templates', '只读承载区不输出交互节点', !/<(?:button|details|summary)\b/.test(readonly) && readonly.includes('纪要'));
+    check(results, 'templates', '只读承载区分组默认折叠且变更项仍不可点击',
+        /<details class="tur-table-card"/.test(readonly)
+        && /<summary class="tur-table-summary tur-table-header"/.test(readonly)
+        && !/<details\b[^>]*\bopen\b/.test(readonly)
+        && /<article class="tur-change-item is-update"/.test(readonly)
+        && !/<button\b/.test(readonly)
+        && !readonly.includes('data-action="open-review-change"')
+        && readonly.includes('纪要'));
     check(results, 'templates', '审核页模板仅可导航项输出变更项导航 data 字段', has(contents.templates, 'data-action="open-review-change"')
         && has(contents.templates, 'data-sheet-key=')
         && has(contents.templates, 'data-row-id=')
