@@ -479,12 +479,13 @@ export function applyAppearanceFontLibrary(root = null) {
     if (style) {
         const userFontImports = library.userFonts.map(buildFontImportCss).filter(Boolean);
         const userFontFaces = library.userFonts.map(buildFontFaceCss).filter(Boolean);
-        style.textContent = [
+        const css = [
             ...userFontImports,
             buildBuiltinFontFaceCss(activeFont),
             ...userFontFaces,
             buildScopedFontOverrideCss(activeFont),
         ].filter(Boolean).join('\n');
+        if (style.textContent !== css) style.textContent = css;
     }
 
     const container = root && typeof root.querySelector === 'function'

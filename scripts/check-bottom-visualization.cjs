@@ -47,6 +47,22 @@ async function main() {
     assert.equal(cards.count, 2);
     assert.deepEqual(view.getOptionTexts(raw), ['问候', '离开'], '仅第一张选项表');
     assert.deepEqual(raw, before, '渲染不修改表格数据');
+    let settingsReads = 0;
+    const extensionSettings = host.extensionSettings;
+    Object.defineProperty(host, 'extensionSettings', { get() { settingsReads += 1; return extensionSettings; } });
+    global.document = { getElementById: () => null };
+    global.CustomEvent = class extends Event {
+        constructor(type, options) { super(type); this.detail = options.detail; }
+    };
+    const bottom = await import('../modules/bottom-visualization/index.js');
+    bottom.startBottomVisualization();
+    const readsBeforePosition = settingsReads;
+    window.dispatchEvent(new CustomEvent(settings.PHONE_SETTINGS_UPDATED_EVENT, { detail: { key: 'phoneContainerX' } }));
+    window.dispatchEvent(new CustomEvent(settings.PHONE_SETTINGS_UPDATED_EVENT, { detail: { key: 'phoneContainerY' } }));
+    assert.equal(settingsReads, readsBeforePosition, '手机位置变化不应刷新底部可视化');
+    window.dispatchEvent(new CustomEvent(settings.PHONE_SETTINGS_UPDATED_EVENT, { detail: { key: 'bottomVisualization' } }));
+    assert.ok(settingsReads > readsBeforePosition, '底部可视化自身设置变化仍需刷新');
+    bottom.stopBottomVisualization();
     settings.flushPhoneSettingsSave();
     console.log('[通过] 底部可视化设置默认、保存回读与非法值归一化');
 }

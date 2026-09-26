@@ -16,7 +16,10 @@ async function main() {
             this.id = id;
             this.values = new Map();
             this.style = { setProperty: (key, value) => this.values.set(key, value), removeProperty: key => this.values.delete(key) };
+            this.textContentWrites = 0;
         }
+        set textContent(value) { this.content = value; this.textContentWrites += 1; }
+        get textContent() { return this.content || ''; }
         setAttribute(key, value) { this[key] = value; }
         getAttribute(key) { return this[key] ?? null; }
         querySelector() { return null; }
@@ -59,6 +62,16 @@ async function main() {
             window.dispatchEvent(new CustomEvent(settings.PHONE_SETTINGS_UPDATED_EVENT, { detail: { key: 'appearanceFontLibrary' } }));
             assert.equal(root.values.get(variable), expected, '真实解析、手机应用和内容预设必须一致');
         }
+        setLibrary({ activeFontId: 'builtin.chill-round', userFonts: [] });
+        fonts.applyAppearanceFontLibrary(phone);
+        const style = elements.get('yuzi-phone-font-library-style');
+        const writes = style.textContentWrites;
+        fonts.applyAppearanceFontLibrary(phone);
+        assert.equal(style.textContentWrites, writes, '字体未变时不得重写寒蝉圆体的 font-face');
+        setLibrary({ activeFontId: 'builtin.chill-round', userFonts: [local] });
+        fonts.applyAppearanceFontLibrary(phone);
+        assert.equal(style.textContentWrites, writes + 1, '当前字体 ID 不变、字体库变化时仍需更新样式');
+        assert.match(style.textContent, /Local Test/, '新增用户字体应出现在样式中');
         stop();
         setLibrary({ activeFontId: remote.id, userFonts: [remote] });
         window.dispatchEvent(new CustomEvent(settings.PHONE_SETTINGS_UPDATED_EVENT));
