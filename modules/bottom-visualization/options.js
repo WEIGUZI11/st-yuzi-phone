@@ -11,9 +11,8 @@ export function createBottomOptions(scope) {
     const sameMessage = (a, b) => a && b && a.chat === b.chat && a.message === b.message && a.swipeId === b.swipeId;
     function clear() { node?.remove(); node = null; }
     function invalidate() {
-        const latest = getInlineMessageTarget();
-        // 记住已展示过的消息，而不是重绘通知刚产生的新消息。
-        blocked = target || latest; clear();
+        // 只记住已展示过的消息；没插入选项的新消息不能被拉黑。
+        blocked = target; clear();
     }
     scope.registerCleanup(clear);
     void subscribeInlineMessageInvalidation(invalidate).then(dispose => {

@@ -100,11 +100,13 @@ async function main() {
     ].forEach((needle) => {
         assertIncludes(builderSource, needle, `SQL builder 源码必须明确严格 ISO time_span 产品边界：${needle}`);
     });
+    const signedDateSql = (expression) => `date(SUBSTR(TRIM(${expression}), 1, CASE WHEN SUBSTR(TRIM(${expression}), 1, 1) = '-' THEN 11 ELSE 10 END))`;
     [
-        "WHEN INSTR(time_span, '~') > 0 THEN date(SUBSTR(TRIM(SUBSTR(time_span, INSTR(time_span, '~') + 1)), 1, 10))",
-        'date(SUBSTR(TRIM(time_span), 1, 10))',
+        signedDateSql('cur_time'),
+        `WHEN INSTR(time_span, '~') > 0 THEN ${signedDateSql("SUBSTR(time_span, INSTR(time_span, '~') + 1)")}`,
+        signedDateSql('time_span'),
     ].forEach((needle) => {
-        assertIncludes(allSql, needle, `SQL builder 输出 SQL 必须固化严格 ISO time_span 解析边界：${needle}`);
+        assertIncludes(allSql, needle, `SQL builder 必须按有无负号截取 10 或 11 位日期：${needle}`);
     });
     ['一周', '半个月', '三周', '半年'].forEach((needle) => {
         assertIncludes(allSql, needle, `SQL builder 必须覆盖文案 ${needle}`);

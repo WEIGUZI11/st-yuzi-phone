@@ -161,18 +161,25 @@ function buildRelativeRelationCaseSql(diffExpression = 'diff_days') {
     END`;
 }
 
-// Chronicle table contract requires time_span to be "YYYY-MM-DD HH:MM ~ YYYY-MM-DD HH:MM".
+// Chronicle table contract requires time_span to be "YYYY-MM-DD HH:MM ~ YYYY-MM-DD HH:MM",
+// with an optional leading minus on either year.
 // The SQL path intentionally supports that strict ISO-leading format only: end date wins,
 // and SQLite date(...) returning NULL falls back to the left segment. Broader legacy
 // date-relation.js parsing (Chinese numerals / abstract dates) is outside this SQL batch
 // derivation boundary; non-ISO rows are treated as invalid inputs, skipped, and reported
 // by buildChronicleInvalidTimeSpanDebugSql().
+function buildLeadingIsoDateSql(expression) {
+    const trimmed = `TRIM(${expression})`;
+    return `date(SUBSTR(${trimmed}, 1, CASE WHEN SUBSTR(${trimmed}, 1, 1) = '-' THEN 11 ELSE 10 END))`;
+}
+
+const TODAY_DATE_EXPRESSION = buildLeadingIsoDateSql('cur_time');
 const TARGET_DATE_EXPRESSION = `COALESCE(
     CASE
-        WHEN INSTR(time_span, '~') > 0 THEN date(SUBSTR(TRIM(SUBSTR(time_span, INSTR(time_span, '~') + 1)), 1, 10))
+        WHEN INSTR(time_span, '~') > 0 THEN ${buildLeadingIsoDateSql("SUBSTR(time_span, INSTR(time_span, '~') + 1)")}
         ELSE NULL
     END,
-    date(SUBSTR(TRIM(time_span), 1, 10))
+    ${buildLeadingIsoDateSql('time_span')}
 )`;
 
 export function buildChronicleTodayRelationSignatureSql(anchorTable = 'global_state', tableName = 'chronicle') {
@@ -180,7 +187,7 @@ export function buildChronicleTodayRelationSignatureSql(anchorTable = 'global_st
     const chronicleTableName = normalizeChronicleTodayRelationTable(tableName);
     return `WITH
 current_anchor AS (
-    SELECT TRIM(cur_time) AS cur_time, date(SUBSTR(TRIM(cur_time), 1, 10)) AS today_date
+    SELECT TRIM(cur_time) AS cur_time, ${TODAY_DATE_EXPRESSION} AS today_date
     FROM ${anchorTableName}
     ORDER BY row_id
     LIMIT 1
@@ -238,7 +245,7 @@ export function buildChronicleTodayRelationUpdateSql(anchorTable = 'global_state
     const chronicleTableName = normalizeChronicleTodayRelationTable(tableName);
     return `WITH
 current_anchor AS (
-    SELECT date(SUBSTR(TRIM(cur_time), 1, 10)) AS today_date
+    SELECT ${TODAY_DATE_EXPRESSION} AS today_date
     FROM ${anchorTableName}
     ORDER BY row_id
     LIMIT 1

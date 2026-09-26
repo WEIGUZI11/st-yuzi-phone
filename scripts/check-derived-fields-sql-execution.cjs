@@ -108,6 +108,39 @@ async function main() {
     ], '拼音物理表环境必须按 row_id 写回对应小日历行');
     reboundDb.close();
 
+    const signedDb = new sqlite.DatabaseSync(':memory:');
+    seedChronicle(signedDb, { anchor: 'global_state', chronicle: 'chronicle' });
+    signedDb.exec(`
+        UPDATE global_state SET cur_time = '2012-02-11 12:00';
+        DELETE FROM chronicle;
+        INSERT INTO chronicle (row_id, time_span, today_relation) VALUES
+            (1, '2012-02-11 08:00 ~ -2012-02-11 09:00', ''),
+            (2, '-2012-02-11 08:00 ~ -2012-02-11 09:00', ''),
+            (3, '-2012-02-11 08:00 ~ 2012-02-11 09:00', '');
+    `);
+    const signatureSql = chronicle.buildChronicleTodayRelationSignatureSql();
+    const updateSql = chronicle.buildChronicleTodayRelationUpdateSql();
+    assert.deepStrictEqual(
+        readRows(signedDb, signatureSql).map(({ invalid_count, pending_update_count }) => ({ invalid_count, pending_update_count })),
+        [{ invalid_count: 0, pending_update_count: 3 }],
+        '纪要右侧负年份必须被识别为有效待计算日期',
+    );
+    signedDb.exec(updateSql);
+    assert.deepStrictEqual(readRows(signedDb, 'SELECT row_id, today_relation FROM chronicle ORDER BY row_id'), [
+        { row_id: 1, today_relation: '4082年半前' },
+        { row_id: 2, today_relation: '4082年半前' },
+        { row_id: 3, today_relation: '今天' },
+    ], '正年份当前时间必须能与纪要右侧负年份计算，且右侧优先');
+
+    signedDb.exec("UPDATE global_state SET cur_time = '-2012-02-11 12:00'");
+    signedDb.exec(updateSql);
+    assert.deepStrictEqual(readRows(signedDb, 'SELECT row_id, today_relation FROM chronicle ORDER BY row_id'), [
+        { row_id: 1, today_relation: '今天' },
+        { row_id: 2, today_relation: '今天' },
+        { row_id: 3, today_relation: '4082年半后' },
+    ], '负年份当前时间也必须能与正负年份纪要结束日期计算');
+    signedDb.close();
+
     console.log('[通过] 派生字段 SQL 在作者 DDL 表名与拼音物理表重绑定环境中均可真实执行并逐行写回');
 }
 
