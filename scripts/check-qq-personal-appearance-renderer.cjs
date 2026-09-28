@@ -3,9 +3,12 @@ const { FakeElement } = require('./helpers/qq-ui-fixture.cjs');
 (async () => {
   const { decorateQQAvatar, decorateQQBubble } = await import('../modules/qq-v2/ui/appearance.js');
   const avatar = new FakeElement('button'); avatar.style.setProperty = (key, value) => { avatar.style[key] = value; };
-  decorateQQAvatar(avatar, 'blob:frame');
+  decorateQQAvatar(avatar, 'blob:frame', { x: 1 / 12, y: -1 / 12, scale: 1.1 });
   assert.equal(avatar.getAttribute('data-qq-avatar-frame'), '');
   assert.equal(avatar.style['--yuzi-qq-avatar-frame-image'], 'url("blob:frame")');
+  assert.ok(Math.abs(Number.parseFloat(avatar.style['--yuzi-qq-avatar-frame-offset-x']) - 100 / 12) < 1e-12);
+  assert.ok(Math.abs(Number.parseFloat(avatar.style['--yuzi-qq-avatar-frame-offset-y']) + 100 / 12) < 1e-12);
+  assert.equal(avatar.style['--yuzi-qq-avatar-frame-scale'], '1.1');
   assert.equal(avatar.children.length, 0, 'Frame does not replace original avatar children or click target');
   const group = new FakeElement('span'); group.classList.add('yuzi-qq-group-avatar-member');
   decorateQQAvatar(group, 'blob:frame'); assert.equal(group.hasAttribute('data-qq-avatar-frame'), false);

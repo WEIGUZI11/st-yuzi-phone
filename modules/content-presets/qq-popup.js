@@ -7,12 +7,20 @@ export async function prepareQQNotificationAppearance(item) {
     const skin = await prepareQQSkin('popup');
     const facade = getQQV2Facade();
     let frame = null;
+    let frameMedia = null;
     try {
-        if (item.avatarFrameAssetId) frame = await facade?.query?.mediaRender({ assetId: item.avatarFrameAssetId });
+        if (item.avatarFrameAssetId) {
+            [frame, frameMedia] = await Promise.all([
+                facade?.query?.mediaRender({ assetId: item.avatarFrameAssetId }),
+                facade?.query?.media({ assetId: item.avatarFrameAssetId }),
+            ]);
+        }
         return {
             apply(element, avatar) {
                 skin?.apply(element);
-                if (avatar && frame?.ok && frame.render?.url) decorateQQAvatar(avatar, frame.render.url);
+                if (avatar && frame?.ok && frame.render?.url) {
+                    decorateQQAvatar(avatar, frame.render.url, frameMedia?.ok ? frameMedia.media?.avatarFrameTransform : null);
+                }
             },
             dispose() {
                 skin?.dispose();

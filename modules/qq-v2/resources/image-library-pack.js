@@ -1,4 +1,5 @@
 import { normalizeBubbleStyle, normalizeOutfits, QQ_OUTFIT_SLOTS } from './appearance-contract.js';
+import { normalizeAvatarFrameTransform } from './avatar-frame-transform.js';
 import { sha256Text } from './content-hash.js';
 import { t } from '../../i18n/index.js';
 const IMAGE_LIBRARY_KEY = 'imageLibraryAssets';
@@ -105,6 +106,9 @@ async function exportImageAsset(asset, usedIds, readMedia) {
         mimeType,
         createdAt: Math.max(0, Number(asset.createdAt) || 0),
         dataUrl: await blobToDataUrl(blob, mimeType),
+        ...(asset.library === 'avatar-frame' && asset.avatarFrameTransform ? {
+            avatarFrameTransform: normalizeAvatarFrameTransform(asset.avatarFrameTransform),
+        } : {}),
         ...(asset.bubble ? { bubble: asset.bubble } : {}),
         ...(asset.origin ? { origin: asset.origin } : {}),
     };
@@ -160,6 +164,9 @@ function importImageAsset(raw, key, index, usedIds) {
         kind: definition.kind,
         library: definition.library,
         ...(source.origin ? { origin: asText(source.origin, 256) } : {}),
+        ...(definition.library === 'avatar-frame' && source.avatarFrameTransform ? {
+            avatarFrameTransform: normalizeAvatarFrameTransform(source.avatarFrameTransform),
+        } : {}),
         ...(definition.library === 'bubble' && source.bubble !== undefined ? { bubble: normalizeBubbleStyle(source.bubble) } : {}),
         blob,
         mimeType,

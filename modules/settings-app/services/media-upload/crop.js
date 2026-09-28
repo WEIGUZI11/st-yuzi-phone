@@ -209,7 +209,7 @@ export async function compressDataUrl(rawDataUrl, { maxWidth = 1440, maxHeight =
     return canvas.toDataURL('image/jpeg', clampNumber(quality, 0.5, 0.9, 0.82));
 }
 
-function createCropRuntimeAdapter(runtime) {
+export function createCropRuntimeAdapter(runtime) {
     const safeRuntime = runtime && typeof runtime === 'object' ? runtime : null;
     const cleanups = [];
     return {

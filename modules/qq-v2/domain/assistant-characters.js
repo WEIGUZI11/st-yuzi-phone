@@ -1,3 +1,5 @@
+import { normalizeMessageTextColor } from './message-text-color.js';
+
 export const TAMAKO_CHARACTER_ID = 'builtin-kitashirakawa-tamako';
 export const TAMAKO_AVATAR_URL = 'https://cdn.jsdelivr.net/gh/niccolecantdoit-rgb/pic-bed@main/img/u15/2026/09/e3e15f00-1a7b-4f22-83b9-194392ad191e.jpg';
 // 简要整理自萌娘百科「北白川玉子」；台词为该页引用的作品短句。
@@ -14,11 +16,18 @@ export function assistantCharacterLibrary(state) {
     resources.assistantCharacters ||= {};
     resources.assistantCharacters[TAMAKO_CHARACTER_ID] ||= {
         characterId: TAMAKO_CHARACTER_ID, formalName: '北白川玉子', persona: TAMAKO_PERSONA,
-        avatarAssetId: '', avatarUrl: TAMAKO_AVATAR_URL, isBuiltIn: true,
+        avatarAssetId: '', avatarUrl: TAMAKO_AVATAR_URL, messageTextColor: 'black', isBuiltIn: true,
     };
+    Object.values(resources.assistantCharacters).forEach((character) => {
+        character.messageTextColor = normalizeMessageTextColor(character.messageTextColor, 'black');
+    });
     return resources.assistantCharacters;
 }
 
 export function assistantCharacterView(character) {
-    return { ...character, defaultPersona: character.isBuiltIn ? TAMAKO_PERSONA : '' };
+    return {
+        ...character,
+        messageTextColor: normalizeMessageTextColor(character.messageTextColor, 'black'),
+        defaultPersona: character.isBuiltIn ? TAMAKO_PERSONA : '',
+    };
 }

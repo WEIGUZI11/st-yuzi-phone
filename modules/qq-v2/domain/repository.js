@@ -3,6 +3,8 @@ import { t } from '../../i18n/index.js';
 import { assistantCharacterLibrary, assistantCharacterView } from './assistant-characters.js';
 import { createEmptyQQV2State } from '../storage/state-store.js';
 import { QQ_V2_BUILT_IN_PROMPT_PRESET_IDS } from './prompt-preset-ids.js';
+import { normalizeAvatarFrameTransform } from '../resources/avatar-frame-transform.js';
+import { normalizeMessageTextColor } from './message-text-color.js';
 
 const SELF_ID = '__self__';
 const SCOPE_SETTINGS_VERSION = 1;
@@ -60,12 +62,13 @@ function exactContactFormalName(value) {
     return name;
 }
 
-function normalizeQQProfile(value) {
+function normalizeQQProfile(value, defaultMessageTextColor = 'black') {
     const profile = value && typeof value === 'object' ? value : {};
     return {
         avatarAssetId: asText(profile.avatarAssetId, 256),
         ...(profile.avatarFrameAssetId ? { avatarFrameAssetId: asText(profile.avatarFrameAssetId, 256) } : {}),
         ...(profile.bubbleAssetId ? { bubbleAssetId: asText(profile.bubbleAssetId, 256) } : {}),
+        messageTextColor: normalizeMessageTextColor(profile.messageTextColor, defaultMessageTextColor),
         signature: asText(profile.signature, 1000),
         gender: asText(profile.gender, 120),
         birthday: asText(profile.birthday, 120),
@@ -99,7 +102,7 @@ function copyScope(state, scope) {
 }
 
 function ensurePersonProfile(person) {
-    Object.assign(person, normalizeQQProfile(person));
+    Object.assign(person, normalizeQQProfile(person, 'black'));
 }
 
 function emptyScope(scopeId) {
@@ -109,7 +112,7 @@ function emptyScope(scopeId) {
         pendingHostDeletion: false,
         settingsVersion: SCOPE_SETTINGS_VERSION,
         worldbookDefaultResolved: false,
-        selfProfile: normalizeQQProfile(),
+        selfProfile: normalizeQQProfile({}, 'white'),
         people: {},
         conversations: {},
         groups: {},
@@ -291,7 +294,7 @@ function ensureScopeQQV2State(scope) {
         || usesLegacyZeroDefaults) {
         scope.settings.conversationHistoryLimit = 100;
     }
-    scope.selfProfile = normalizeQQProfile(scope.selfProfile);
+    scope.selfProfile = normalizeQQProfile(scope.selfProfile, 'white');
     if (!scope.people || typeof scope.people !== 'object') scope.people = {};
     Object.values(scope.people).forEach(ensurePersonProfile);
     Object.values(scope.conversations || {}).forEach((conversation) => {
@@ -400,6 +403,13 @@ function requireProfileAsset(state, scope, assetId, expectedKind, conversationId
     }
     return asset.assetId;
 }
+
+function requireMessageTextColor(value) {
+    if (value !== 'white' && value !== 'black') {
+        throw new QQV2DomainError(t("消息字色只能选择白色或黑色"), 'message_text_color_invalid');
+    }
+    return value;
+}
 function imageLibraryKind(library) {
     const name = asText(library, 64);
     const kind = IMAGE_LIBRARY_KINDS[name];
@@ -434,6 +444,7 @@ function createPrivatePerson(state, scope, formalName, random) {
         formalName,
         normalizedName: formalName,
         avatarAssetId: chooseImageLibraryAssetId(state, 'avatar', random),
+        messageTextColor: 'black',
         signature: '',
         gender: '',
         birthday: '',
@@ -1072,6 +1083,9 @@ export function createQQV2Repository(options = {}) {
                 library,
                 blob,
                 mimeType: asText(input.mimeType || blob.type, 128),
+                ...(library === 'avatar-frame' && input.avatarFrameTransform ? {
+                    avatarFrameTransform: normalizeAvatarFrameTransform(input.avatarFrameTransform),
+                } : {}),
                 createdAt: newestCreatedAt - index,
             }));
             assets.forEach((asset) => {
@@ -1122,6 +1136,15 @@ export function createQQV2Repository(options = {}) {
                     character.avatarAssetId = requireProfileAsset(state, scope, id, 'avatar');
                     character.avatarUrl = '';
                 }
+                if (Object.hasOwn(patch, 'avatarFrameAssetId')) {
+                    character.avatarFrameAssetId = requireProfileAsset(state, scope, patch.avatarFrameAssetId, 'avatar-frame');
+                }
+                if (Object.hasOwn(patch, 'bubbleAssetId')) {
+                    character.bubbleAssetId = requireProfileAsset(state, scope, patch.bubbleAssetId, 'bubble');
+                }
+                if (Object.hasOwn(patch, 'messageTextColor')) {
+                    character.messageTextColor = requireMessageTextColor(patch.messageTextColor);
+                }
                 for (const target of Object.values(state.scopes)) {
                     const person = target.people?.[characterId];
                     if (person?.assistantCharacterId !== characterId) continue;
@@ -1140,8 +1163,15 @@ export function createQQV2Repository(options = {}) {
                 if (!character && input.characterId) throw new QQV2DomainError(t("助手人物不存在"), 'assistant_not_found');
                 if (!character) {
                     const characterId = createId('assistant');
-                    character = { characterId, formalName: requireText(input.name, '姓名', 120), persona: '',
-                        avatarAssetId: chooseImageLibraryAssetId(state, 'avatar', random), avatarUrl: '', isBuiltIn: false };
+                    character = {
+                        characterId,
+                        formalName: requireText(input.name, '姓名', 120),
+                        persona: '',
+                        avatarAssetId: chooseImageLibraryAssetId(state, 'avatar', random),
+                        avatarUrl: '',
+                        messageTextColor: 'black',
+                        isBuiltIn: false,
+                    };
                     library[characterId] = character;
                 }
                 const existing = Object.values(scope.conversations).find(item => item.assistantCharacterId === character.characterId);
@@ -1492,9 +1522,18 @@ export function createQQV2Repository(options = {}) {
                 if (Object.hasOwn(profile, 'avatarAssetId')) {
                     current.avatarAssetId = requireProfileAsset(state, scope, profile.avatarAssetId, 'avatar');
                 }
+                if (Object.hasOwn(profile, 'avatarFrameAssetId')) {
+                    current.avatarFrameAssetId = requireProfileAsset(state, scope, profile.avatarFrameAssetId, 'avatar-frame');
+                }
+                if (Object.hasOwn(profile, 'bubbleAssetId')) {
+                    current.bubbleAssetId = requireProfileAsset(state, scope, profile.bubbleAssetId, 'bubble');
+                }
                 if (Object.hasOwn(profile, 'signature')) current.signature = asText(profile.signature, 1000);
                 if (Object.hasOwn(profile, 'gender')) current.gender = asText(profile.gender, 120);
                 if (Object.hasOwn(profile, 'birthday')) current.birthday = asText(profile.birthday, 120);
+                if (Object.hasOwn(profile, 'messageTextColor')) {
+                    current.messageTextColor = requireMessageTextColor(profile.messageTextColor);
+                }
                 if (Object.hasOwn(profile, 'profileBackgroundAssetId')) {
                     current.profileBackgroundAssetId = requireProfileAsset(state, scope, profile.profileBackgroundAssetId, 'profile-background');
                 }
@@ -1533,9 +1572,18 @@ export function createQQV2Repository(options = {}) {
                 if (Object.hasOwn(profile, 'avatarAssetId')) {
                     person.avatarAssetId = requireProfileAsset(state, scope, profile.avatarAssetId, 'avatar');
                 }
+                if (Object.hasOwn(profile, 'avatarFrameAssetId')) {
+                    person.avatarFrameAssetId = requireProfileAsset(state, scope, profile.avatarFrameAssetId, 'avatar-frame');
+                }
+                if (Object.hasOwn(profile, 'bubbleAssetId')) {
+                    person.bubbleAssetId = requireProfileAsset(state, scope, profile.bubbleAssetId, 'bubble');
+                }
                 if (Object.hasOwn(profile, 'signature')) person.signature = asText(profile.signature, 1000);
                 if (Object.hasOwn(profile, 'gender')) person.gender = asText(profile.gender, 120);
                 if (Object.hasOwn(profile, 'birthday')) person.birthday = asText(profile.birthday, 120);
+                if (Object.hasOwn(profile, 'messageTextColor')) {
+                    person.messageTextColor = requireMessageTextColor(profile.messageTextColor);
+                }
                 if (Object.hasOwn(profile, 'profileBackgroundAssetId')) {
                     person.profileBackgroundAssetId = requireProfileAsset(state, scope, profile.profileBackgroundAssetId, 'profile-background');
                 }
@@ -1984,6 +2032,8 @@ export function createQQV2Repository(options = {}) {
                 });
                 for (const character of Object.values(state.sharedResources.assistantCharacters || {})) {
                     if (deleted.has(character.avatarAssetId)) character.avatarAssetId = '';
+                    if (deleted.has(character.avatarFrameAssetId)) character.avatarFrameAssetId = '';
+                    if (deleted.has(character.bubbleAssetId)) character.bubbleAssetId = '';
                 }
                 const outfits = state.sharedResources.imageLibraryOutfits || {};
                 for (const [id, outfit] of Object.entries(outfits)) {

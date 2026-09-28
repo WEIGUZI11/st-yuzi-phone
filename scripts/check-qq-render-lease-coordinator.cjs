@@ -107,6 +107,22 @@ async function main() {
         'every QQ render session receives the background cache lease');
     assert.match(appSource, /leaseSessionFor\(token\)\?\.background/g,
         'chat and profile background surfaces consume the dedicated lease session');
+    assert.match(appSource, /const bubbleRenderLeases = createMediaRenderLeaseCoordinator\(facade, \{ cacheLimit: 24 \}\)/,
+        'chat bubbles keep a small independent render cache');
+    assert.match(appSource, /bubbles:\s*bubbleRenderLeases\.begin\(\)/,
+        'every QQ render session receives the bubble cache lease');
+    assert.match(appSource, /leaseSessionFor\(token\)\?\.bubbles/g,
+        'message bubbles consume the dedicated bubble lease session');
+    assert.match(appSource, /const profileLibraryRenderLeases = createMediaRenderLeaseCoordinator\(facade, \{ cacheLimit: 24 \}\)/,
+        'profile library pickers use an independent bounded render cache');
+    const pickerSource = appSource.slice(
+        appSource.indexOf('const openImageLibraryPicker ='),
+        appSource.indexOf('const updatePrivateProfileAsset ='),
+    );
+    assert.match(pickerSource, /profileLibraryRenderLeases\.begin\(\)/,
+        'profile library pickers must reserve their own render session');
+    assert.doesNotMatch(pickerSource, /leaseSessionFor\(renderEpoch\)\?\.media/,
+        'profile library pickers must not use a committed page media session');
     console.log('[qq-render-lease-coordinator] passed');
 }
 

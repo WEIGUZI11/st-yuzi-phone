@@ -45,7 +45,11 @@ function main() {
     assert.ok(emoji.indexOf('data-qq-sticker-upload') < emoji.indexOf('resources?.stickers'),
         'the upload tile must stay in the first emoji-grid cell');
     const stickerUpload = sourceSlice(app, 'const uploadSticker =', 'const confirmImageLibraryDeletion =');
-    assert.match(app, /import \{ pickImageFiles \}/, 'QQ uploads must use the raw multi-file picker');
+    assert.match(
+        app,
+        /import\s*\{[\s\S]*?\bpickImageFiles\b[\s\S]*?\}\s*from ['"]\.\.\/\.\.\/settings-app\/services\/media-upload\.js['"]/,
+        'QQ uploads must use the raw multi-file picker',
+    );
     assert.match(stickerUpload, /pickImageFiles\(/, 'sticker upload must preserve each original selected file');
     assert.doesNotMatch(stickerUpload, /skipCrop|cropPreset|compress\s*:/,
         'sticker upload must not enter a crop or compression path');

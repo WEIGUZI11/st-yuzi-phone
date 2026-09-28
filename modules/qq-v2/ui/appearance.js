@@ -1,8 +1,15 @@
 import { normalizeBubbleStyle } from '../resources/appearance-contract.js';
+import { normalizeAvatarFrameTransform } from '../resources/avatar-frame-transform.js';
 
-export function decorateQQAvatar(element, url) {
+export function decorateQQAvatar(element, url, frameTransform = null) {
     if (!url || element.classList.contains('yuzi-qq-group-avatar') || element.classList.contains('yuzi-qq-group-avatar-member')) return;
     element.style.setProperty('--yuzi-qq-avatar-frame-image', 'url(' + JSON.stringify(url) + ')');
+    if (frameTransform && typeof frameTransform === 'object') {
+        const transform = normalizeAvatarFrameTransform(frameTransform);
+        element.style.setProperty('--yuzi-qq-avatar-frame-offset-x', `${transform.x * 100}%`);
+        element.style.setProperty('--yuzi-qq-avatar-frame-offset-y', `${transform.y * 100}%`);
+        element.style.setProperty('--yuzi-qq-avatar-frame-scale', String(transform.scale));
+    }
     element.setAttribute('data-qq-avatar-frame', '');
 }
 export function decorateQQBubble(element, url, parameters) {

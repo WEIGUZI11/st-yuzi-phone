@@ -4,7 +4,11 @@ import { t } from '../../i18n/index.js';
 import { createMediaViewerContent } from '../../ui-runtime/media-viewer-content.js';
 import { createMessageWindow, mergeMessagePage, reconcileMessageScrollAnchor } from './message-window.js';
 import { createAssistantUI } from './assistant.js';
-import { pickImageFiles } from '../../settings-app/services/media-upload.js';
+import {
+    fileToDataUrl,
+    pickImageFiles,
+} from '../../settings-app/services/media-upload.js';
+import { openAvatarFrameCalibrationDialog } from './avatar-frame-calibration.js';
 import { createPhoneNavIconElement } from '../../phone-core/navigation-ui.js';
 import { isScrollContainerNearBottom } from '../../phone-core/stable-scroll-anchor.js';
 import { createPhoneViewScrollState } from '../../phone-core/view-scroll-state.js';
@@ -58,6 +62,7 @@ import {
 } from './image-library-pack-actions.js';
 import { downloadJsonPack, pickJsonPackFile } from './json-pack-actions.js';
 import { normalizeQQV2TagName, parseQQV2TagInput } from '../domain/story-context-tags.js';
+import { messageTextColorCssValue } from '../domain/message-text-color.js';
 
 const TABS = Object.freeze([
     ['messages', '消息'],
@@ -978,6 +983,7 @@ export function createQQApp({
 
     let releaseSkin = () => {};
     const bubbleMetadata = new Map();
+    const avatarFrameMetadata = new Map();
     let root = null;
     let viewport = null;
     let disposed = false;
@@ -1005,6 +1011,7 @@ export function createQQApp({
     const conversationSnapshots = new Map();
     const jumpCounts = new Map();
     const renderLeaseSessions = new Map();
+    let profileLibraryPickerSession = null;
     const selectedImageAssetIds = new Set();
     const selectedStickerIds = new Set();
     const imageGenerationTasks = new Map();
@@ -1025,6 +1032,8 @@ export function createQQApp({
     const mediaRenderLeases = createMediaRenderLeaseCoordinator(facade);
     const backgroundRenderLeases = createMediaRenderLeaseCoordinator(facade, { cacheLimit: 8 });
     const avatarRenderLeases = createMediaRenderLeaseCoordinator(facade, { cacheLimit: 48 });
+    const bubbleRenderLeases = createMediaRenderLeaseCoordinator(facade, { cacheLimit: 24 });
+    const profileLibraryRenderLeases = createMediaRenderLeaseCoordinator(facade, { cacheLimit: 24 });
     const stickerRenderLeases = createRenderLeaseCoordinator({
         acquire: async (stickerId) => {
             const result = await facade.query.stickerRender?.({ stickerId });
@@ -1101,7 +1110,14 @@ export function createQQApp({
 
     const leaseSessionFor = (token = renderEpoch) => renderLeaseSessions.get(token);
 
+    const abortProfileLibraryPickerSession = () => {
+        const session = profileLibraryPickerSession;
+        profileLibraryPickerSession = null;
+        if (session) void session.abort();
+    };
+
     const clearOverlay = () => {
+        abortProfileLibraryPickerSession();
         try {
             overlayCleanup?.();
         } catch {}
@@ -1152,30 +1168,54 @@ export function createQQApp({
     const applyPersonalFrame = (element, assetId, token = renderEpoch) => {
         if (!assetId || element.classList.contains('yuzi-qq-group-avatar-member')) return;
         const session = leaseSessionFor(token)?.avatars;
-        const apply = render => { if (render?.url && isActive(token)) decorateQQAvatar(element, render.url); };
+        if (!avatarFrameMetadata.has(assetId)) avatarFrameMetadata.set(assetId, facade.query.media({ assetId }));
+        const apply = ([render, result]) => {
+            if (render?.url && result?.ok && isActive(token)) {
+                decorateQQAvatar(element, render.url, result.media?.avatarFrameTransform);
+            }
+        };
         const cached = session?.peek(assetId);
-        if (cached) apply(cached); else void session?.load(assetId).then(apply).catch(() => {});
+        if (cached) {
+            void Promise.resolve(avatarFrameMetadata.get(assetId)).then((result) => apply([cached, result])).catch(() => {});
+        } else {
+            void Promise.all([session?.load(assetId), avatarFrameMetadata.get(assetId)])
+                .then(apply)
+                .catch(() => { avatarFrameMetadata.delete(assetId); });
+        }
     };
-    const applyPersonalBubble = (element, assetId, token = renderEpoch) => {
+    const applyPersonalBubble = (element, assetId, messageTextColor, token = renderEpoch) => {
+        if (messageTextColor) element.style.color = messageTextColorCssValue(messageTextColor);
         if (!assetId) return;
-        const session = leaseSessionFor(token)?.media;
+        const session = leaseSessionFor(token)?.bubbles;
         if (!session) return;
         if (!bubbleMetadata.has(assetId)) bubbleMetadata.set(assetId, facade.query.media({ assetId }));
+        const cached = session.peek(assetId);
+        if (cached?.url) {
+            decorateQQBubble(element, cached.url, {
+                ...(messageTextColor ? { textColor: messageTextColorCssValue(messageTextColor) } : {}),
+            });
+        }
         void Promise.all([session.load(assetId), bubbleMetadata.get(assetId)]).then(([render, result]) => {
-            if (render?.url && result?.ok && isActive(token)) decorateQQBubble(element, render.url, result.media?.bubble);
+            if (render?.url && result?.ok && isActive(token)) {
+                decorateQQBubble(element, render.url, {
+                    ...asObject(result.media?.bubble),
+                    ...(messageTextColor ? { textColor: messageTextColorCssValue(messageTextColor) } : {}),
+                });
+            }
         }).catch(() => { bubbleMetadata.delete(assetId); });
     };
 
     const avatar = (person, className = 'yuzi-qq-avatar', {
         interactive = false,
         attributes = {},
+        showFrame = false,
     } = {}) => {
         const element = interactive
             ? createButton('', className, attributes)
             : createElement('span', className);
         if (!interactive) element.setAttribute('aria-hidden', 'true');
         element.textContent = initial(person?.formalName || person?.title);
-        applyPersonalFrame(element, person?.avatarFrameAssetId);
+        if (showFrame) applyPersonalFrame(element, person?.avatarFrameAssetId);
         const avatarUrl = asText(person?.avatarUrl);
         if (avatarUrl) {
             const image = createElement('img');
@@ -1308,13 +1348,15 @@ export function createQQApp({
         return result?.ok ? asObject(result.context) : {};
     };
 
-    const identityAvatar = (context, profile, title, token) => {
+    const identityAvatar = (context, profile, title, token, {
+        showFrame = false,
+    } = {}) => {
         const identity = asObject(context?.user);
         const element = createButton('', 'yuzi-qq-identity-avatar yuzi-qq-current-profile-trigger', {
             'aria-label': t("当前用户资料"), 'data-qq-current-profile': '1', title: t("当前用户资料"),
         });
         element.textContent = initial(identity.name || title);
-        applyPersonalFrame(element, profile?.avatarFrameAssetId, token);
+        if (showFrame) applyPersonalFrame(element, profile?.avatarFrameAssetId, token);
         const hostAvatar = asText(identity.avatar);
         if (hostAvatar) {
             const image = createElement('img');
@@ -1516,7 +1558,7 @@ export function createQQApp({
         if (showPresence) copy.append(status);
         const actions = createElement('div', `yuzi-qq-identity-actions${actionsClassName ? ` ${actionsClassName}` : ''}`);
         if (action) actions.append(action);
-        header.append(identityAvatar(context, profile, title, token), copy, actions);
+        header.append(identityAvatar(context, profile, title, token, { showFrame: true }), copy, actions);
         return header;
     };
 
@@ -2068,6 +2110,9 @@ export function createQQApp({
             person: {
                 formalName: displayName,
                 avatarAssetId: profile.avatarAssetId,
+                avatarFrameAssetId: profile.avatarFrameAssetId,
+                bubbleAssetId: profile.bubbleAssetId,
+                messageTextColor: profile.messageTextColor,
                 avatarUrl: context.user?.avatar,
                 signature: profile.signature,
                 gender: profile.gender,
@@ -2131,6 +2176,47 @@ export function createQQApp({
         return row;
     };
 
+    const profileLibraryAssetRow = ({ label, value, pickAttributes, clearAttributes, className = '' }) => {
+        const row = createElement('div', `yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-profile-asset-row ${className}`);
+        const labelNode = createElement('span', 'yuzi-qq-field-label');
+        labelNode.textContent = label;
+        const control = createElement('span', 'yuzi-qq-field-control yuzi-qq-profile-asset-control');
+        const pick = createButton('', 'yuzi-qq-icon-button yuzi-qq-profile-library-pick', {
+            'aria-label': t`${label}选择`, title: t`${label}选择`, ...pickAttributes,
+        });
+        pick.append(createIcon('image'));
+        control.append(pick);
+        if (value) {
+            const clear = createButton('', 'yuzi-qq-icon-button yuzi-qq-profile-asset-delete', {
+                'aria-label': t`${label}清除`, title: t`${label}清除`, ...clearAttributes,
+            });
+            clear.append(createIcon('trash'));
+            control.append(clear);
+        }
+        row.append(labelNode, control);
+        return row;
+    };
+
+    const profileMessageTextColorRow = ({ value, owner, conversationId = '', className = '' }) => {
+        const row = createElement('label', `yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-profile-editor-row is-control-stacked${className ? ` ${className}` : ''}`);
+        const labelNode = createElement('span', 'yuzi-qq-field-label');
+        labelNode.textContent = t("消息字色");
+        const select = createElement('select', 'yuzi-qq-field-control yuzi-qq-field-select yuzi-qq-profile-message-text-color');
+        select.name = 'messageTextColor';
+        select.dataset.qqProfileMessageTextColor = '1';
+        select.dataset.qqProfileFieldOwner = owner;
+        if (conversationId) select.dataset.qqProfileFieldConversation = conversationId;
+        [['white', t("白字")], ['black', t("黑字")]].forEach(([optionValue, optionLabel]) => {
+            const option = createElement('option');
+            option.value = optionValue;
+            option.textContent = optionLabel;
+            option.selected = optionValue === value;
+            select.append(option);
+        });
+        row.append(labelNode, select);
+        return row;
+    };
+
     const renderProfileEditorSurface = ({ token, profile, displayName, conversationId = '', current = false }) => {
         const { main, content } = makeSecondaryPage(t("编辑资料"), {
             className: `yuzi-qq-profile-view yuzi-qq-profile-page yuzi-qq-profile-editor-view yuzi-qq-profile-edit-view${current ? ' yuzi-qq-current-profile-editor-view' : ''}`,
@@ -2151,6 +2237,34 @@ export function createQQApp({
                 clearAttributes: current
                     ? { 'data-qq-current-profile-clear-avatar': '1' }
                     : { 'data-qq-profile-clear-avatar': conversationId },
+                className: rowClass,
+            }),
+            profileLibraryAssetRow({
+                label: t("头像框"),
+                value: asText(profile.avatarFrameAssetId),
+                pickAttributes: current
+                    ? { 'data-qq-current-profile-pick-avatar-frame': '1' }
+                    : { 'data-qq-profile-pick-avatar-frame': conversationId },
+                clearAttributes: current
+                    ? { 'data-qq-current-profile-clear-avatar-frame': '1' }
+                    : { 'data-qq-profile-clear-avatar-frame': conversationId },
+                className: rowClass,
+            }),
+            profileLibraryAssetRow({
+                label: t("气泡"),
+                value: asText(profile.bubbleAssetId),
+                pickAttributes: current
+                    ? { 'data-qq-current-profile-pick-bubble': '1' }
+                    : { 'data-qq-profile-pick-bubble': conversationId },
+                clearAttributes: current
+                    ? { 'data-qq-current-profile-clear-bubble': '1' }
+                    : { 'data-qq-profile-clear-bubble': conversationId },
+                className: rowClass,
+            }),
+            profileMessageTextColorRow({
+                value: asText(profile.messageTextColor) || (current ? 'white' : 'black'),
+                owner,
+                conversationId,
                 className: rowClass,
             }),
             profileEditRow({ field: 'formalName', value: displayName, owner, conversationId, readonly: current }),
@@ -2349,6 +2463,7 @@ export function createQQApp({
                 avatarUrl: currentIdentity.avatarUrl,
                 avatarFrameAssetId: currentIdentity.avatarFrameAssetId,
                 bubbleAssetId: currentIdentity.bubbleAssetId,
+                messageTextColor: currentIdentity.messageTextColor,
             }
             : {
                 formalName: asText(message.senderName) || contactFormalName(conversation),
@@ -2358,12 +2473,14 @@ export function createQQApp({
                 avatarUrl: conversation.avatarUrl,
                 avatarFrameAssetId: groupChat ? groupMember?.avatarFrameAssetId : conversation.avatarFrameAssetId,
                 bubbleAssetId: groupChat ? groupMember?.bubbleAssetId : conversation.bubbleAssetId,
+                messageTextColor: groupChat ? groupMember?.messageTextColor : conversation.messageTextColor,
             };
         const senderAvatar = avatar(
             sender,
             `yuzi-qq-avatar yuzi-qq-message-avatar yuzi-qq-${groupChat ? 'group' : 'private'}-message-avatar${own ? '' : ' yuzi-qq-avatar-button'}`,
             {
                 interactive: !own,
+                showFrame: true,
                 attributes: own
                     ? {}
                     : groupChat
@@ -2519,7 +2636,9 @@ export function createQQApp({
             body = createElement('span', 'yuzi-qq-message-bubble yuzi-qq-private-message-bubble');
             body.textContent = message.content;
         }
-        if (message.type === 'text' || message.type === 'voice') applyPersonalBubble(body, sender.bubbleAssetId);
+        if (message.type === 'text' || message.type === 'voice') {
+            applyPersonalBubble(body, sender.bubbleAssetId, sender.messageTextColor);
+        }
         body.setAttribute('data-qq-message-body', '');
         stack.append(body);
         const lastSelf = [...allMessages].reverse().find((item) => item.senderType === 'self');
@@ -2840,6 +2959,7 @@ export function createQQApp({
             avatarAssetId: asText(currentProfile.avatarAssetId),
             avatarFrameAssetId: currentProfile.avatarFrameAssetId,
             bubbleAssetId: currentProfile.bubbleAssetId,
+            messageTextColor: currentProfile.messageTextColor || 'white',
             avatarUrl: asText(currentContext.user?.avatar),
         };
         if (conversation.backgroundAssetId) {
@@ -2906,6 +3026,24 @@ export function createQQApp({
             : await facade.intent.updatePrivateProfile({
                 conversationId: input.dataset.qqProfileFieldConversation,
                 profile: { [field]: value },
+            });
+        const status = input.closest('.yuzi-qq-profile-editor-view')?.querySelector('[data-qq-profile-editor-status]');
+        if (!result?.ok) {
+            if (status) status.textContent = result?.error?.message || t("保存失败");
+            return;
+        }
+        input.value = value;
+        if (status) status.textContent = '';
+    };
+
+    const persistProfileMessageTextColor = async (input) => {
+        const owner = input.dataset.qqProfileFieldOwner;
+        const value = input.value === 'white' ? 'white' : 'black';
+        const result = owner === 'current'
+            ? await facade.intent.updateCurrentProfile({ profile: { messageTextColor: value } })
+            : await facade.intent.updatePrivateProfile({
+                conversationId: input.dataset.qqProfileFieldConversation,
+                profile: { messageTextColor: value },
             });
         const status = input.closest('.yuzi-qq-profile-editor-view')?.querySelector('[data-qq-profile-editor-status]');
         if (!result?.ok) {
@@ -3447,6 +3585,65 @@ export function createQQApp({
         syncSelection();
         return main;
     };
+
+    const openImageLibraryPicker = async ({ library, selectedAssetId = '', onSelect }) => {
+        const result = await facade.query.imageLibrary({ library });
+        if (!result?.ok) {
+            report(new Error(result?.error?.message || t("读取图片资料失败")));
+            return;
+        }
+        const assets = asArray(result.assets).filter((asset) => asText(asset.assetId));
+        const content = createElement('div', 'yuzi-qq-profile-library-picker');
+        const grid = createElement('div', 'yuzi-qq-profile-library-picker-grid');
+        const renderSession = assets.length > 0 ? profileLibraryRenderLeases.begin() : null;
+        const title = library === 'avatar-frame' ? t("选择头像框") : t("选择气泡");
+        if (assets.length === 0) {
+            const empty = createElement('p', 'yuzi-qq-settings-status');
+            empty.textContent = t("图片资料中还没有可用素材");
+            content.append(empty);
+        } else {
+            assets.forEach((asset) => {
+                const assetId = asText(asset.assetId);
+                const item = createButton('', `yuzi-qq-profile-library-picker-item${assetId === selectedAssetId ? ' is-selected' : ''}`, {
+                    'aria-label': title,
+                    title,
+                });
+                const image = createElement('img');
+                image.alt = '';
+                image.decoding = 'async';
+                item.append(image);
+                const cached = renderSession?.peek(assetId);
+                const apply = (render) => {
+                    if (render?.url) image.src = render.url;
+                };
+                if (cached) apply(cached);
+                else if (renderSession) void renderSession.load(assetId).then(apply).catch(() => {});
+                item.addEventListener('click', async () => {
+                    item.disabled = true;
+                    try {
+                        await onSelect(assetId);
+                        clearOverlay();
+                        await render();
+                    } catch (error) {
+                        item.disabled = false;
+                        report(error);
+                    }
+                });
+                grid.append(item);
+            });
+            content.append(grid);
+        }
+        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
+        cancel.addEventListener('click', clearOverlay);
+        showDialog({
+            title,
+            content,
+            actions: [cancel],
+            className: 'yuzi-qq-profile-library-picker-dialog',
+        });
+        profileLibraryPickerSession = renderSession;
+    };
+
     const renderSettingsDetail = async (token) => {
         const kind = page.kind;
         if (kind === 'image-library') return renderImageLibrary(token);
@@ -3708,6 +3905,7 @@ export function createQQApp({
             media: mediaRenderLeases.begin(),
             background: backgroundRenderLeases.begin(),
             avatars: avatarRenderLeases.begin(),
+            bubbles: bubbleRenderLeases.begin(),
             stickers: stickerRenderLeases.begin(),
             refreshMessages,
         };
@@ -3733,6 +3931,7 @@ export function createQQApp({
                     leaseSessions.media.abort(),
                     leaseSessions.background.abort(),
                     leaseSessions.avatars.abort(),
+                    leaseSessions.bubbles.abort(),
                     leaseSessions.stickers.abort(),
                 ]);
                 return;
@@ -3755,6 +3954,7 @@ export function createQQApp({
                 leaseSessions.media.commit(),
                 leaseSessions.background.commit(),
                 leaseSessions.avatars.commit(),
+                leaseSessions.bubbles.commit(),
                 leaseSessions.stickers.commit(),
             ]);
             viewScrollState.restore(nextScrollSnapshot, { token, isCurrent: isActive });
@@ -3763,6 +3963,7 @@ export function createQQApp({
                 leaseSessions.media.abort(),
                 leaseSessions.background.abort(),
                 leaseSessions.avatars.abort(),
+                leaseSessions.bubbles.abort(),
                 leaseSessions.stickers.abort(),
             ]);
             throw error;
@@ -4574,8 +4775,36 @@ export function createQQApp({
         await render();
     };
 
+    const updateProfileLibraryAsset = async ({ owner, conversationId = '', fieldName, library }) => {
+        const profile = owner === 'current'
+            ? (await facade.query.currentProfile())?.profile
+            : await getConversation(conversationId);
+        await openImageLibraryPicker({
+            library,
+            selectedAssetId: asText(profile?.[fieldName]),
+            onSelect: async (assetId) => {
+                const result = owner === 'current'
+                    ? await facade.intent.updateCurrentProfile({ profile: { [fieldName]: assetId } })
+                    : await facade.intent.updatePrivateProfile({ conversationId, profile: { [fieldName]: assetId } });
+                if (!result?.ok) throw new Error(result?.error?.message || t("资料更新失败"));
+            },
+        });
+    };
+
+    const clearProfileLibraryAsset = async ({ owner, conversationId = '', fieldName }) => {
+        const result = owner === 'current'
+            ? await facade.intent.updateCurrentProfile({ profile: { [fieldName]: '' } })
+            : await facade.intent.updatePrivateProfile({ conversationId, profile: { [fieldName]: '' } });
+        if (!result?.ok) throw new Error(result?.error?.message || t("资料更新失败"));
+        await render();
+    };
+
     const uploadImageLibraryAsset = (library) => {
         pickImageFiles(async (files) => {
+            if (library === 'avatar-frame') {
+                await uploadAvatarFrameAssets(files);
+                return;
+            }
             const saved = await facade.intent.saveImageLibraryAssets({
                 assets: files.map(({ file }) => ({
                     library,
@@ -4799,6 +5028,7 @@ export function createQQApp({
                 avatarRenderLeases.invalidate(deletedAssetIds),
                 backgroundRenderLeases.invalidate(deletedAssetIds),
             ]);
+            deletedAssetIds.forEach((assetId) => avatarFrameMetadata.delete(assetId));
             clearImageLibrarySelection();
             clearOverlay();
             await render();
@@ -4810,6 +5040,32 @@ export function createQQApp({
             className: 'yuzi-qq-confirm-dialog yuzi-qq-image-library-delete-dialog',
         });
     };
+
+    const uploadAvatarFrameAssets = async (files) => {
+        let savedCount = 0;
+        for (const { file } of files) {
+            if (disposed || !isCurrent()) return;
+            const transform = await openAvatarFrameCalibrationDialog(await fileToDataUrl(file), {
+                runtime: { isDisposed: () => disposed || !isCurrent() },
+            });
+            if (!transform || disposed || !isCurrent()) {
+                if (savedCount > 0) await render();
+                return;
+            }
+            const saved = await facade.intent.saveImageLibraryAssets({
+                assets: [{
+                    library: 'avatar-frame',
+                    blob: file,
+                    mimeType: file.type,
+                    avatarFrameTransform: transform,
+                }],
+            });
+            if (!saved?.ok) throw new Error(saved?.error?.message || t("图片保存失败"));
+            savedCount += 1;
+        }
+        await render();
+    };
+
     const persistSettings = async (form, field = '') => {
         const kind = form.dataset.qqSettingsForm;
         const value = (name) => form.elements[name]?.value ?? '';
@@ -4958,7 +5214,8 @@ export function createQQApp({
 
     const assistantUI = createAssistantUI({ facade, createElement, createButton, avatar, showDialog, clearOverlay,
         openChat, render, makeSecondaryPage, settingField, pickBackground: updateConversationBackgroundAsset,
-        clearBackground: clearConversationBackgroundAsset, isCurrent: () => !disposed, report });
+        clearBackground: clearConversationBackgroundAsset, pickLibraryAsset: openImageLibraryPicker,
+        isCurrent: () => !disposed, report });
 
     const handleClick = async (event) => {
         const target = event.target.closest('button');
@@ -5014,12 +5271,54 @@ export function createQQApp({
         if (target.dataset.qqCurrentProfile) return go({ type: 'current-profile' });
         if (target.dataset.qqCurrentProfileEdit) return go({ type: 'current-profile-edit' });
         if (target.dataset.qqCurrentProfilePickAvatar) return updateCurrentProfileAsset('avatarAssetId', 'avatar');
+        if (target.dataset.qqCurrentProfilePickAvatarFrame) {
+            return updateProfileLibraryAsset({ owner: 'current', fieldName: 'avatarFrameAssetId', library: 'avatar-frame' });
+        }
+        if (target.dataset.qqCurrentProfilePickBubble) {
+            return updateProfileLibraryAsset({ owner: 'current', fieldName: 'bubbleAssetId', library: 'bubble' });
+        }
         if (target.dataset.qqCurrentProfilePickBackground) return updateCurrentProfileAsset('profileBackgroundAssetId', 'profile-background');
         if (target.dataset.qqCurrentProfileClearAvatar) return clearCurrentProfileAsset('avatarAssetId').catch(report);
+        if (target.dataset.qqCurrentProfileClearAvatarFrame) {
+            return clearProfileLibraryAsset({ owner: 'current', fieldName: 'avatarFrameAssetId' }).catch(report);
+        }
+        if (target.dataset.qqCurrentProfileClearBubble) {
+            return clearProfileLibraryAsset({ owner: 'current', fieldName: 'bubbleAssetId' }).catch(report);
+        }
         if (target.dataset.qqCurrentProfileClearBackground) return clearCurrentProfileAsset('profileBackgroundAssetId').catch(report);
         if (target.dataset.qqProfilePickAvatar) return updatePrivateProfileAsset(target.dataset.qqProfilePickAvatar, 'avatarAssetId', 'avatar');
+        if (target.dataset.qqProfilePickAvatarFrame) {
+            return updateProfileLibraryAsset({
+                owner: 'private',
+                conversationId: target.dataset.qqProfilePickAvatarFrame,
+                fieldName: 'avatarFrameAssetId',
+                library: 'avatar-frame',
+            });
+        }
+        if (target.dataset.qqProfilePickBubble) {
+            return updateProfileLibraryAsset({
+                owner: 'private',
+                conversationId: target.dataset.qqProfilePickBubble,
+                fieldName: 'bubbleAssetId',
+                library: 'bubble',
+            });
+        }
         if (target.dataset.qqProfilePickBackground) return updatePrivateProfileAsset(target.dataset.qqProfilePickBackground, 'profileBackgroundAssetId', 'profile-background');
         if (target.dataset.qqProfileClearAvatar) return clearPrivateProfileAsset(target.dataset.qqProfileClearAvatar, 'avatarAssetId').catch(report);
+        if (target.dataset.qqProfileClearAvatarFrame) {
+            return clearProfileLibraryAsset({
+                owner: 'private',
+                conversationId: target.dataset.qqProfileClearAvatarFrame,
+                fieldName: 'avatarFrameAssetId',
+            }).catch(report);
+        }
+        if (target.dataset.qqProfileClearBubble) {
+            return clearProfileLibraryAsset({
+                owner: 'private',
+                conversationId: target.dataset.qqProfileClearBubble,
+                fieldName: 'bubbleAssetId',
+            }).catch(report);
+        }
         if (target.dataset.qqProfileClearBackground) return clearPrivateProfileAsset(target.dataset.qqProfileClearBackground, 'profileBackgroundAssetId').catch(report);
         if (target.dataset.qqContactPackMenu) return openContactPackMenu(target);
         if (target.dataset.qqImageLibraryPackMenu) return openImageLibraryPackMenu(target);
@@ -5182,6 +5481,10 @@ export function createQQApp({
     };
 
     const handleChange = (event) => {
+        if (event.target.matches?.('[data-qq-profile-message-text-color]')) {
+            void persistProfileMessageTextColor(event.target).catch(report);
+            return;
+        }
         if (event.target.matches?.('[data-qq-profile-field-input]')) {
             void persistProfileEditorField(event.target).catch(report);
             return;
@@ -5224,7 +5527,13 @@ export function createQQApp({
             disposeImageLibraryLazyLoading();
             const interrupted = renderLeaseSessions.size > 0;
             for (const sessions of renderLeaseSessions.values()) {
-                void Promise.all([sessions.media.abort(), sessions.background.abort(), sessions.avatars.abort(), sessions.stickers.abort()]);
+                void Promise.all([
+                    sessions.media.abort(),
+                    sessions.background.abort(),
+                    sessions.avatars.abort(),
+                    sessions.bubbles.abort(),
+                    sessions.stickers.abort(),
+                ]);
             }
             if (interrupted || pendingMessages) onDeferredRender();
         },
@@ -5271,10 +5580,13 @@ export function createQQApp({
                 mediaRenderLeases.dispose(),
                 backgroundRenderLeases.dispose(),
                 avatarRenderLeases.dispose(),
+                bubbleRenderLeases.dispose(),
+                profileLibraryRenderLeases.dispose(),
                 stickerRenderLeases.dispose(),
             ]);
             releaseSkin();
             bubbleMetadata.clear();
+            avatarFrameMetadata.clear();
             root?.classList.remove('yuzi-qq-app');
             root?.replaceChildren();
             root = null;

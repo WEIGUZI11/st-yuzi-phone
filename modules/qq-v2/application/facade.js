@@ -1,4 +1,5 @@
 import { normalizeQQV2TagName, normalizeQQV2TagNames } from '../domain/story-context-tags.js';
+import { normalizeAvatarFrameTransform } from '../resources/avatar-frame-transform.js';
 
 function asText(value, maxLength = 1024) {
     return String(value ?? '').trim().slice(0, maxLength);
@@ -345,6 +346,7 @@ function cloneConversation(conversation, storyTime = '') {
         avatarAssetId: asText(source.avatarAssetId || person.avatarAssetId, 256),
         ...((source.avatarFrameAssetId || person.avatarFrameAssetId) ? { avatarFrameAssetId: asText(source.avatarFrameAssetId || person.avatarFrameAssetId, 256) } : {}),
         ...((source.bubbleAssetId || person.bubbleAssetId) ? { bubbleAssetId: asText(source.bubbleAssetId || person.bubbleAssetId, 256) } : {}),
+        messageTextColor: asText(source.messageTextColor || person.messageTextColor, 32),
         backgroundAssetId: asText(source.backgroundAssetId, 256),
         remark: asText(source.remark, 120),
         profileBackgroundAssetId: asText(source.profileBackgroundAssetId || person.profileBackgroundAssetId, 256),
@@ -441,6 +443,7 @@ function clonePerson(person) {
         avatarAssetId: asText(source.avatarAssetId, 256),
         ...(source.avatarFrameAssetId ? { avatarFrameAssetId: asText(source.avatarFrameAssetId, 256) } : {}),
         ...(source.bubbleAssetId ? { bubbleAssetId: asText(source.bubbleAssetId, 256) } : {}),
+        messageTextColor: asText(source.messageTextColor, 32),
         signature: asText(source.signature, 1000),
         gender: asText(source.gender, 120),
         birthday: asText(source.birthday, 120),
@@ -453,6 +456,7 @@ function cloneProfile(profile) {
         avatarAssetId: asText(source.avatarAssetId, 256),
         ...(source.avatarFrameAssetId ? { avatarFrameAssetId: asText(source.avatarFrameAssetId, 256) } : {}),
         ...(source.bubbleAssetId ? { bubbleAssetId: asText(source.bubbleAssetId, 256) } : {}),
+        messageTextColor: asText(source.messageTextColor, 32),
         signature: asText(source.signature, 1000),
         gender: asText(source.gender, 120),
         birthday: asText(source.birthday, 120),
@@ -470,6 +474,9 @@ function cloneMedia(media) {
         mimeType: asText(source.mimeType, 128),
         size: Math.max(0, Math.trunc(asNumber(source.blob?.size ?? source.size))),
         library: asText(source.library, 64),
+        ...(source.avatarFrameTransform ? {
+            avatarFrameTransform: Object.freeze(normalizeAvatarFrameTransform(source.avatarFrameTransform)),
+        } : {}),
         ...(source.bubble ? { bubble: Object.freeze({ ...source.bubble }) } : {}),
         createdAt: Math.max(0, Math.trunc(asNumber(source.createdAt))),
     });
@@ -1276,6 +1283,9 @@ export function createQQV2Facade(options = {}) {
                     library: asText(asset?.library, 64),
                     blob: asset?.blob,
                     mimeType: asText(asset?.mimeType, 128),
+                    ...(asset?.avatarFrameTransform ? {
+                        avatarFrameTransform: normalizeAvatarFrameTransform(asset.avatarFrameTransform),
+                    } : {}),
                 }));
                 if (assets.length === 0 || assets.some((asset) => !asset.library)) {
                     return Object.freeze({ ok: false, status: 'invalid', reason: 'image-assets-required' });

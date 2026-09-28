@@ -2644,6 +2644,43 @@
     outline-offset: calc(var(--yuzi-qq-focus-ring-width) * -1);
 }
 
+.yuzi-qq-profile-library-picker {
+    min-inline-size: min(100%, var(--yuzi-qq-dialog-width));
+}
+
+.yuzi-qq-profile-library-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--yuzi-qq-row-gap);
+    max-block-size: min(52cqh, var(--yuzi-qq-dialog-width));
+    overflow: auto;
+    padding: var(--yuzi-qq-inline-gap);
+}
+
+.yuzi-qq-profile-library-picker-item {
+    position: relative;
+    display: grid;
+    aspect-ratio: 1;
+    min-inline-size: 0;
+    overflow: hidden;
+    place-items: center;
+    border: var(--yuzi-qq-line-width) solid var(--yuzi-qq-line);
+    border-radius: var(--yuzi-qq-editor-group-radius);
+    background: var(--yuzi-qq-control);
+}
+
+.yuzi-qq-profile-library-picker-item > img {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+}
+
+.yuzi-qq-profile-library-picker-item.is-selected {
+    outline: var(--yuzi-qq-focus-ring-width) solid var(--yuzi-qq-accent);
+    outline-offset: calc(var(--yuzi-qq-focus-ring-width) * -1);
+}
+
 .yuzi-qq-image-library-upload-action {
     color: var(--yuzi-qq-accent);
 }
@@ -4356,6 +4393,9 @@
     position: absolute;
     inset: -10%;
     background: var(--yuzi-qq-avatar-frame-image) center / 100% 100% no-repeat;
+    transform: translate(var(--yuzi-qq-avatar-frame-offset-x, 0%), var(--yuzi-qq-avatar-frame-offset-y, 0%))
+        scale(var(--yuzi-qq-avatar-frame-scale, 1));
+    transform-origin: center;
     pointer-events: none;
     z-index: 1;
 }
