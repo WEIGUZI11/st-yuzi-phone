@@ -21,4 +21,4 @@
 ## 当前策略
 1. modern 层是默认入口的唯一组成部分，新增层级统一接入 `01-phone-base.css`。
 2. 顶层入口 `style.css` 只串联顶层 layers，`styles/01-phone-base.css` 负责聚合本目录 active layers；`00-theme-modes.css` 必须保持在 `00-phone-tokens.css` 之后。
-3. 顶层入口 `style.css` 与聚合入口 `styles/01-phone-base.css` 的契约保持稳定，由 `scripts/check-style-entry-contract.cjs` 静态护栏。
+3. 顶层入口 `style.css` 与聚合入口 `styles/01-phone-base.css` 的契约保持稳定；调整入口或层级后，通过构建与界面人工验收确认样式加载正常。

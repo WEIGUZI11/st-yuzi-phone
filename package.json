@@ -10,7 +10,6 @@
     "build:watch": "node build.mjs --watch",
     "check": "node scripts/run-contract-checks.cjs",
     "check:ci": "node scripts/run-contract-checks-ci.cjs",
-    "check:qq-v1-removal": "node scripts/check-qq-v1-removal-contract.cjs",
     "lint": "eslint modules/ index.js build.mjs",
     "tables:split": "node scripts/table-source.cjs split docs/reference/小剧场2.1.json tables/sources/小剧场2.1",
     "tables:check": "node scripts/table-source.cjs check tables/sources/小剧场2.1 && node scripts/table-source.cjs check tables/sources/纪要",

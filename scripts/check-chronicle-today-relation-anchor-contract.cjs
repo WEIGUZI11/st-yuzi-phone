@@ -74,12 +74,12 @@ async function main() {
     assertIncludes(builder, 'normalizeChronicleTodayRelationAnchorTable', 'SQL builder 必须校验 today anchor 表名');
     assert.deepStrictEqual(
         builderModule.CHRONICLE_TODAY_RELATION_ANCHOR_TABLES,
-        ['quanjushujubiao', 'global_state', 'current_status'],
+        ['quanjushujubiao', 'global_state', 'current_status', 'sheet_quan_ju_shu_ju_biao'],
         'today anchor 候选表必须集中维护并保持拼音优先、旧表兼容回退顺序',
     );
     assert.deepStrictEqual(
         builderModule.CHRONICLE_TODAY_RELATION_TABLES,
-        ['jiyaobiao', 'chronicle'],
+        ['jiyaobiao', 'chronicle', 'sheet_ji_yao_biao'],
         '纪要候选表必须集中维护并保持拼音优先、旧表兼容回退顺序',
     );
     assert.deepStrictEqual(
@@ -131,6 +131,24 @@ async function main() {
         '拼音候选缺失时必须回退旧纪要表与 global_state',
     );
     assert.deepStrictEqual(fallbackQueryCalls.map((call) => call.tableName), ['chronicle', 'global_state'], '已知缺失候选不得调用 queryTableRows');
+
+    const sheetQueryCalls = [];
+    const sheetNames = ['sheet_ji_yao_biao', 'sheet_quan_ju_shu_ju_biao'];
+    const sheetFallback = await sourceModule.resolveChronicleTodayRelationContext({
+        getTableAvailability: async (tableName) => ({
+            status: sheetNames.includes(tableName) ? 'present' : 'absent',
+        }),
+        queryTableRows: async (options) => {
+            sheetQueryCalls.push(options.tableName);
+            return { ok: true, code: 'ok', rows: [], columns: [], values: [], rowCount: 0 };
+        },
+    });
+    assert.deepStrictEqual(
+        sheetFallback,
+        { status: 'ready', context: { chronicleTable: 'sheet_ji_yao_biao', anchorTable: 'sheet_quan_ju_shu_ju_biao' } },
+        '只有 sheet 标识可用时必须识别纪要表和全局数据表',
+    );
+    assert.deepStrictEqual(sheetQueryCalls, sheetNames, '缺失旧候选必须静默跳过，只查询可用的 sheet 标识');
 
     const allAnchorsMissingCalls = [];
     const allAnchorsMissing = await sourceModule.resolveChronicleTodayRelationContext({

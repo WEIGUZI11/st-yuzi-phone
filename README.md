@@ -30,7 +30,7 @@ npm run build
 
 `dist/` 必须提交；SillyTavern `auto_update` 只拉取仓库内容，不会替用户执行构建。表格模板事实源位于 `tables/sources/`，正式表源为 `小剧场2.1` 与 `纪要`，`恋爱特化参考` 是参考源；修改表源后必须先通过 `tables:check`，再用 `tables:build` 更新 `tables/generated/`。
 
-发布链路由 contract checks 守护：脚本版 loader 互斥与 `window.__YUZI_PHONE_INSTANCE__` singleton guard 由 `scripts/check-script-loader-contract.cjs` 检查；版本字段由 `scripts/check-extension-version-contract.cjs` 检查；release/dist 链路由 `scripts/check-release-chain-contract.cjs` 检查；表源边界由 `scripts/check-table-sources-contract.cjs` 检查。
+脚本版 loader 互斥与 `window.__YUZI_PHONE_INSTANCE__` singleton guard 由 `scripts/check-script-loader-contract.cjs` 检查；版本字段由 `scripts/check-extension-version-contract.cjs` 检查；表源边界由 `scripts/check-table-sources-contract.cjs` 检查。release/dist 交付通过构建、CI 的产物与提交状态检查，以及发布前人工验收确认。
 
 ## 更新日志
 

@@ -2,10 +2,12 @@ export const CHRONICLE_TODAY_RELATION_ANCHOR_TABLES = Object.freeze([
     'quanjushujubiao',
     'global_state',
     'current_status',
+    'sheet_quan_ju_shu_ju_biao',
 ]);
 export const CHRONICLE_TODAY_RELATION_TABLES = Object.freeze([
     'jiyaobiao',
     'chronicle',
+    'sheet_ji_yao_biao',
 ]);
 export const CHRONICLE_TODAY_RELATION_REQUIRED_COLUMNS = Object.freeze([
     'row_id',

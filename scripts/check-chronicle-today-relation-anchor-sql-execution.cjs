@@ -44,12 +44,12 @@ async function main() {
     assert.strictEqual(typeof resolveContext, 'function', '纪要派生器必须导出 context resolver');
     assert.deepStrictEqual(
         sqlModule.CHRONICLE_TODAY_RELATION_ANCHOR_TABLES,
-        ['quanjushujubiao', 'global_state', 'current_status'],
+        ['quanjushujubiao', 'global_state', 'current_status', 'sheet_quan_ju_shu_ju_biao'],
         '故事日期锚点必须保持拼音优先与旧表兼容回退顺序',
     );
     assert.deepStrictEqual(
         sqlModule.CHRONICLE_TODAY_RELATION_TABLES,
-        ['jiyaobiao', 'chronicle'],
+        ['jiyaobiao', 'chronicle', 'sheet_ji_yao_biao'],
         '纪要目标表必须保持拼音优先与旧表兼容回退顺序',
     );
 
@@ -119,8 +119,9 @@ async function main() {
     }, {
         jiyaobiao: { status: 'absent' },
         chronicle: { status: 'absent' },
+        sheet_ji_yao_biao: { status: 'absent' },
     });
-    assert.strictEqual(chronicleMissing.result.status, 'completed', '两个纪要候选都缺失时必须安全跳过');
+    assert.strictEqual(chronicleMissing.result.status, 'completed', '全部纪要候选都缺失时必须安全跳过');
     assert.deepStrictEqual(chronicleMissing.calls, [], '纪要候选缺失时不得调用 queryTableRows 或继续检查日期锚点');
 
     const runtimeNotReady = await runResolver(resolveContext, {

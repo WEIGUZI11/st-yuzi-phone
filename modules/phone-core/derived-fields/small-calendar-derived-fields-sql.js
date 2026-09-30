@@ -2,6 +2,7 @@ export const SMALL_CALENDAR_DERIVED_FIELDS_TABLE = 'small_calendar_days';
 export const SMALL_CALENDAR_DERIVED_FIELDS_TABLES = Object.freeze([
     'xiaorilibiao',
     SMALL_CALENDAR_DERIVED_FIELDS_TABLE,
+    'sheet_xiao_ri_li_biao',
 ]);
 
 export const SMALL_CALENDAR_DERIVED_FIELDS_REQUIRED_COLUMNS = Object.freeze([

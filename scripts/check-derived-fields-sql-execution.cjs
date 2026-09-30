@@ -108,6 +108,28 @@ async function main() {
     ], '拼音物理表环境必须按 row_id 写回对应小日历行');
     reboundDb.close();
 
+    const sheetDb = new sqlite.DatabaseSync(':memory:');
+    seedChronicle(sheetDb, { anchor: 'sheet_quan_ju_shu_ju_biao', chronicle: 'sheet_ji_yao_biao' });
+    seedCalendar(sheetDb, 'sheet_xiao_ri_li_biao');
+    const sheetChronicleSignatureSql = chronicle.buildChronicleTodayRelationSignatureSql('sheet_quan_ju_shu_ju_biao', 'sheet_ji_yao_biao');
+    const sheetCalendarSignatureSql = calendar.buildSmallCalendarDerivedFieldsSignatureSql('sheet_xiao_ri_li_biao');
+    assert.strictEqual(readRows(sheetDb, sheetChronicleSignatureSql)[0].pending_update_count, 3, 'sheet 标识纪要表必须识别全部待派生行');
+    assert.strictEqual(readRows(sheetDb, sheetCalendarSignatureSql)[0].pending_update_count, 2, 'sheet 标识小日历表必须识别全部待派生行');
+    sheetDb.exec(chronicle.buildChronicleTodayRelationUpdateSql('sheet_quan_ju_shu_ju_biao', 'sheet_ji_yao_biao'));
+    sheetDb.exec(calendar.buildSmallCalendarDerivedFieldsUpdateSql('sheet_xiao_ri_li_biao'));
+    assert.deepStrictEqual(readRows(sheetDb, 'SELECT row_id, today_relation FROM sheet_ji_yao_biao ORDER BY row_id'), [
+        { row_id: 1, today_relation: '今天' },
+        { row_id: 2, today_relation: '3天前' },
+        { row_id: 3, today_relation: '后天' },
+    ], 'sheet 标识环境必须按 row_id 写回对应纪要行');
+    assert.deepStrictEqual(readRows(sheetDb, 'SELECT row_id, weekday_text, month_days FROM sheet_xiao_ri_li_biao ORDER BY row_id'), [
+        { row_id: 1, weekday_text: '星期四', month_days: 29 },
+        { row_id: 2, weekday_text: '星期五', month_days: 31 },
+    ], 'sheet 标识环境必须按 row_id 写回对应小日历行');
+    assert.strictEqual(readRows(sheetDb, sheetChronicleSignatureSql)[0].pending_update_count, 0, 'sheet 标识纪要派生完成后不得重复写入');
+    assert.strictEqual(readRows(sheetDb, sheetCalendarSignatureSql)[0].pending_update_count, 0, 'sheet 标识小日历派生完成后不得重复写入');
+    sheetDb.close();
+
     const signedDb = new sqlite.DatabaseSync(':memory:');
     seedChronicle(signedDb, { anchor: 'global_state', chronicle: 'chronicle' });
     signedDb.exec(`
@@ -141,7 +163,7 @@ async function main() {
     ], '负年份当前时间也必须能与正负年份纪要结束日期计算');
     signedDb.close();
 
-    console.log('[通过] 派生字段 SQL 在作者 DDL 表名与拼音物理表重绑定环境中均可真实执行并逐行写回');
+    console.log('[通过] 派生字段 SQL 在作者 DDL 表名、拼音物理表重绑定与 sheet 标识环境中均可真实执行并逐行写回');
 }
 
 main().catch((error) => {

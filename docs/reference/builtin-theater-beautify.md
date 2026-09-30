@@ -48,8 +48,5 @@
 ## 回归入口
 
 - `node scripts/check-theater-builtin-behavior.cjs`：倒序与原行身份、独立画布字段、可选身份字段。
-- `node scripts/check-theater-image-host-behavior.cjs`：公开共享服务的提示词组合、持久回读和开关。
-- `node scripts/check-theater-image-settings-behavior.cjs`：QQ 独立开关与三个表格默认关闭。
-- `node scripts/check-theater-builtin-pages.cjs`：真实 Chromium DOM／样式测试，覆盖 detached 首次挂载的三个场景开关矩阵、运行中关闭开关、魔法棒／加载／重生成状态、头像按钮并排、宿主字体干扰、论坛单行导航／详情作者靠左、直播无新增标题且原操作可用、日记标题栏日夜实色无模糊与 Home 安全区、双画布、广场横竖图和论坛列表／详情随图比例、论坛双视图同步与详情清理、晚到读取、直播更新、长图预览不裁切／不显示底部描述、预览清理和日历夜间正文／标签对比度。自动发现 Edge／Chrome／Chromium，也可用 `YUZI_TEST_BROWSER` 指定浏览器。使用独立临时 profile，不连接个人浏览器，不调用真实生图。可将 `YUZI_TEST_STYLES` 指向候选或正式 bundle CSS，使用同一组行为测试验证构建后的样式。
 
-以上脚本由现有 `npm run check` / `check:ci` 发现；仍需运行 lint、回归和 build。最终视觉验收由用户进行。
+保留的脚本由现有 `npm run check` / `check:ci` 发现。内置生图入口的开关、提示词组合与持久回读，以及页面样式、加载／重生成状态、图片比例和预览清理，改为按相关改动人工验收；不再自动启动浏览器做页面回归。发布前仍需按项目流程运行 lint、相关回归和 build，最终视觉验收由用户进行。

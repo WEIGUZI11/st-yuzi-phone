@@ -36,4 +36,4 @@
 - **Fusion 资源释放**：`modules/phone-fusion/runtime.js` 通过 `revokeFusionDownloadUrl()`、`setFusionDownloadUrl()` 与 `cleanupFusionPageResources()` 清理 Object URL；空合并路径先 `clearFusionResult()` 再渲染空结果。
 - **变量读取 readiness**：`modules/variable-manager/variable-api.js` 的异步楼层变量读取包含 MVU bounded wait，并通过 meta 字段区分 `waitedMvu`、`mvuInitiallyAvailable`、`mvuAvailableAfterWait` 与 `source`。
 - **数据契约与 UI 消费**：批量删除结果包含 `attemptedRowIndexes`、`failedRowIndexes`、`unattemptedRowIndexes`、`notDeletedRowIndexes`，UI 应使用未删除集合保留选择并反馈 partial failure；详情页保存与外部表更新通过 pending/suppress 同步链路保持一致。
-- **发布与表源边界**：`dist/` 是 manifest 实际加载产物，必须随发布提交；正式表源为 `tables/sources/小剧场2.1` 与 `tables/sources/纪要`，`tables/sources/恋爱特化参考` 是参考源。版本、release 链路与表源边界分别由 `scripts/check-extension-version-contract.cjs`、`scripts/check-release-chain-contract.cjs`、`scripts/check-table-sources-contract.cjs` 守护。
+- **发布与表源边界**：`dist/` 是 manifest 实际加载产物，必须随发布提交；正式表源为 `tables/sources/小剧场2.1` 与 `tables/sources/纪要`，`tables/sources/恋爱特化参考` 是参考源。版本与表源边界分别由 `scripts/check-extension-version-contract.cjs`、`scripts/check-table-sources-contract.cjs` 守护；release/dist 交付通过构建、CI 的产物与提交状态检查，以及发布前人工验收确认。

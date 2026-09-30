@@ -60,10 +60,10 @@ async function main() {
     assert.ok(Array.isArray(mod.CHRONICLE_TODAY_RELATION_ANCHOR_TABLES), 'SQL builder 必须导出集中 today anchor 表白名单数组');
     assert.deepStrictEqual(
         mod.CHRONICLE_TODAY_RELATION_ANCHOR_TABLES,
-        ['quanjushujubiao', 'global_state', 'current_status'],
+        ['quanjushujubiao', 'global_state', 'current_status', 'sheet_quan_ju_shu_ju_biao'],
         'today anchor 候选表必须保持拼音优先与英文兼容回退顺序',
     );
-    assert.deepStrictEqual(mod.CHRONICLE_TODAY_RELATION_TABLES, ['jiyaobiao', 'chronicle'], '纪要目标表候选必须保持拼音优先与英文兼容回退顺序');
+    assert.deepStrictEqual(mod.CHRONICLE_TODAY_RELATION_TABLES, ['jiyaobiao', 'chronicle', 'sheet_ji_yao_biao'], '纪要目标表候选必须保持拼音优先与英文兼容回退顺序');
     assert.deepStrictEqual(
         mod.CHRONICLE_TODAY_RELATION_ANCHOR_REQUIRED_COLUMNS,
         ['row_id', 'cur_time'],

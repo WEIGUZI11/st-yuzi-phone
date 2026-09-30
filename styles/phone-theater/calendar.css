@@ -33,12 +33,6 @@
     color: var(--yuzi-theater-calendar-text);
 }
 
-.phone-app-page.phone-theater-page[data-theater-scene="calendar"] .phone-theater-nav .phone-nav-back svg {
-    color: var(--yuzi-theater-calendar-text);
-    fill: currentColor;
-    stroke: currentColor;
-}
-
 .phone-app-page.phone-theater-page[data-theater-scene="calendar"] .phone-theater-body {
     background: transparent;
     color: var(--yuzi-theater-calendar-text);

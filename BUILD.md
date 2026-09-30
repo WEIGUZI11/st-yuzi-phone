@@ -52,7 +52,7 @@ npm run build:candidate:check
 
 小手机发布前的最低自动化门禁是：`npm run lint`、`npm run check`、`npm run check:ci`、`npm run tables:check`、`npm run tables:build`、`npm run build:candidate:check`、`npm run build` 全部通过。`check` 证明合同脚本真实全绿；`check:ci` 额外证明历史失败基线没有过期或重新堆积；`tables:check` / `tables:build` 证明表源 Markdown 与 generated JSON 未漂移；候选构建检查证明自定义输出不会改写正式 `dist/`。玉子美化制作工具是独立发布单元，其安装、检查、测试、打包和回读在该项目自身目录执行，不由小手机构建链代跑。
 
-当前发布链路还显式检查脚本版 loader 互斥、`window.__YUZI_PHONE_INSTANCE__` singleton guard、版本字段、release/dist 交付与 table source 边界；对应 contract 入口分别是 `scripts/check-script-loader-contract.cjs`、`scripts/check-extension-version-contract.cjs`、`scripts/check-release-chain-contract.cjs` 与 `scripts/check-table-sources-contract.cjs`。
+当前保留脚本版 loader 互斥、`window.__YUZI_PHONE_INSTANCE__` singleton guard、版本字段与 table source 边界检查；对应 contract 入口分别是 `scripts/check-script-loader-contract.cjs`、`scripts/check-extension-version-contract.cjs` 与 `scripts/check-table-sources-contract.cjs`。release/dist 交付由本节发布步骤、CI 的构建产物与提交状态检查，以及发布前人工验收确认。
 
 ## 文件结构
 

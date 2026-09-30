@@ -57,7 +57,7 @@ async function main() {
     assert.strictEqual(sqlMod.SMALL_CALENDAR_DERIVED_FIELDS_TABLE, 'small_calendar_days', '小日历派生字段必须使用英文物理表名');
     assert.deepStrictEqual(
         sqlMod.SMALL_CALENDAR_DERIVED_FIELDS_TABLES,
-        ['xiaorilibiao', 'small_calendar_days'],
+        ['xiaorilibiao', 'small_calendar_days', 'sheet_xiao_ri_li_biao'],
         '小日历候选表必须保持拼音优先与旧表兼容回退顺序',
     );
 
@@ -162,6 +162,23 @@ async function main() {
     });
     assert.deepStrictEqual(legacyFallback, { status: 'ready', context: { tableName: 'small_calendar_days' } }, '拼音小日历表缺失时必须回退旧表');
     assert.deepStrictEqual(legacyFallbackCalls.map((call) => call.tableName), ['small_calendar_days'], '已知缺失的拼音小日历表不得调用 queryTableRows');
+
+    const sheetQueryCalls = [];
+    const sheetFallback = await runtimeMod.resolveSmallCalendarDerivedFieldsContext({
+        getTableAvailability: async (tableName) => ({
+            status: tableName === 'sheet_xiao_ri_li_biao' ? 'present' : 'absent',
+        }),
+        queryTableRows: async (options) => {
+            sheetQueryCalls.push(options.tableName);
+            return { ok: true, code: 'ok', rows: [], columns: [], values: [], rowCount: 0 };
+        },
+    });
+    assert.deepStrictEqual(
+        sheetFallback,
+        { status: 'ready', context: { tableName: 'sheet_xiao_ri_li_biao' } },
+        '只有 sheet 标识可用时必须识别小日历表',
+    );
+    assert.deepStrictEqual(sheetQueryCalls, ['sheet_xiao_ri_li_biao'], '缺失旧候选必须静默跳过，只查询可用的 sheet 标识');
 
     const absentCalls = [];
     const absent = await runtimeMod.resolveSmallCalendarDerivedFieldsContext({
