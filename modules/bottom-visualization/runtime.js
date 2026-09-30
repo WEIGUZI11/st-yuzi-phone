@@ -12,6 +12,7 @@ import { createBottomOptions } from './options.js';
 import { openBottomSettings } from './settings-dialog.js';
 import { bindBottomScrollChain } from './scroll-chain.js';
 import { createBottomLayout } from './layout.js';
+import { createBottomContentRenderer } from './content-renderer.js';
 import { escapeHtml as html } from '../utils/dom-escape.js';
 
 export function createBottomVisualization() {
@@ -33,12 +34,15 @@ export function createBottomVisualization() {
     const options = createBottomOptions(scope);
     bindBottomScrollChain(scope, [panel, dock]);
     const layout = createBottomLayout(scope, root, () => { active = ''; descending = false; render(); }, () => render(true));
+    const beautify = createBottomContentRenderer(content, { onChange: () => render(true) });
+    scope.registerCleanup(() => beautify.dispose());
     function render(preserveScroll = false) {
         if (!config) return;
         const scroll = preserveScroll ? { top: content.scrollTop, left: content.scrollLeft, cards: new Map([...content.querySelectorAll('[data-row]')].map(node => [node.dataset.row, node.scrollTop])) } : null;
         const edge = config.position === 'edge';
         const table = active && active !== 'review' ? buildTableContent(raw, active, descending) : null;
         if (active && active !== 'review' && !table) active = '';
+        const beautified = beautify.update(active, raw);
         if (lastEdge !== 'review' && !raw?.[lastEdge]) lastEdge = 'review';
         nav.hidden = edge ? !active : collapsed;
         bar.hidden = edge || !collapsed;
@@ -50,8 +54,8 @@ export function createBottomVisualization() {
         const area = layout.region();
         content.dataset.review = String(active === 'review');
         const resize = ['edge', 'side'].includes(area) ? '' : iconButton('resize', t('长按调整高度'), 'M8 9h8M8 15h8');
-        panel.querySelector('header').innerHTML = `<div><strong>${html(table?.title || t('审核'))}</strong>${table ? `<small>${t`共 ${table.count} 项`}</small>` : ''}</div><div class="yuzi-bottom-controls">${table ? iconButton('sort', descending ? t('倒序') : t('正序'), 'M7 20V4m-4 4 4-4 4 4M17 4v16m-4-4 4 4 4-4') : ''}${resize}${iconButton('close', t('关闭'), 'm6 6 12 12M6 18 18 6')}</div>`;
-        content.innerHTML = table ? table.html : active === 'review' ? `<div class="yuzi-bottom-review tur-page tur-content">${buildTableUpdateReviewContentHtml(getReviewState(), { readOnly: true })}</div>` : '';
+        panel.querySelector('header').innerHTML = `<div><strong>${html(table?.title || t('审核'))}</strong>${table ? `<small>${t`共 ${table.count} 项`}</small>` : ''}</div><div class="yuzi-bottom-controls">${table && !beautified ? iconButton('sort', descending ? t('倒序') : t('正序'), 'M7 20V4m-4 4 4-4 4 4M17 4v16m-4-4 4 4 4-4') : ''}${resize}${iconButton('close', t('关闭'), 'm6 6 12 12M6 18 18 6')}</div>`;
+        if (!beautified) content.innerHTML = table ? table.html : active === 'review' ? `<div class="yuzi-bottom-review tur-page tur-content">${buildTableUpdateReviewContentHtml(getReviewState(), { readOnly: true })}</div>` : '';
         layout.update(config);
         content.scrollTop = scroll?.top || 0; content.scrollLeft = scroll?.left || 0;
         if (scroll) content.querySelectorAll('[data-row]').forEach(node => { node.scrollTop = scroll.cards.get(node.dataset.row) || 0; });
@@ -85,6 +89,7 @@ export function createBottomVisualization() {
     const handleClick = event => {
         const button = event.target.closest('button');
         if (!button || !event.currentTarget.contains(button)) return;
+        if (content.contains(button)) return;
         if (button.dataset.action === 'resize') return;
         if (button.dataset.action === 'settings') { openBottomSettings(scope); return; }
         if (button.dataset.sheet) { active = active === button.dataset.sheet ? '' : button.dataset.sheet; descending = false; if (active && config.position === 'edge') lastEdge = active; }

@@ -7,6 +7,8 @@ const state = {
     metadata: new Map(),
     pageByTable: new Map(),
     popupByTable: new Map(),
+    bottomByTable: new Map(),
+    changedPresetIds: [],
     revision: 0,
 };
 const listeners = new Set();
@@ -34,6 +36,8 @@ export function getContentPresetIndexSnapshot() {
         metadata: new Map(state.metadata),
         pageByTable,
         popupByTable: new Map(state.popupByTable),
+        bottomByTable: new Map(state.bottomByTable),
+        changedPresetIds: Object.freeze([...state.changedPresetIds]),
         // 旧页面 renderer 继续读取此字段；它明确等同于 pageByTable。
         activeByTable: new Map(pageByTable),
         revision: state.revision,
@@ -52,6 +56,8 @@ export function commitContentPresetIndex(patch = {}) {
     if ('pageByTable' in patch) state.pageByTable = new Map(patch.pageByTable);
     else if ('activeByTable' in patch) state.pageByTable = new Map(patch.activeByTable);
     if ('popupByTable' in patch) state.popupByTable = new Map(patch.popupByTable);
+    if ('bottomByTable' in patch) state.bottomByTable = new Map(patch.bottomByTable);
+    state.changedPresetIds = patch.changedPresetIds || [];
     state.revision += 1;
     emit();
     return getContentPresetIndexSnapshot();

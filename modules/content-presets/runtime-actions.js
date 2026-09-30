@@ -18,6 +18,7 @@ export function createContentPresetActions(options = {}) {
         const promise = Promise.resolve().then(() => {
             const fromRoute = String(getRoute() || '');
             if (!isCurrent()) return result(action, 'stale', fromRoute);
+            if (options.disabled) return result(action, 'unavailable', fromRoute);
             return execute(fromRoute);
         }).catch(error => result(action, 'failed', String(getRoute() || ''), { errorCode: 'navigation_failed', message: String(error?.message || error) }))
             .finally(() => pending.delete(action));

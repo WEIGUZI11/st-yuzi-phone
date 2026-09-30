@@ -5,10 +5,12 @@ const STATES = new Set(['created', 'importing', 'mounting', 'active', 'disposing
 
 export function createContentPresetInstance(options = {}) {
     const sheetKey = String(options.sheetKey || '').trim();
+    const surface = options.surface || 'page';
+    const key = JSON.stringify([surface, sheetKey]);
     const routeToken = options.routeToken;
     const token = `${sheetKey}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
     const generation = (options.getGeneration || getContentPresetGeneration)(sheetKey);
-    const isGenerationCurrent = options.isGenerationCurrent || isContentPresetGenerationCurrent;
+    const isGenerationCurrent = options.isGenerationCurrent || (surface === 'bottom' ? () => true : isContentPresetGenerationCurrent);
     const controller = (options.createAbortController || (() => new AbortController()))();
     let state = 'created';
     let authorDisposer = null;
@@ -47,15 +49,15 @@ export function createContentPresetInstance(options = {}) {
             }
             callDisposer(authorDisposer);
             try { options.onHostCleanup?.(); } catch {}
-            if (instances.get(sheetKey) === instance) instances.delete(sheetKey);
+            if (instances.get(key) === instance) instances.delete(key);
             state = 'disposed';
         },
     };
-    instances.get(sheetKey)?.dispose();
-    instances.set(sheetKey, instance);
+    instances.get(key)?.dispose();
+    instances.set(key, instance);
     return instance;
 }
 
 export function invalidateContentPresetInstances(sheetKeys = [], options = {}) {
-    for (const key of new Set(sheetKeys.map(String))) instances.get(key)?.dispose(options);
+    for (const key of new Set(sheetKeys.map(String))) instances.get(JSON.stringify([options.surface || 'page', key]))?.dispose(options);
 }

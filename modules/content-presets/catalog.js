@@ -2,7 +2,7 @@ import { buildTableNavigationCatalog } from '../table-navigation/catalog.js';
 import { createTableSnapshot } from './snapshot.js';
 import { listMatchingDisplays, listMatchingPageItems, matchesDisplayTarget } from './matcher.js';
 
-export function buildContentPresetCatalog(rawData, presets = [], pageByTable = new Map(), popupByTable = new Map()) {
+export function buildContentPresetCatalog(rawData, presets = [], pageByTable = new Map(), popupByTable = new Map(), bottomByTable = new Map()) {
     const entries = buildTableNavigationCatalog(rawData).map(entry => {
         const snapshot = createTableSnapshot(rawData, entry.sheetKey);
         return { entry, snapshot, table: { tableName: snapshot?.tableName || entry.tableName, headers: snapshot?.rawHeaders || [] } };
@@ -23,6 +23,7 @@ export function buildContentPresetCatalog(rawData, presets = [], pageByTable = n
             popupCandidates,
             pageActive,
             popupActive,
+            bottomActive: bottomByTable.get(entry.sheetKey) || null,
             // v2 UI / renderer 仍读取旧字段；它只代表页面能力。
             candidates: pageCandidates,
             active: pageActive,

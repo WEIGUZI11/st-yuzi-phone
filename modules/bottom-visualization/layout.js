@@ -82,7 +82,7 @@ export function createBottomLayout(scope, root, close, refreshRegion) {
         const regionChanged = panel.dataset.region && panel.dataset.region !== area;
         data(panel, 'region', area);
         panel.querySelector('[data-action="resize"]')?.toggleAttribute('hidden', area === 'side' || area === 'edge');
-        const horizontal = content.dataset.review !== 'true' && layoutConfig.layout === 'horizontal';
+        const horizontal = content.dataset.review !== 'true' && content.dataset.beautified !== 'true' && layoutConfig.layout === 'horizontal';
         content.classList.toggle('is-horizontal', horizontal);
         content.classList.toggle('is-vertical', !horizontal);
         releaseScroll?.(); releaseScroll = null; flow = null;

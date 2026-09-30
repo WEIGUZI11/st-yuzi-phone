@@ -121,8 +121,9 @@ export function renderTheaterScene(container, sceneId, options = {}) {
 
     container.__yuziBuiltinDispose?.();
     const state = getTheaterRenderState(container, sceneId);
-    const lifecycle = createTheaterLifecycleContext(container, state.sceneId, options);
-    const scrollPreserver = createRuntimeScrollPreserver(container, state, '.phone-app-body.phone-theater-body', phoneRuntime);
+    const lifecycle = options.lifecycle || createTheaterLifecycleContext(container, state.sceneId, options);
+    const runtime = lifecycle.runtime || phoneRuntime;
+    const scrollPreserver = createRuntimeScrollPreserver(container, state, '.phone-app-body.phone-theater-body', runtime);
     const hasExistingScrollableBody = !!container.querySelector('.phone-app-body.phone-theater-body');
     const prevContainerHeight = Math.max(0, container.offsetHeight || 0);
     const nextRenderOptions = options.initialTableData || options.initialNavigationContext
@@ -140,9 +141,10 @@ export function renderTheaterScene(container, sceneId, options = {}) {
     const viewModel = buildTheaterSceneViewModel(rawData, state.sceneId);
     state.navigationSheetKey = resolveTheaterNavigationSheetKey(rawData, viewModel, options.navigationSheetKey);
     const uiState = buildUiState(state, viewModel);
+    if (options.readOnly) { uiState.canEdit = false; uiState.canDelete = false; }
     uiState.tableNavigation = state.navigationSheetKey
         ? buildTableNavigationControlState(rawData, state.navigationSheetKey, {
-            blocked: state.deleteManageMode || state.deleting,
+            blocked: options.readOnly || state.deleteManageMode || state.deleting,
             navigationContext: options.initialNavigationContext,
         })
         : null;
@@ -158,11 +160,12 @@ export function renderTheaterScene(container, sceneId, options = {}) {
 
     try {
         if (viewModel.available && typeof viewModel.scene.mountBuiltin === 'function') {
-            mountBuiltinTheater(container, {scene:viewModel.scene, sheetKey:state.navigationSheetKey, rawData, navigation:uiState.tableNavigation, lifecycle});
+            mountBuiltinTheater(container, {scene:viewModel.scene, sheetKey:state.navigationSheetKey, rawData, navigation:uiState.tableNavigation, lifecycle,
+                actions: options.actions, isVisible: options.isVisible, subscribeActivity: options.subscribeActivity});
             return;
         }
         container.innerHTML = buildTheaterScenePageHtml(viewModel, uiState);
-        bindTheaterSceneEvents(container, lifecycle);
+        if (!options.readOnly) bindTheaterSceneEvents(container, lifecycle);
         bindTheaterSceneInteractions(container, {
             scene: viewModel.scene,
             sceneId: state.sceneId,
@@ -171,12 +174,13 @@ export function renderTheaterScene(container, sceneId, options = {}) {
             tableNavigation: uiState.tableNavigation,
             render: renderCurrentScene,
             lifecycle,
+            readOnly: options.readOnly,
         });
     } finally {
         if (hasExistingScrollableBody) {
             scrollPreserver.restoreScroll('bodyScrollTop');
-            phoneRuntime.requestAnimationFrame(() => {
-                phoneRuntime.requestAnimationFrame(() => {
+            runtime.requestAnimationFrame(() => {
+                runtime.requestAnimationFrame(() => {
                     if (!container.isConnected) return;
                     container.style.removeProperty('min-height');
                 });

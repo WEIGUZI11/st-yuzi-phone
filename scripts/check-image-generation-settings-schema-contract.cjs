@@ -19,6 +19,7 @@ async function testImageGenerationDefaultsAndNormalization() {
 
     assert.deepEqual(IMAGE_GENERATION_DEFAULTS, {
         enabled: false,
+        provider: 'chatu8',
         qqEnabled: true,
         theaterEnabled: {square:false, forum:false, live:false},
         timeoutMs: 300_000,
@@ -40,6 +41,7 @@ async function testImageGenerationDefaultsAndNormalization() {
     });
     assert.deepEqual(normalized, {
         enabled: true,
+        provider: 'chatu8',
         qqEnabled: true,
         theaterEnabled: {square:false, forum:false, live:false},
         timeoutMs: 1_800_000,
@@ -55,6 +57,8 @@ async function testImageGenerationDefaultsAndNormalization() {
         valid: true,
         value: normalized,
     });
+    assert.equal(normalizeImageGenerationSettings({ enabled: true, provider: 'baibai' }).provider, 'baibai');
+    assert.equal(normalizeImageGenerationSettings({ enabled: true }).provider, 'chatu8', '旧开关沿用智慧姬');
 }
 
 async function testRoleMappingsAreBoundedNormalizedAndDeepCloned() {
@@ -211,6 +215,7 @@ async function testSettingsFacadeExportsImageGenerationSchema() {
     assert.equal(typeof settings.normalizeImageGenerationSettings, 'function');
     assert.deepEqual(settings.IMAGE_GENERATION_DEFAULTS, {
         enabled: false,
+        provider: 'chatu8',
         qqEnabled: true,
         theaterEnabled: {square:false, forum:false, live:false},
         timeoutMs: 300_000,
@@ -276,6 +281,7 @@ async function testSettingsServiceLoadsNormalizedMappingViewModel() {
     assert.deepEqual(viewModel, {
         config: {
             enabled: true,
+            provider: 'chatu8',
             qqEnabled: true,
             theaterEnabled: {square:false, forum:false, live:false},
             timeoutMs: 120_000,
@@ -318,6 +324,7 @@ async function testSettingsServiceBuildsPreviewFromDraftConfigAndTestInput() {
     };
     const draftConfig = {
         enabled: true,
+        provider: 'chatu8',
         timeoutMs: 90_000,
         roleMappings: [
             {
@@ -425,6 +432,7 @@ async function testSettingsServiceSavesOneNormalizedConfigObject() {
         status: 'saved',
         config: {
             enabled: true,
+            provider: 'chatu8',
             qqEnabled: true,
             theaterEnabled: {square:false, forum:false, live:false},
             timeoutMs: 10_000,
@@ -465,7 +473,8 @@ async function testSettingsServiceComposesAndStoresTestImage() {
         },
     };
     const storedConfig = {
-        enabled: false,
+        enabled: true,
+        provider: 'baibai',
         timeoutMs: 300_000,
         roleMappings: [
             {
@@ -533,6 +542,7 @@ async function testSettingsServiceComposesAndStoresTestImage() {
     }]);
     assert.deepEqual(generationCalls, [{
         prompt: '星野铃，银色长发，木下，两个人坐在咖啡店',
+        provider: 'baibai',
         width: null,
         height: null,
         negativePrompt: '',

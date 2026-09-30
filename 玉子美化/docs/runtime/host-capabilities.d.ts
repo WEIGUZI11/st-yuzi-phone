@@ -18,6 +18,7 @@ export interface ImageResult {
   record?: Readonly<Record<string, unknown>>;
 }
 export interface ImageGenerationActions {
+  /** 使用小手机主设置选中的接口；页面不传后端、密钥或角色库。制作模拟仅生成测试图。 */
   generateImage(canvasName: string, rowValues: Record<string, unknown>): Promise<ImageResult>;
   saveImage(canvasName: string, rowValues: Record<string, unknown>, image: Blob): Promise<ImageResult>;
   deleteImage(canvasName: string, rowValues: Record<string, unknown>): Promise<ImageResult>;

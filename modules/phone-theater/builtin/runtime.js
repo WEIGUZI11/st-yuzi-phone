@@ -48,10 +48,10 @@ export function mountBuiltinTheater(container, options, deps = {}) {
         getState:()=>({...snapshot,canPrevious:!navigation.previous?.disabled && !!navigation.previous?.target,canNext:!navigation.next?.disabled && !!navigation.next?.target}),
         subscribe:listener=>{listeners.add(listener);return()=>listeners.delete(listener);},
         mountImages:()=>imageController.mount(),
-        isVisible:()=>getPhoneCoreState().isPhoneActive !== false,
-        subscribeActivity:subscribePhoneActivity,
+        isVisible:options.isVisible || (()=>getPhoneCoreState().isPhoneActive !== false),
+        subscribeActivity:options.subscribeActivity || subscribePhoneActivity,
         notify:message=>{if(active())showToast(root,message,true,toastRuntime);},
-        actions:{back:guarded(navigateBack),previousTable:guarded(()=>requestTableNavigationSwitch(sheetKey,'previous')),nextTable:guarded(()=>requestTableNavigationSwitch(sheetKey,'next')),editCurrentTable:guarded(()=>navigateToEditableTable({sheetKey}))},
+        actions:options.actions || {back:guarded(navigateBack),previousTable:guarded(()=>requestTableNavigationSwitch(sheetKey,'previous')),nextTable:guarded(()=>requestTableNavigationSwitch(sheetKey,'next')),editCurrentTable:guarded(()=>navigateToEditableTable({sheetKey}))},
     };
     let unmount;
     const syncAppearance=()=>{

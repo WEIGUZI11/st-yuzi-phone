@@ -56,6 +56,7 @@ export const IMAGE_GENERATION_LIMITS = Object.freeze({
 
 export const IMAGE_GENERATION_DEFAULTS = Object.freeze({
     enabled: false,
+    provider: 'chatu8',
     qqEnabled: true,
     theaterEnabled: Object.freeze({ square:false, forum:false, live:false }),
     timeoutMs: 300_000,
@@ -168,6 +169,7 @@ export const defaultSettings = {
     worldbookReadingBlockedKeywords: [...WORLDBOOK_READING_BLOCKED_KEYWORDS_DEFAULTS],
     imageGeneration: {
         enabled: IMAGE_GENERATION_DEFAULTS.enabled,
+        provider: IMAGE_GENERATION_DEFAULTS.provider,
         qqEnabled: true,
         theaterEnabled: { square:false, forum:false, live:false },
         timeoutMs: IMAGE_GENERATION_DEFAULTS.timeoutMs,
@@ -361,6 +363,7 @@ export function normalizeImageGenerationSettings(raw) {
 
     return {
         enabled: normalizeImageGenerationBoolean(source.enabled, IMAGE_GENERATION_DEFAULTS.enabled),
+        provider: source.provider === 'baibai' ? 'baibai' : IMAGE_GENERATION_DEFAULTS.provider,
         qqEnabled: source.qqEnabled === undefined ? true : normalizeImageGenerationBoolean(source.qqEnabled, true),
         theaterEnabled: Object.fromEntries(['square', 'forum', 'live'].map(id => [id, source.theaterEnabled?.[id] === true])),
         timeoutMs,

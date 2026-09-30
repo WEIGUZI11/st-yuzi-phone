@@ -40,7 +40,7 @@ export const SETTINGS_ENTRY_META = {
     image_generation: {
         get glyph() { return t("绘"); },
         get title() { return t("生图设置"); },
-        get description() { return t("配置智慧姬、角色资料映射与测试生成"); },
+        get description() { return t("配置生图接口、角色资料映射与测试生成"); },
         tone: 'is-image-generation',
         get badge() { return t("图片"); },
     },

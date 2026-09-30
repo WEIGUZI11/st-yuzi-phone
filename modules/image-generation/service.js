@@ -1,4 +1,5 @@
 import { createChatu8ImageBridge } from '../integration/chatu8-image-bridge.js';
+import { createBaiBaiImageBridge } from '../integration/baibai-image-bridge.js';
 import { createImageFileBridge } from '../integration/image-file-bridge.js';
 
 function defaultCreateRequestId() {
@@ -16,6 +17,7 @@ function createNoopLogger() {
 
 export function createImageGenerationService(options = {}) {
     const generator = options.generator || createChatu8ImageBridge(options.generatorOptions);
+    const baiBaiGenerator = options.baiBaiGenerator || createBaiBaiImageBridge(options.baiBaiGeneratorOptions);
     const imageFiles = options.imageFiles || createImageFileBridge(options.imageFileOptions);
     const createRequestId = options.createRequestId || defaultCreateRequestId;
     const now = options.now || Date.now;
@@ -65,7 +67,8 @@ export function createImageGenerationService(options = {}) {
 
         let generationResult;
         try {
-            generationResult = await generator.requestImage(request, {
+            const selectedGenerator = input.provider === 'baibai' ? baiBaiGenerator : generator;
+            generationResult = await selectedGenerator.requestImage(request, {
                 timeoutMs: input.timeoutMs,
             });
         } catch (error) {
@@ -166,6 +169,7 @@ export function createImageGenerationService(options = {}) {
         if (generator && typeof generator.dispose === 'function') {
             generator.dispose();
         }
+        baiBaiGenerator.dispose?.();
     }
 
     return Object.freeze({

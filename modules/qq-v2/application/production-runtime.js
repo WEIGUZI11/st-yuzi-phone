@@ -2336,7 +2336,7 @@ export function createQQV2ProductionRuntime(options = {}) {
                 throw imageGenerationError('QQ 人物提示词服务不可用', 'image_prompt_composer_unavailable');
             }
             if (typeof imageGenerationService?.generateAndStore !== 'function') {
-                throw imageGenerationError('智慧姬生图服务不可用', 'image_generation_unavailable');
+                throw imageGenerationError('生图服务不可用', 'image_generation_unavailable');
             }
             const scopeSession = captureReadyScopeSession(scopeId);
             const normalizedScopeId = await ensureScope(scopeId, null, { scopeSession });

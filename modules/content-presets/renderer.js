@@ -24,6 +24,37 @@ import { contentPresetScrollRegistry } from './scroll-registry.js';
 import { createPresetStateSnapshot, createTableSnapshot } from './snapshot.js';
 
 const contentPresetHostAppearance = createContentPresetHostAppearance();
+let styleScopeSequence = 0;
+
+function scopePageStyle(root, style) {
+    if (!document.head || typeof root.setAttribute !== 'function') return;
+    const scope = `yuzi-preset-${++styleScopeSequence}`;
+    root.setAttribute('data-yuzi-preset-scope', scope);
+    const source = style.textContent;
+    const media = style.media;
+    style.media = 'not all';
+    style.textContent = `@scope ([data-yuzi-preset-scope="${scope}"]) {${source}}`;
+    // Parse without applying it globally, even while the phone page is detached.
+    document.head.append(style);
+    try {
+        const scopeRule = style.sheet?.cssRules?.[0];
+        // ponytail: older browsers retain legacy CSS; drop this fallback when @scope is the minimum baseline.
+        if (!scopeRule?.cssRules || !scopeRule.cssText.startsWith('@scope')) style.textContent = source;
+        else {
+            const normalizeSelectors = rules => {
+                for (const rule of rules) {
+                    if (rule.selectorText) rule.selectorText = rule.selectorText.replace(/:root\b|:host\b(?![-(])/g, ':scope');
+                    if (rule.cssRules) normalizeSelectors(rule.cssRules);
+                }
+            };
+            normalizeSelectors(scopeRule.cssRules);
+            style.textContent = scopeRule.cssText;
+        }
+    } finally {
+        style.remove();
+        style.media = media;
+    }
+}
 
 function fileText(record, path) {
     const file = path ? record.files?.[path] : null;
@@ -58,13 +89,13 @@ const DEFAULT_RUNTIME_DEPS = Object.freeze({
     subscribeTableUpdate,
 });
 
-function createState(rawData, sheetKey, route, version) {
+function createState(rawData, sheetKey, route, version, navigationEnabled = true) {
     return createPresetStateSnapshot({
         rawData,
         sheetKey,
         route,
         version,
-        navigationState: buildTableNavigationControlState(rawData, sheetKey),
+        navigationState: navigationEnabled ? buildTableNavigationControlState(rawData, sheetKey) : { previous: { disabled: true }, next: { disabled: true } },
     });
 }
 
@@ -75,8 +106,9 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
 
     return async function tryRenderContentPreset(page, target, options = {}) {
     if (!runtimeDeps.isContentPresetFullPageRuntimeEnabled()) return false;
+    const bottom = options.surface === 'bottom';
     const indexSnapshot = runtimeDeps.getContentPresetIndexSnapshot();
-    const binding = indexSnapshot.status === 'ready'
+    const binding = bottom ? options.binding : indexSnapshot.status === 'ready'
         ? indexSnapshot.activeByTable.get(target?.sheetKey)
         : null;
     if (!binding || !(page instanceof HTMLElement) || !target?.sheetKey) return false;
@@ -89,6 +121,7 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
             target.sheetKey,
             target.route,
             version,
+            !bottom,
         );
     } catch {
         return false;
@@ -110,7 +143,7 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
     let instance = null;
     let fallbackStarted = false;
     let committed = false;
-    const scrollKey = { chatId: '', sheetKey: target.sheetKey, presetId: binding.presetId, itemId: binding.itemId };
+    const scrollKey = { surface: bottom ? 'bottom' : 'page', chatId: '', sheetKey: target.sheetKey, presetId: binding.presetId, itemId: binding.itemId };
     const cleanup = () => {
         unregisterPageCleanup(); unregisterPageCleanup = () => {};
         unsubscribeTableUpdate(); unsubscribeTableUpdate = () => {};
@@ -123,7 +156,7 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
         runtimeDeps.releaseCurrentViewingSheet(owner); owner = null;
         root.remove();
     };
-    const isCurrent = () => instance?.isCurrent(runtimeDeps.getPhoneCoreState().routeRenderToken) === true;
+    const isCurrent = () => instance?.isCurrent(bottom ? undefined : runtimeDeps.getPhoneCoreState().routeRenderToken) === true;
     const fallback = () => {
         if (fallbackStarted || !isCurrent()) return;
         fallbackStarted = true;
@@ -132,15 +165,17 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
     };
 
     try {
-        owner = runtimeDeps.acquireCurrentViewingSheet(target.sheetKey);
+        if (!bottom) owner = runtimeDeps.acquireCurrentViewingSheet(target.sheetKey);
         instance = runtimeDeps.createContentPresetInstance({
+            surface: bottom ? 'bottom' : 'page',
             sheetKey: target.sheetKey,
-            routeToken: options.renderToken,
-            isPageOwner: () => isActiveTokenForRuntime(options.renderToken),
+            routeToken: bottom ? undefined : options.renderToken,
+            isPageOwner: bottom ? options.isCurrent : () => isActiveTokenForRuntime(options.renderToken),
             onStopUpdates: () => contextController?.dispose(),
             onCaptureScroll: () => { if (committed && scrollKey.chatId) runtimeDeps.contentPresetScrollRegistry.write(scrollKey, root.scrollTop); },
             onHostCleanup: cleanup,
         });
+        options.onInstance?.(instance);
         unregisterPageCleanup = runtimeDeps.registerRoutePageCleanup(page, () => instance.dispose());
         instance.transition('importing');
         const record = await runtimeDeps.getPresetRecord(binding.presetId);
@@ -156,6 +191,7 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
         if (css) {
             const style = document.createElement('style');
             style.textContent = assetRuntime.rewriteCss(css, item.entry.css);
+            scopePageStyle(root, style);
             root.prepend(style);
         }
         releaseAppearance = runtimeDeps.createContentPresetAppearanceBridge(
@@ -166,7 +202,8 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
         scrollKey.chatId = runtimeDeps.resolveStableChatId();
         const actions = runtimeDeps.createContentPresetActions({
             sheetKey: target.sheetKey,
-            getRoute: () => runtimeDeps.getPhoneCoreState().currentRoute,
+            disabled: bottom,
+            getRoute: () => bottom ? target.route : runtimeDeps.getPhoneCoreState().currentRoute,
             isCurrent,
         });
         const imageActions = runtimeDeps.contentPresetImageGenerationHost?.createPageActions?.({
@@ -184,7 +221,7 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
             presetAssets,
             resolveAsset: assetRuntime.resolveAsset,
         });
-        moduleRuntime = await runtimeDeps.importContentPresetModule({ source: fileText(record, item.entry.mount), signal: instance.signal });
+        moduleRuntime = await runtimeDeps.importContentPresetModule({ source: fileText(record, item.entry.mount), signal: instance.signal, importModule: options.importModule });
         if (!isCurrent()) { instance.dispose(); return true; }
         instance.transition('mounting');
         const disposer = await runtimeDeps.invokeContentPresetMount({
@@ -206,9 +243,12 @@ export function __test__createTryRenderContentPreset(overrides = {}) {
                 try {
                     const rawData = runtimeDeps.getTableData();
                     const nextTable = createTableSnapshot(rawData, target.sheetKey);
-                    if (!nextTable || !runtimeDeps.matchesPresetItem(item, { tableName: nextTable.tableName, headers: nextTable.rawHeaders })) return;
+                    if (!nextTable || !runtimeDeps.matchesPresetItem(item, { tableName: nextTable.tableName, headers: nextTable.rawHeaders })) {
+                        if (bottom) fallback();
+                        return;
+                    }
                     version += 1;
-                    contextController.publish(createState(rawData, target.sheetKey, target.route, version), 'table-data');
+                    contextController.publish(createState(rawData, target.sheetKey, target.route, version, !bottom), 'table-data');
                 } catch {}
             }) || (() => {});
         } catch {}

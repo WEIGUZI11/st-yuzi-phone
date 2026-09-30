@@ -23,6 +23,13 @@
 .yuzi-bottom-content { min-height:0; flex:1; padding:16px; gap:12px; display:flex; align-items:flex-start; overscroll-behavior:contain; }
 .yuzi-bottom-content.is-vertical { flex-wrap:wrap; justify-content:center; align-content:flex-start; overflow-y:auto; overflow-x:hidden; }
 .yuzi-bottom-content.is-horizontal { flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; }
+.yuzi-bottom-content[data-beautified="true"] {
+    position:relative; min-width:0; padding:0; gap:0;
+    flex-flow:column nowrap; align-items:stretch; overflow:hidden;
+    --yuzi-phone-app-nav-top-padding:0px;
+}
+.yuzi-bottom-content[data-beautified="true"] > :is(.phone-content-preset-root,.phone-app-page) { flex:1 1 auto; min-height:0; width:100%; }
+.yuzi-bottom-content[data-beautified="true"] > .yuzi-phone-theater-builtin { font-family:inherit; }
 .yuzi-bottom-card { width:var(--yuzi-phone-bottom-card-width,260px); max-width:100%; flex:0 0 auto; background:var(--yuzi-theme-surface); border:1px solid var(--yuzi-theme-border-strong); border-radius:10px; overflow-wrap:anywhere; user-select:text; }
 .yuzi-bottom-content.is-horizontal .yuzi-bottom-card { max-height:100%; overflow-y:auto; overscroll-behavior-y:contain; }
 .yuzi-bottom-card-heading { padding:10px 14px; border-bottom:1px solid var(--yuzi-theme-divider); color:var(--yuzi-theme-text-secondary); font-size:.85em; }

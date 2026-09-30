@@ -78,7 +78,7 @@ const renderSceneBody = extractFunctionBody(
 );
 assert(renderSceneBody.includes('export function renderTheaterScene(container, sceneId, options = {})'), 'renderTheaterScene 必须接收 options');
 assertOrdered(renderSceneBody, [
-    'const lifecycle = createTheaterLifecycleContext(container, state.sceneId, options);',
+    'const lifecycle = options.lifecycle || createTheaterLifecycleContext(container, state.sceneId, options);',
     'if (!lifecycle.isActive()) return;',
     'container.innerHTML = buildTheaterScenePageHtml(viewModel, uiState);',
     'lifecycle,',

@@ -235,6 +235,13 @@ export function createImageGenerationSettingsService(options = {}) {
         }
 
         const config = readConfig(input?.config);
+        if (!config.enabled) {
+            return {
+                ok: false,
+                status: 'disabled',
+                error: { code: 'image-generation-disabled', message: t("请先选择生图接口。") },
+            };
+        }
         const requestConfig = normalizeImageGenerationSettings({
             ...config,
             timeoutMs: input.timeoutMs ?? config.timeoutMs,
@@ -350,6 +357,7 @@ export function createImageGenerationSettingsService(options = {}) {
         try {
             generationResult = await imageGenerationService.generateAndStore({
                 prompt,
+                provider: requestConfig.provider,
                 width: null,
                 height: null,
                 negativePrompt: text(input.negativePrompt),

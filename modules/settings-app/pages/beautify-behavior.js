@@ -97,6 +97,14 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
             return;
         }
         const application = String(select?.dataset?.contentPresetApplication || '');
+        if (application === 'bottom') {
+            const sheetKey = String(select.dataset.sheetKey || '');
+            const selected = select.selectedOptions?.[0];
+            const sceneId = selected?.dataset?.builtinScene;
+            const binding = sceneId ? { kind: 'builtin' } : { presetId: selected?.dataset?.presetId, itemId: selected?.dataset?.itemId };
+            void run(select, () => select.value ? service.setBottomActive(sheetKey, binding) : service.clearBottomActive(sheetKey), t("底部美化已保存，重开面板后生效"));
+            return;
+        }
         if (application !== 'page' && application !== 'popup') return;
         const sheetKey = String(select?.dataset?.sheetKey || '');
         const selected = select?.selectedOptions?.[0];
@@ -143,6 +151,7 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
         if (action === 'clear') return void run(button, () => service.clearActive(sheetKey), t("该表已恢复默认展示"));
         if (action === 'clear-all-page' || action === 'clear-all') return confirm(t("全部恢复页面默认？"), t("将清除全部表格美化应用，但保留弹窗应用和已导入预设。"), t("确认清除"), () => run(button, () => (service.clearAllPageActive || service.clearAllActive)(), t("全部页面已恢复默认展示")));
         if (action === 'clear-all-popup') return confirm(t("全部清空弹窗应用？"), t("将移除全部自定义弹窗应用，但保留页面美化、内置展示和已导入预设。"), t("确认清除"), () => run(button, () => service.clearAllPopupActive(), t("全部弹窗应用已清空")));
+        if (action === 'clear-all-bottom') return confirm(t("全部恢复底部默认？"), t("将清除全部底部可视化美化应用，但保留页面美化、弹窗应用和已导入预设。"), t("确认清除"), () => run(button, () => service.clearAllBottomActive(), t("全部底部可视化已恢复默认")));
     };
 
         const attachPageInteractions = () => {

@@ -658,6 +658,22 @@
 .yuzi-theater-live-scene[data-has-image=true]:before {
   display: none;
 }
+.yuzi-theater-live-scene[data-has-image=true] {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.yuzi-theater-live-scene[data-has-image=true]:after {
+  pointer-events: none;
+}
+/* Keep the fixed controls interactive without blocking the shared image canvas. */
+.yuzi-theater-live[data-has-generated-image=true] .yuzi-theater-live-ui {
+  pointer-events: none;
+}
+.yuzi-theater-live[data-has-generated-image=true] .yuzi-theater-live-ui :is(button, input, .yuzi-theater-live-chat-wrap) {
+  pointer-events: auto;
+}
 .yuzi-theater-live .yuzi-phone-theater-image-button {
   position:absolute;
   right:70px;

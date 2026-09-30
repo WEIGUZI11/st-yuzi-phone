@@ -5,6 +5,9 @@ const { pathToFileURL } = require('node:url');
 async function main() {
     const root = path.resolve(__dirname, '..');
     const workshop = path.join(root, '玉子美化');
+    const imageDocs = fs.readFileSync(path.join(workshop, 'docs/runtime/host-capabilities.md'), 'utf8');
+    assert.match(imageDocs, /互斥选择智慧姬或柏宝绘/, '作者文档应说明接口选择由小手机负责');
+    assert.match(imageDocs, /制作期模拟不选择真实接口/, '模拟不得调用真实生图插件');
     const canvas = JSON.parse(fs.readFileSync(path.join(workshop, 'examples/image-avatar/canvas.json'), 'utf8'));
     const { normalizePageItemHostCapabilities } = await import(pathToFileURL(path.join(root, 'modules/content-presets/display-contract.js')).href);
     const target = { tableName: canvas.tableName, fields: [...new Set([...canvas.stableIdentityFields, ...canvas.promptFields])] };

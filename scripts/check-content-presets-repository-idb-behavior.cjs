@@ -12,6 +12,7 @@ function createHarness({ seed = {}, autoComplete = true, requestError = null, de
         activeByTable: new Map((seed.activeByTable || []).map(value => [value.sheetKey, structuredClone(value)])),
         popupByTable: new Map((seed.popupByTable || []).map(value => [value.sheetKey, structuredClone(value)])),
         appBindings: new Map((seed.appBindings || []).map(value => [value.sheetKey, structuredClone(value)])),
+        bottomByTable: new Map((seed.bottomByTable || []).map(value => [value.sheetKey, structuredClone(value)])),
     };
     const transactions = [];
 
@@ -24,6 +25,7 @@ function createHarness({ seed = {}, autoComplete = true, requestError = null, de
                 activeByTable: cloneMap(committed.activeByTable),
                 popupByTable: cloneMap(committed.popupByTable),
                 appBindings: cloneMap(committed.appBindings),
+                bottomByTable: cloneMap(committed.bottomByTable),
             };
             this.aborted = false;
             this.completed = false;
@@ -60,11 +62,14 @@ function createHarness({ seed = {}, autoComplete = true, requestError = null, de
                     return request;
                 },
                 delete(key) {
-                    if (['activeByTable', 'popupByTable', 'appBindings'].includes(name) && key === deleteErrorKey) throw new Error('fixture binding delete failed');
+                    if (['activeByTable', 'popupByTable', 'appBindings', 'bottomByTable'].includes(name) && key === deleteErrorKey) throw new Error('fixture binding delete failed');
                     map.delete(key);
                 },
+                clear() {
+                    map.clear();
+                },
                 index(indexName) {
-                    assert.ok(['activeByTable', 'popupByTable', 'appBindings'].includes(name));
+                    assert.ok(['activeByTable', 'popupByTable', 'appBindings', 'bottomByTable'].includes(name));
                     assert.equal(indexName, 'presetId');
                     return {
                         getAll(presetId) {
@@ -97,6 +102,7 @@ function createHarness({ seed = {}, autoComplete = true, requestError = null, de
             committed.activeByTable = cloneMap(this.staged.activeByTable);
             committed.popupByTable = cloneMap(this.staged.popupByTable);
             committed.appBindings = cloneMap(this.staged.appBindings);
+            committed.bottomByTable = cloneMap(this.staged.bottomByTable);
             this.completed = true;
             this.oncomplete?.();
         }
@@ -108,6 +114,7 @@ function createHarness({ seed = {}, autoComplete = true, requestError = null, de
         transaction(storeNames, mode) {
             const tx = new Transaction(storeNames, mode);
             transactions.push(tx);
+            if (autoComplete) setImmediate(() => tx.complete());
             return tx;
         },
     };
@@ -182,13 +189,45 @@ async function setup(options = {}) {
 }
 
 function assertTransaction(tx) {
-    assert.deepEqual(tx.storeNames, ['presets', 'activeByTable', 'popupByTable', 'appBindings']);
+    assert.deepEqual(tx.storeNames, ['presets', 'activeByTable', 'popupByTable', 'appBindings', 'bottomByTable']);
     assert.equal(tx.mode, 'readwrite');
 }
 
 async function main() {
     const originalIndexedDb = globalThis.indexedDB;
     try {
+        {
+            const { repository } = await setup();
+            await repository.setBottomActiveBinding('sheet-a', { presetId: 'preset-2', itemId: 'other' });
+            await repository.setBottomActiveBinding('sheet-theater', { kind: 'builtin', sceneId: 'square' });
+            const restored = await repository.loadBottomBindings();
+            assert.equal(restored.get('sheet-a').presetId, 'preset-2', '底部选择必须可持久回读');
+            assert.equal(restored.get('sheet-theater').kind, 'builtin', '内置美化无需导入包');
+            assert.equal((await repository.loadPageBindings()).get('sheet-a').presetId, 'preset-1', '底部选择不覆盖手机页面');
+            await repository.deletePresetRecord('preset-2');
+            assert.equal((await repository.loadBottomBindings()).has('sheet-a'), false, '删除包清除对应底部绑定');
+            assert.equal((await repository.loadBottomBindings()).get('sheet-theater').sceneId, 'square', '删包不影响内置美化');
+        }
+        {
+            const { repository } = await setup();
+            const index = await import('../modules/content-presets/index-state.js');
+            index.commitContentPresetIndex({ status: 'ready', pageByTable: new Map(), popupByTable: new Map(), bottomByTable: new Map() });
+            const { createContentPresetWorkshopService } = await import('../modules/content-presets/workshop-service.js');
+            const service = createContentPresetWorkshopService({ getTableData: () => ({
+                sheet_a: { name: '测试表', content: [['row_id', '字段'], [1, '内容']] },
+                sheet_live: { name: '直播表', content: [['row_id', '直播间名']] },
+            }) });
+            await service.setPageActive('sheet_a', 'preset-1', 'old-a');
+            await service.setBottomActive('sheet_a', { presetId: 'preset-2', itemId: 'other' });
+            await service.setBottomActive('sheet_live', { kind: 'builtin' });
+            const view = await service.getViewModel();
+            assert.equal(view.tables[0].pageActive.presetId, 'preset-1');
+            assert.equal(view.tables[0].bottomActive.presetId, 'preset-2');
+            assert.equal(view.tables[1].bottomActive.sceneId, 'live');
+            await service.clearBottomActive('sheet_a');
+            assert.equal((await service.getViewModel()).tables[0].bottomActive, null);
+            assert.equal((await repository.loadPageBindings()).get('sheet_a').presetId, 'preset-1');
+        }
         {
             const valid = validRecord('preset-valid', ['item-valid']);
             const untrusted = { id: 'preset-untrusted', items: [{ id: 'item-untrusted', activatable: true, entry: { mount: 'pages/main.mjs' } }] };
@@ -388,7 +427,8 @@ async function main() {
     console.log('[content-presets-repository-idb-behavior-check] 检查通过');
 }
 
-main().catch(error => {
+module.exports = { createHarness, validRecord };
+if (require.main === module) main().catch(error => {
     console.error('[content-presets-repository-idb-behavior-check] 检查失败');
     console.error(error);
     process.exitCode = 1;

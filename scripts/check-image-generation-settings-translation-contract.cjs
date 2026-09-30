@@ -130,6 +130,7 @@ async function testTestGenerateTranslatesBeforeCallingImageGeneration() {
         },
         {
             prompt: '1girl, silver hair, by the window',
+            provider: 'chatu8',
             width: null,
             height: null,
             negativePrompt: '',

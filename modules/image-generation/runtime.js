@@ -14,7 +14,7 @@ function readImageGenerationConfig(getSettings) {
 /**
  * 将“小手机当前设置”适配为 QQ 运行时需要的两个公开能力：
  * 1. 根据当前表格映射组合人物提示词；
- * 2. 遵守总开关与当前超时配置后调用底层生图服务。
+ * 2. 遵守接口选择与当前超时配置后调用底层生图服务。
  */
 export function createPhoneImageGenerationRuntime(options = {}) {
     const getSettings = typeof options.getPhoneSettings === 'function'
@@ -58,6 +58,7 @@ export function createPhoneImageGenerationRuntime(options = {}) {
             : config.timeoutMs;
         return imageGenerationService.generateAndStore({
             ...input,
+            provider: config.provider,
             timeoutMs,
         });
     }

@@ -712,7 +712,7 @@ async function testTestPreviewAcceptsOnlyGeneratedImageDirectoryPaths() {
     await flushAsyncWork();
     assert.equal(container.querySelector('#phone-image-generation-test-preview').innerHTML, '');
     assert.deepEqual(toasts, [{
-        message: '智慧姬没有返回可显示的图片',
+        message: '生图接口没有返回可显示的图片',
         isError: true,
     }]);
     page.dispose();

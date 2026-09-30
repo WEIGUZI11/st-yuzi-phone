@@ -364,6 +364,7 @@ async function testPageHidesEmptyDirectoryAndSavesOnlyTableDisplayPreference() {
 
     assert.deepEqual(saves.at(-1), {
         enabled: false,
+        provider: 'chatu8',
         qqEnabled: true,
         theaterEnabled: {square:false, forum:false, live:false},
         timeoutMs: 300000,

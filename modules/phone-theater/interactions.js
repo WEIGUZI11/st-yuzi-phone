@@ -417,6 +417,7 @@ export function bindTheaterSceneInteractions(container, options = {}) {
     }
 
     container.__phoneTheaterClickHandler = (event) => {
+        if (options.readOnly) return;
         handleDeleteAction(event, container, options);
     };
 

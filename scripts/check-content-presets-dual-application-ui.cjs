@@ -28,6 +28,9 @@ async function main() {
             pageActive: { presetId: page.presetId, itemId: page.itemId },
             popupCandidates: [popup],
             popupActive: { presetId: popup.presetId },
+            presentation: 'theater',
+            sceneId: 'square',
+            bottomActive: { kind: 'builtin', sceneId: 'square' },
         }],
     });
 
@@ -44,6 +47,13 @@ async function main() {
     assert.match(html, /data-action="clear-all-page"/, '工坊必须明确支持只恢复全部页面默认值');
     assert.match(html, /data-action="clear-all-popup"/, '工坊必须明确支持只清空全部弹窗应用');
     assert.match(html, /selected/, '两个应用的当前值必须可独立呈现');
+    const bottom = html.match(/<select[^>]*data-content-preset-application="bottom"[\s\S]*?<\/select>/)?.[0];
+    assert.ok(bottom, '每张表必须提供独立的底部可视化美化选择');
+    assert.match(bottom, />默认<\/option>/, '底部默认始终是普通卡片，不是手机内置界面');
+    assert.match(bottom, /data-builtin-scene="square" selected>内置美化<\/option>/);
+    assert.match(bottom, /data-preset-id="page-preset"/, '底部复用同一份已导入页面美化');
+    const ordinary = buildBeautifyTemplatePageHtml({ status: 'ready', tables: [{ sheetKey: 'sheet-normal', pageCandidates: [page] }] });
+    assert.doesNotMatch(ordinary, /data-builtin-scene=/, '普通表格不得提供内置小剧场美化');
 
     assert.doesNotMatch(html, /sheetKey：|字段：|帖子编号|同 ID 导入会要求确认|ID：internal-preset-id/,
         '工坊不得常驻展示字段清单、内部标识说明和重复覆盖提示');

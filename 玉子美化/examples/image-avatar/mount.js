@@ -32,7 +32,12 @@ export function mount(context) {
       const state = await actions.getImageGenerationState('avatar', values);
       if (!current(values, token)) return;
       button.disabled = busy || !state.available;
-      if (!state.available) { message.textContent = '当前无法生图：' + state.status; return; }
+      if (!state.available) {
+        message.textContent = state.status === 'disabled'
+          ? '当前未启用生图：请在小手机主设置选择生图接口，并开启此表的生图按钮。'
+          : '当前无法生图：' + state.status;
+        return;
+      }
       if (busy) return;
       const result = await actions.readImage('avatar', values);
       if (current(values, token) && result.ok && result.imagePath) showImage(result.imagePath);

@@ -24,6 +24,9 @@ import {
     setPageActiveBinding,
     setPopupActiveBindings,
     setPopupActiveBinding,
+    setBottomActiveBinding,
+    clearBottomActiveBinding,
+    clearAllBottomActiveBindings,
 } from './repository.js';
 
 const DEFAULT_WORKSHOP_DEPS = Object.freeze({
@@ -52,6 +55,9 @@ const DEFAULT_WORKSHOP_DEPS = Object.freeze({
     setPopupActiveBindings,
     setPopupActiveBinding,
     subscribeContentPresetIndex,
+    setBottomActiveBinding,
+    clearBottomActiveBinding,
+    clearAllBottomActiveBindings,
 });
 
 function metadataOf(record) {
@@ -59,9 +65,13 @@ function metadataOf(record) {
 }
 async function capturePostCommitFailure(task) { try { await task(); } catch {} }
 function withCommittedMutation(runtimeDeps, operation, buildPatch, afterCommit) {
-    return runtimeDeps.enqueueContentPresetMutation(operation, (result, current) => buildPatch(result, current), (result, current, patch) => capturePostCommitFailure(() => afterCommit?.(result, current, patch)))
+    let affectedSheetKeys = [];
+    return runtimeDeps.enqueueContentPresetMutation(operation, (result, current) => {
+        const patch = buildPatch(result, current);
+        affectedSheetKeys = patch.affectedSheetKeys || [];
+        return patch;
+    }, (result, current, patch) => capturePostCommitFailure(() => afterCommit?.(result, current, patch)))
         .then(async result => {
-            const affectedSheetKeys = result.affectedSheetKeys || [];
             await capturePostCommitFailure(() => runtimeDeps.invalidateContentPresetInstances(affectedSheetKeys));
             await capturePostCommitFailure(() => runtimeDeps.convergeCurrentContentPresetRoute(affectedSheetKeys));
             return result;
@@ -71,16 +81,19 @@ function replaceMetadata(current, record) { const metadata = new Map(current.met
 function pageBindings(snapshot) { return new Map(snapshot.pageByTable || snapshot.activeByTable || []); }
 function popupBindings(snapshot) { return new Map(snapshot.popupByTable || []); }
 function clearAffected(map, keys) { const next = new Map(map); keys.forEach(key => next.delete(key)); return next; }
+function withoutPreset(map, presetId) { return new Map([...map || []].filter(([, binding]) => binding.presetId !== presetId)); }
+function affectedPageSheets(current, presetId) { return [...pageBindings(current)].filter(([, binding]) => binding.presetId === presetId).map(([key]) => key); }
 
 export function createUnavailableContentPresetWorkshopService() {
     const error = new Error(t("模板工坊将在完整页面运行时启用后可用"));
-    const snapshot = Object.freeze({ status: 'unavailable', error, metadata: new Map(), pageByTable: new Map(), popupByTable: new Map(), activeByTable: new Map(), revision: 0 });
+    const snapshot = Object.freeze({ status: 'unavailable', error, metadata: new Map(), pageByTable: new Map(), popupByTable: new Map(), bottomByTable: new Map(), activeByTable: new Map(), revision: 0 });
     const viewModel = Object.freeze({ status: 'unavailable', error, revision: 0, presets: Object.freeze([]), tables: Object.freeze([]) });
     const unavailable = () => Promise.reject(error);
     return Object.freeze({
         getSnapshot: () => snapshot, subscribe: () => () => {}, getViewModel: async () => viewModel,
         prepareImport: unavailable, importPrepared: unavailable, exportPreset: unavailable, deletePreset: unavailable,
         setQQActive: unavailable,
+        setBottomActive: unavailable, clearBottomActive: unavailable, clearAllBottomActive: unavailable,
         setPageActive: unavailable, clearPageActive: unavailable, clearAllPageActive: unavailable,
         setPopupActive: unavailable, clearPopupActive: unavailable, clearAllPopupActive: unavailable,
         // v2 公开方法仅代表页面应用。
@@ -107,7 +120,7 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
         return Object.freeze({
             status: index.status, error: index.error, revision: index.revision, presets: Object.freeze(presets),
             qq: { bindings: presets.some(preset => preset.qq) ? await runtimeDeps.loadQQBindings() : { theme: '', popup: '' }, presets: presets.filter(preset => preset.qq) },
-            tables: runtimeDeps.buildContentPresetCatalog(rawData || {}, presets, pageBindings(index), popupBindings(index)),
+            tables: runtimeDeps.buildContentPresetCatalog(rawData || {}, presets, pageBindings(index), popupBindings(index), index.bottomByTable),
         });
     };
     const setPageActive = (sheetKey, presetId, itemId) => withCommittedMutation(runtimeDeps, async () => {
@@ -122,6 +135,30 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
         const previous = pageBindings(current).get(sheetKey);
         if (previous) runtimeDeps.contentPresetScrollRegistry.clearByBinding(previous);
     });
+    const setBottomActive = async (sheetKey, binding) => {
+        const table = (await getViewModel()).tables.find(entry => entry.sheetKey === sheetKey);
+        if (!table || (binding?.kind === 'builtin'
+            ? table.presentation !== 'theater'
+            : !table.pageCandidates.some(entry => entry.presetId === binding?.presetId && entry.itemId === binding?.itemId))) {
+            throw new Error(t("目标表或底部美化不可绑定"));
+        }
+        const selection = binding.kind === 'builtin' ? { kind: 'builtin', sceneId: table.sceneId } : binding;
+        return runtimeDeps.enqueueContentPresetMutation(
+            () => runtimeDeps.setBottomActiveBinding(sheetKey, selection),
+            (record, current) => {
+                const bottomByTable = new Map(current.bottomByTable);
+                bottomByTable.set(sheetKey, record);
+                return { indexPatch: { bottomByTable } };
+            },
+        );
+    };
+    const clearBottomActive = sheetKey => runtimeDeps.enqueueContentPresetMutation(
+        () => runtimeDeps.clearBottomActiveBinding(sheetKey),
+        (_result, current) => {
+            const bottomByTable = new Map(current.bottomByTable); bottomByTable.delete(sheetKey);
+            return { indexPatch: { bottomByTable } };
+        },
+    );
     const clearPageActive = sheetKey => withCommittedMutation(runtimeDeps, async () => {
         await runtimeDeps.clearPageActiveBinding(sheetKey); return { affectedSheetKeys: [sheetKey] };
     }, (result, current) => ({ affectedSheetKeys: result.affectedSheetKeys, indexPatch: (() => { const pageByTable = clearAffected(pageBindings(current), result.affectedSheetKeys); return { pageByTable, activeByTable: pageByTable }; })() }), (_result, current) => {
@@ -225,8 +262,9 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
                     throw error;
                 }
             }, (result, current) => ({
-                affectedSheetKeys: result.affectedSheetKeys,
-                indexPatch: { status: 'ready', error: null, metadata: replaceMetadata(current, record), pageByTable: clearAffected(pageBindings(current), result.affectedSheetKeys), popupByTable: clearAffected(popupBindings(current), result.affectedSheetKeys) },
+                affectedSheetKeys: affectedPageSheets(current, record.id),
+                indexPatch: { status: 'ready', error: null, metadata: replaceMetadata(current, record), pageByTable: withoutPreset(pageBindings(current), record.id), popupByTable: withoutPreset(popupBindings(current), record.id),
+                    bottomByTable: withoutPreset(current.bottomByTable, record.id), changedPresetIds: [record.id] },
             }), result => { if (result.replaced) runtimeDeps.contentPresetScrollRegistry.clearByPreset(record.id); });
         },
         async exportPreset(presetId) {
@@ -236,9 +274,16 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
         },
         deletePreset: presetId => withCommittedMutation(runtimeDeps, () => runtimeDeps.deletePresetRecord(presetId), (result, current) => {
             const metadata = new Map(current.metadata); metadata.delete(result.presetId);
-            return { affectedSheetKeys: result.affectedSheetKeys, indexPatch: { metadata, pageByTable: clearAffected(pageBindings(current), result.affectedSheetKeys), popupByTable: clearAffected(popupBindings(current), result.affectedSheetKeys) } };
+            return { affectedSheetKeys: affectedPageSheets(current, result.presetId), indexPatch: { metadata, pageByTable: withoutPreset(pageBindings(current), result.presetId), popupByTable: withoutPreset(popupBindings(current), result.presetId),
+                bottomByTable: withoutPreset(current.bottomByTable, result.presetId), changedPresetIds: [result.presetId] } };
         }, result => runtimeDeps.contentPresetScrollRegistry.clearByPreset(result.presetId)),
         setPageActive,
+        setBottomActive,
+        clearBottomActive,
+        clearAllBottomActive: () => runtimeDeps.enqueueContentPresetMutation(
+            () => runtimeDeps.clearAllBottomActiveBindings(),
+            () => ({ indexPatch: { bottomByTable: new Map() } }),
+        ),
         clearPageActive,
         clearAllPageActive: () => withCommittedMutation(runtimeDeps, async () => { await runtimeDeps.clearAllPageActiveBindings(); return { affectedSheetKeys: [...pageBindings(runtimeDeps.getContentPresetIndexSnapshot()).keys()] }; }, result => ({ affectedSheetKeys: result.affectedSheetKeys, indexPatch: { pageByTable: new Map(), activeByTable: new Map() } }), (_result, current) => { for (const binding of pageBindings(current).values()) runtimeDeps.contentPresetScrollRegistry.clearByBinding(binding); }),
         setPopupActive,

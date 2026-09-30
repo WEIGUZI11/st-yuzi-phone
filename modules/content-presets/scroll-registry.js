@@ -4,7 +4,7 @@ function normalizePart(value) {
 
 function keyOf(parts = {}) {
     const values = [parts.chatId, parts.sheetKey, parts.presetId, parts.itemId].map(normalizePart);
-    return values.every(Boolean) ? JSON.stringify(values) : '';
+    return values.every(Boolean) ? JSON.stringify([parts.surface || 'page', ...values]) : '';
 }
 
 export function createContentPresetScrollRegistry(options = {}) {
@@ -42,6 +42,7 @@ export function createContentPresetScrollRegistry(options = {}) {
             const itemId = normalizePart(parts.itemId);
             if (!sheetKey || !presetId || !itemId) return 0;
             return removeWhere(value => normalizePart(value.sheetKey) === sheetKey
+                && normalizePart(value.surface || 'page') === normalizePart(parts.surface || 'page')
                 && normalizePart(value.presetId) === presetId && normalizePart(value.itemId) === itemId);
         },
         restore(root, parts, isCurrent = () => true, frames = 2) {

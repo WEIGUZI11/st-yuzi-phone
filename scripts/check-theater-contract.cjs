@@ -368,7 +368,7 @@ function main() {
     pushCheck(results, 'render', 'theater render 向 interactions 传递 lifecycle', has(contents.render, 'lifecycle,') && has(contents.interactions, 'lifecycle: options.lifecycle,'));
     pushCheck(results, 'data', 'theater 数据层导出稳定物理锚点解析', has(contents.data, 'export function resolveTheaterNavigationSheetKey(rawData, viewModel, requestedSheetKey)') && has(contents.data, 'getSheetKeys(rawData)') && has(contents.data, 'sceneSheetKeys.has'));
     pushCheck(results, 'render', 'theater render 使用数据层锚点解析并覆盖当前 state', has(contents.render, 'resolveTheaterNavigationSheetKey,') && has(contents.render, 'state.navigationSheetKey = resolveTheaterNavigationSheetKey(rawData, viewModel, options.navigationSheetKey)'));
-    pushCheck(results, 'render', 'theater render 在删除管理态禁用表级切换', has(contents.render, 'buildTableNavigationControlState(rawData, state.navigationSheetKey, {') && has(contents.render, 'blocked: state.deleteManageMode || state.deleting'));
+    pushCheck(results, 'render', 'theater render 在只读宿主及删除管理态禁用表级切换', has(contents.render, 'buildTableNavigationControlState(rawData, state.navigationSheetKey, {') && has(contents.render, 'blocked: options.readOnly || state.deleteManageMode || state.deleting'));
 
     pushCheck(results, 'templates', 'theater templates 导出 buildTheaterScenePageHtml(viewModel, uiState)', has(contents.templates, 'export function buildTheaterScenePageHtml(viewModel, uiState = {})'));
     pushCheck(results, 'templates', 'theater templates 导入 renderKit', has(contents.templates, "from './core/render-kit.js'"));

@@ -105,6 +105,7 @@ function getConfig(viewModel = {}) {
     const promptOutputFilter = normalizeImagePromptOutputFilterSettings(config);
     return {
         enabled: config.enabled === true,
+        provider: config.provider === 'baibai' ? 'baibai' : 'chatu8',
         timeoutMs: Number.isFinite(Number(config.timeoutMs)) ? Number(config.timeoutMs) : 300000,
         roleMappings: asArray(config.roleMappings),
         tableDisplayEnabledBySheetKey: tableDisplayEnabledBySheetKey(
@@ -450,12 +451,16 @@ export function buildImageGenerationPageHtml(viewModel = {}) {
         ? (hasUsableImagePreset ? '' : t("尚未导入有效的生图预设"))
         : sharedResources.error || (presetServiceAvailable ? t("生图预设读取中或暂不可用") : t("生图预设接口尚未接入"));
     const engineSection = buildSettingsSectionHtml({
-        title: t("智慧姬"),
-        desc: t("生图模式跟随智慧姬设置。测试图片和之后的 QQ 生图会保存到：user/images/yuzi-phone-generated/"),
+        title: t("生图接口"),
+        desc: t("接口配置跟随对应插件；最多选择一个，都不勾选则关闭生图。图片保存到：user/images/yuzi-phone-generated/"),
         bodyHtml: `
             <label class="phone-appearance-check-item">
-                <span class="phone-appearance-check-main">${t`启用生图（总开关）`}</span>
-                <input id="phone-image-generation-enabled" type="checkbox" class="phone-settings-switch" ${config.enabled ? 'checked' : ''}>
+                <span class="phone-appearance-check-main">${t`智慧姬`}</span>
+                <input id="phone-image-generation-enabled" type="checkbox" class="phone-settings-switch" ${config.enabled && config.provider === 'chatu8' ? 'checked' : ''}>
+            </label>
+            <label class="phone-appearance-check-item">
+                <span class="phone-appearance-check-main">${t`柏宝绘`}</span>
+                <input id="phone-image-generation-baibai-enabled" type="checkbox" class="phone-settings-switch" ${config.enabled && config.provider === 'baibai' ? 'checked' : ''}>
             </label>
         `,
     });
@@ -478,7 +483,7 @@ export function buildImageGenerationPageHtml(viewModel = {}) {
         : '';
     const translationSection = buildSettingsSectionHtml({
         title: t("中文提示词转换"),
-        desc: t("使用所选 API 和生图预设转换提示词，再交给智慧姬。"),
+        desc: t("使用所选 API 和生图预设转换提示词，再交给所选生图接口。"),
         extraClass: 'phone-image-generation-translation-section',
         bodyHtml: `
             <div class="phone-image-generation-translation-controls">
@@ -598,7 +603,7 @@ export function buildImageGenerationPageHtml(viewModel = {}) {
     });
     const requestSection = buildSettingsSectionHtml({
         title: t("请求设置"),
-        desc: t("超时仅停止等待，不会取消后台生图。"),
+        desc: t("智慧姬超时仅停止等待；柏宝绘超时会请求取消。"),
         bodyHtml: `
             <label class="phone-settings-field-inline">
                 <span>${t`等待超时（秒）`}</span>
@@ -951,8 +956,11 @@ function createImageGenerationPageSession(ctx) {
         const excludeTagsInput = ctx.container.querySelector(
             '#phone-image-generation-prompt-translation-exclude-tags',
         );
+        const smartGirlEnabled = ctx.container.querySelector('#phone-image-generation-enabled')?.checked === true;
+        const baiBaiEnabled = ctx.container.querySelector('#phone-image-generation-baibai-enabled')?.checked === true;
         return {
-            enabled: ctx.container.querySelector('#phone-image-generation-enabled')?.checked === true,
+            enabled: smartGirlEnabled || baiBaiEnabled,
+            provider: baiBaiEnabled ? 'baibai' : smartGirlEnabled ? 'chatu8' : current.provider,
             qqEnabled: ctx.container.querySelector('#phone-image-generation-qq-enabled')?.checked ?? current.qqEnabled,
             theaterEnabled: Object.fromEntries(['square','forum','live'].map(id => [id, ctx.container.querySelector('[data-scene-id="' + id + '"]')?.checked ?? current.theaterEnabled[id]])),
             timeoutMs: clampTimeoutMs(ctx.container.querySelector('#phone-image-generation-timeout')?.value),
@@ -1156,15 +1164,19 @@ function createImageGenerationPageSession(ctx) {
     };
     const runTestGeneration = async () => {
         const testInput = getTestInputFromDom();
+        const config = readConfigFromDom();
         state.testInput = { ...state.testInput, ...testInput };
         setAiOutput('');
-        setTestStatus({ generating: true, statusText: t("正在请求智慧姬…") });
+        setTestStatus({
+            generating: true,
+            statusText: config.provider === 'baibai' ? t("正在请求柏宝绘…") : t("正在请求智慧姬…"),
+        });
         try {
             const result = await service.testGenerate({
                 ...testInput,
                 prompt: state.testInput.finalPrompt,
-                config: readConfigFromDom(),
-                timeoutMs: readConfigFromDom().timeoutMs,
+                config,
+                timeoutMs: config.timeoutMs,
             });
             if (!isActive()) return;
             if (result?.prompt !== undefined) setPromptPreview(result.prompt);
@@ -1173,7 +1185,7 @@ function createImageGenerationPageSession(ctx) {
                 throw new Error(result?.error?.message || result?.message || t("图片生成失败"));
             }
             const imagePath = getGeneratedImagePath(result);
-            if (!imagePath) throw new Error(t("智慧姬没有返回可显示的图片"));
+            if (!imagePath) throw new Error(t("生图接口没有返回可显示的图片"));
             setTestStatus({
                 generating: false,
                 statusText: t("测试图片已生成并保存"),
@@ -1323,8 +1335,17 @@ function createImageGenerationPageSession(ctx) {
             ctx.state.mode = 'home';
             ctx.render();
         });
-        addListener(ctx.container.querySelector('#phone-image-generation-enabled'), 'change', () => {
-            void saveConfig(readConfigFromDom(), { refreshPreviewAfter: false });
+        const providerCheckboxes = [
+            ctx.container.querySelector('#phone-image-generation-enabled'),
+            ctx.container.querySelector('#phone-image-generation-baibai-enabled'),
+        ].filter(Boolean);
+        providerCheckboxes.forEach((checkbox) => {
+            addListener(checkbox, 'change', () => {
+                if (checkbox.checked) {
+                    providerCheckboxes.forEach((other) => { other.checked = other === checkbox; });
+                }
+                void saveConfig(readConfigFromDom(), { refreshPreviewAfter: false });
+            });
         });
         Array.from(ctx.container.querySelectorAll('.phone-image-generation-table-display-enabled') || [])
             .forEach((checkbox) => {

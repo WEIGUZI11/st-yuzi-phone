@@ -29,14 +29,11 @@ export function createBuiltinImageController(options) {
         button.classList.toggle('is-loading', state.busy);
         button.firstElementChild.className = 'fa-solid fa-' + (imagePath ? 'rotate' : 'wand-magic-sparkles');
         frame.dataset.hasImage = String(Boolean(imagePath));
+        image.hidden = !imagePath;
+        if (imagePath && image.getAttribute('src') !== imagePath) image.src = imagePath;
+        description.hidden = Boolean(imagePath);
         if (canvas.canvas === 'background') {
-            if (imagePath) frame.style.backgroundImage = 'url(' + JSON.stringify(imagePath) + ')';
-            else frame.style.removeProperty('background-image');
             root.querySelector('.yuzi-theater-live')?.setAttribute('data-has-generated-image', String(Boolean(imagePath)));
-        } else {
-            image.hidden = !imagePath;
-            if (imagePath && image.getAttribute('src') !== imagePath) image.src = imagePath;
-            description.hidden = Boolean(imagePath);
         }
     }
     function repaint() {
@@ -73,9 +70,11 @@ export function createBuiltinImageController(options) {
             const icon = document.createElement('i');
             icon.setAttribute('aria-hidden', 'true');
             button.append(icon);
-            if (canvas.canvas === 'background') root.querySelector('.yuzi-theater-live').append(button);
-            else frame.replaceChildren(image, description, button);
-            const binding = { state, button, description, image, canvas, stamp, validIdentity, dispose:()=>{frameController.abort();signal.removeEventListener('abort',abortFrame);if(canvas.canvas === 'background')button.remove();} };
+            if (canvas.canvas === 'background') {
+                frame.append(image);
+                root.querySelector('.yuzi-theater-live').append(button);
+            } else frame.replaceChildren(image, description, button);
+            const binding = { state, button, description, image, canvas, stamp, validIdentity, dispose:()=>{frameController.abort();signal.removeEventListener('abort',abortFrame);if(canvas.canvas === 'background'){button.remove();image.remove();}} };
             frames.set(frame, binding); paint(frame, binding);
             if (validIdentity && !state.readRequested) { state.readRequested=true; void service.read(sourceInput(canvas, record)).then(saved => { if (active() && state.revision === 0) { state.imagePath=saved?.imagePath || ''; repaint(); } }).catch(() => {}); }
             button.addEventListener('click', async event => {
@@ -95,13 +94,11 @@ export function createBuiltinImageController(options) {
                 } catch(error) { if(active()) options.notify?.(error.message || '图片生成失败'); }
                 finally { state.busy=false; if(active()) repaint(); }
             }, {signal:frameSignal});
-            if (canvas.canvas !== 'background') {
-                image.tabIndex=0; image.setAttribute('role','button');
-                const view = event => { event.stopPropagation(); if(active() && state.imagePath) options.showImage?.(state.imagePath, imageDescription); };
-                // In the forum feed the card owns navigation; only detail opens the viewer.
-                image.addEventListener('click', event => { if(!frame.closest('[data-post-index]')) view(event); }, {signal:frameSignal});
-                image.addEventListener('keydown', event => { if(event.key === 'Enter' && !frame.closest('[data-post-index]')) view(event); }, {signal:frameSignal});
-            }
+            image.tabIndex=0; image.setAttribute('role','button');
+            const view = event => { event.stopPropagation(); if(active() && state.imagePath) options.showImage?.(state.imagePath, imageDescription); };
+            // In the forum feed the card owns navigation; only detail opens the viewer.
+            image.addEventListener('click', event => { if(!frame.closest('[data-post-index]')) view(event); }, {signal:frameSignal});
+            image.addEventListener('keydown', event => { if(event.key === 'Enter' && !frame.closest('[data-post-index]')) view(event); }, {signal:frameSignal});
         });
         repaint();
     }

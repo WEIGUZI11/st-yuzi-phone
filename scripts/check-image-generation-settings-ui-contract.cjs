@@ -117,6 +117,9 @@ function createFakeContainer() {
                 ['#phone-image-generation-enabled', new FakeElement({
                     checked: /id="phone-image-generation-enabled"[^>]*checked/u.test(html),
                 })],
+                ['#phone-image-generation-baibai-enabled', new FakeElement({
+                    checked: /id="phone-image-generation-baibai-enabled"[^>]*checked/u.test(html),
+                })],
                 ['#phone-image-generation-test-names', new FakeElement({
                     value: html.match(/id="phone-image-generation-test-names"[^>]*value="([^"]*)"/u)?.[1] ?? '',
                 })],
@@ -317,7 +320,7 @@ async function testSettingsHomeAndImageGenerationPageExposeConfirmedControls() {
 
     assert.match(pageHtml, />生图设置</u);
     assert.match(pageHtml, /智慧姬/u);
-    for (const text of ['生图模式跟随智慧姬设置。', '使用所选 API 和生图预设转换提示词，再交给智慧姬。', '转换 API 预设', '多个人名用分号分隔（; 或；）。', '按映射顺序匹配，命中即停；字段按表格列顺序拼接。', '超时仅停止等待，不会取消后台生图。']) {
+    for (const text of ['生图接口', '柏宝绘', '都不勾选则关闭生图。', '使用所选 API 和生图预设转换提示词，再交给所选生图接口。', '转换 API 预设', '多个人名用分号分隔（; 或；）。', '按映射顺序匹配，命中即停；字段按表格列顺序拼接。', '智慧姬超时仅停止等待；柏宝绘超时会请求取消。']) {
         assert.ok(pageHtml.includes(text), text);
     }
     assert.doesNotMatch(pageHtml, /小手机负责整理提示词|中间模型 API 预设|启用转换时，AI 输出/);
@@ -329,8 +332,12 @@ async function testSettingsHomeAndImageGenerationPageExposeConfirmedControls() {
     assert.match(emptyHtml, /user\/images\/yuzi-phone-generated\//u, '空白配置也必须显示本地保存路径');
     const source = read('modules/settings-app/pages/image-generation.js');
     assert.doesNotMatch(source, /输入人物名字或图片描述后，这里会显示中文提示词。/u, '首次渲染与动态更新采用同一简短提示');
-    assert.match(pageHtml, /测试图片和之后的 QQ 生图会保存到：user\/images\/yuzi-phone-generated\//u);
+    assert.match(pageHtml, /图片保存到：user\/images\/yuzi-phone-generated\//u);
     assert.match(pageHtml, /id="phone-image-generation-enabled"[^>]*checked/u);
+    assert.doesNotMatch(pageHtml, /启用生图（总开关）|id="phone-image-generation-baibai-enabled"[^>]*checked/u);
+    const baiBaiHtml = buildImageGenerationPageHtml({ config: { enabled: true, provider: 'baibai' } });
+    assert.match(baiBaiHtml, /id="phone-image-generation-baibai-enabled"[^>]*checked/u);
+    assert.doesNotMatch(baiBaiHtml, /id="phone-image-generation-enabled"[^>]*checked/u);
     assert.match(pageHtml, /id="phone-image-generation-test-names"/u);
     assert.match(pageHtml, /id="phone-image-generation-test-description"/u);
     assert.match(pageHtml, /id="phone-image-generation-prompt-preview"/u);
@@ -532,6 +539,22 @@ async function testImageGenerationPageUsesInjectedServiceAndKeepsAsyncUpdatesLoc
     enabled.dispatchEvent(new Event('change'));
     await flushAsyncWork();
     assert.equal(saveCalls.at(-1).enabled, true);
+    assert.equal(saveCalls.at(-1).provider, 'chatu8');
+    const baiBaiEnabled = container.querySelector('#phone-image-generation-baibai-enabled');
+    baiBaiEnabled.checked = true;
+    baiBaiEnabled.dispatchEvent(new Event('change'));
+    await flushAsyncWork();
+    assert.equal(enabled.checked, false, '切到柏宝绘时取消智慧姬');
+    assert.equal(saveCalls.at(-1).provider, 'baibai');
+    baiBaiEnabled.checked = false;
+    baiBaiEnabled.dispatchEvent(new Event('change'));
+    await flushAsyncWork();
+    assert.equal(saveCalls.at(-1).enabled, false, '两项都不勾选时关闭生图');
+    enabled.checked = true;
+    enabled.dispatchEvent(new Event('change'));
+    await flushAsyncWork();
+    assert.equal(baiBaiEnabled.checked, false);
+    assert.equal(saveCalls.at(-1).provider, 'chatu8');
 
     const names = container.querySelector('#phone-image-generation-test-names');
     const description = container.querySelector('#phone-image-generation-test-description');

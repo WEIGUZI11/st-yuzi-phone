@@ -23,11 +23,13 @@ function buildApplicationSelect({
     sheetKey,
     candidates,
     active,
+    builtinSceneId = '',
 }) {
     const isPopup = application === 'popup';
     const availableCandidates = asArray(candidates);
     const activeCandidate = availableCandidates.find(candidate => selected(active, candidate, application));
-    const currentValue = activeCandidate
+    const builtinSelected = builtinSceneId && active?.kind === 'builtin' && active.sceneId === builtinSceneId;
+    const currentValue = builtinSelected ? `builtin:${builtinSceneId}` : activeCandidate
         ? (isPopup ? activeCandidate.presetId : `${activeCandidate.presetId}:${activeCandidate.itemId}`)
         : '';
     const options = availableCandidates.map((candidate) => {
@@ -49,7 +51,8 @@ function buildApplicationSelect({
         <select class="phone-settings-select" data-content-preset-application="${escapeHtmlAttr(application)}"
             data-sheet-key="${escapeHtmlAttr(sheetKey)}" data-content-preset-current-value="${escapeHtmlAttr(currentValue)}"
             aria-label="${escapeHtmlAttr(label)}">
-            <option value=""${active ? '' : ' selected'}>${escapeHtml(emptyLabel)}</option>
+            <option value=""${activeCandidate || builtinSelected ? '' : ' selected'}>${escapeHtml(emptyLabel)}</option>
+            ${builtinSceneId ? `<option value="builtin:${escapeHtmlAttr(builtinSceneId)}" data-builtin-scene="${escapeHtmlAttr(builtinSceneId)}"${builtinSelected ? ' selected' : ''}>${t("内置美化")}</option>` : ''}
             ${options}
         </select>
     </label>`;
@@ -100,6 +103,14 @@ export function buildBeautifyTemplatePageHtml(viewModel = {}) {
                 sheetKey: table.sheetKey,
                 candidates: popupCandidates,
                 active: popupActive,
+            })}${buildApplicationSelect({
+                application: 'bottom',
+                label: t("底部可视化美化"),
+                emptyLabel: t("默认"),
+                sheetKey: table.sheetKey,
+                candidates: pageCandidates,
+                active: table.bottomActive,
+                builtinSceneId: table.presentation === 'theater' ? table.sceneId : '',
             })}`;
             return `<article class="phone-settings-card"><div class="phone-settings-card-title">${escapeHtml(table.tableName || table.sheetKey)}</div><div class="phone-settings-form">${applications}</div></article>`;
         }).join('')
@@ -114,7 +125,7 @@ export function buildBeautifyTemplatePageHtml(viewModel = {}) {
     const bodyHtml = `${statusHtml}
         ${buildSettingsSectionHtml({ title: 'QQ', desc: t('主题与通知独立应用；恢复默认不清除个人装饰。'), bodyHtml: qqHtml })}
         ${buildSettingsSectionHtml({ title: t("完整预设"), bodyHtml: `<div class="phone-settings-action"><button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="import">${t`导入预设`}</button></div>${presetCardsHtml}` })}
-        ${buildSettingsSectionHtml({ title: t("表格应用"), desc: t("导入后，请分别选择页面和弹窗应用。"), bodyHtml: `${tableCardsHtml}<div class="phone-settings-action"><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-page">${t`全部恢复页面默认`}</button><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-popup">${t`全部清空弹窗应用`}</button></div>` })}`;
+        ${buildSettingsSectionHtml({ title: t("表格应用"), desc: `${t("导入后，请分别选择页面和弹窗应用。")}${t("底部可视化美化独立选择，重开面板后生效。")}`, bodyHtml: `${tableCardsHtml}<div class="phone-settings-action"><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-page">${t`全部恢复页面默认`}</button><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-popup">${t`全部清空弹窗应用`}</button><button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="clear-all-bottom">${t`全部恢复底部默认`}</button></div>` })}`;
     return buildSettingsPageFrame({
         title: t("模板工坊"),
         heroHtml,

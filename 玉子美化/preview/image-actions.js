@@ -12,6 +12,7 @@ export function createPreviewImageActions({ declaration, getState, signal, image
     if (signal.aborted) return { error: answer(false, 'stale', { reason: 'instance-inactive' }) };
     const canvas = canvases.find(value => value.canvas === name);
     if (!canvas) return { error: answer(false, 'invalid-input', { reason: 'canvas-not-found' }) };
+    // 模拟“未选生图接口或表开关关闭”；不读取智慧姬／柏宝绘，也不提供真实接口切换。
     if (requireEnabled && scenario === 'disabled') return { error: answer(false, 'disabled', { reason: 'image-generation-disabled' }) };
     if (scenario === 'unavailable') return { error: answer(false, 'unavailable', { reason: 'preview-unavailable' }) };
     const state = getState();

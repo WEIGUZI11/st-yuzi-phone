@@ -5,6 +5,7 @@ import {
 import { isTrustedContentPresetRecord } from './format.js';
 import { hasPageCapability, hasPopupCapability } from './matcher.js';
 import { normalizePackagePath } from './paths.js';
+import { getTheaterSceneDefinition } from '../phone-theater/config.js';
 
 let dbPromise = null;
 
@@ -46,6 +47,7 @@ export function openContentPresetRepository(factory = globalThis.indexedDB) {
             ensureBindingStore(db, transaction, CONTENT_PRESET_STORES.activeByTable);
             ensureBindingStore(db, transaction, CONTENT_PRESET_STORES.popupByTable);
             ensureBindingStore(db, transaction, CONTENT_PRESET_STORES.appBindings);
+            ensureBindingStore(db, transaction, CONTENT_PRESET_STORES.bottomByTable);
         };
         request.onsuccess = () => {
             const db = request.result;
@@ -130,7 +132,7 @@ export async function getPresetRecord(id) {
         .then(record => isTrustedContentPresetRecord(record) ? record : null));
 }
 
-function loadBindingsFromStore(tx, storeName, valuesOf, capability, targetKey) {
+function loadBindingsFromStore(tx, storeName, valuesOf, capability, targetKey, allowBuiltin = false) {
     return Promise.all([
         requestResult(tx.objectStore(CONTENT_PRESET_STORES.presets).getAll()),
         requestResult(tx.objectStore(storeName).getAll()),
@@ -140,24 +142,39 @@ function loadBindingsFromStore(tx, storeName, valuesOf, capability, targetKey) {
             new Set((Array.isArray(valuesOf(preset)) ? valuesOf(preset) : []).filter(capability).map(value => text(value.id)).filter(Boolean)),
         ]));
         return new Map(bindings.map(binding => {
+            if (allowBuiltin && binding?.kind === 'builtin') return { sheetKey: text(binding.sheetKey), kind: 'builtin', sceneId: text(binding.sceneId) };
             const targetId = text(binding?.[targetKey]);
             return { sheetKey: text(binding?.sheetKey), presetId: text(binding?.presetId), [targetKey]: targetId, ...(targetKey === 'displayId' ? { itemId: targetId } : {}) };
         })
-            .filter(binding => binding.sheetKey && binding.presetId && binding[targetKey] && validTargets.get(binding.presetId)?.has(binding[targetKey]))
+            .filter(binding => binding.sheetKey && (binding.kind === 'builtin'
+                ? !!getTheaterSceneDefinition(binding.sceneId)
+                : binding.presetId && binding[targetKey] && validTargets.get(binding.presetId)?.has(binding[targetKey])))
             .map(binding => [binding.sheetKey, binding]));
     });
 }
-function loadBindings(storeName, valuesOf, capability, targetKey) {
+function loadBindings(storeName, valuesOf, capability, targetKey, allowBuiltin = false) {
     return openContentPresetRepository().then(db => runTransaction(
         db,
         [CONTENT_PRESET_STORES.presets, storeName],
         'readonly',
-        tx => loadBindingsFromStore(tx, storeName, valuesOf, capability, targetKey),
+        tx => loadBindingsFromStore(tx, storeName, valuesOf, capability, targetKey, allowBuiltin),
     ));
 }
 // 兼容旧调用：activeByTable 永远是页面绑定。
 export function loadActiveBindings() { return loadBindings(CONTENT_PRESET_STORES.activeByTable, preset => preset.items, hasPageCapability, 'itemId'); }
 export function loadPageBindings() { return loadActiveBindings(); }
+export function loadBottomBindings() { return loadBindings(CONTENT_PRESET_STORES.bottomByTable, preset => preset.items, hasPageCapability, 'itemId', true); }
+export function setBottomActiveBinding(sheetKey, binding) {
+    if (binding?.kind !== 'builtin') return setBinding(sheetKey, binding?.presetId, binding?.itemId, CONTENT_PRESET_STORES.bottomByTable, preset => preset.items, hasPageCapability, 'itemId', '表格美化页面');
+    const record = { sheetKey: text(sheetKey), kind: 'builtin', sceneId: text(binding.sceneId) };
+    if (!record.sheetKey || !getTheaterSceneDefinition(record.sceneId)) return Promise.reject(new Error(t("内置美化绑定无效")));
+    return openContentPresetRepository().then(db => runTransaction(db, [CONTENT_PRESET_STORES.bottomByTable], 'readwrite', tx => {
+        tx.objectStore(CONTENT_PRESET_STORES.bottomByTable).put(record);
+        return record;
+    }));
+}
+export function clearBottomActiveBinding(sheetKey) { return clearBinding(sheetKey, CONTENT_PRESET_STORES.bottomByTable); }
+export function clearAllBottomActiveBindings() { return clearAllBindings(CONTENT_PRESET_STORES.bottomByTable); }
 export function loadPopupBindings() {
     return openContentPresetRepository().then(db => runTransaction(
         db,
@@ -290,13 +307,14 @@ function removeAllPresetBindings(tx, presetId) {
         removePresetBindings(tx, presetId, CONTENT_PRESET_STORES.activeByTable),
         removePresetBindings(tx, presetId, CONTENT_PRESET_STORES.popupByTable),
         removePresetBindings(tx, presetId, CONTENT_PRESET_STORES.appBindings),
+        removePresetBindings(tx, presetId, CONTENT_PRESET_STORES.bottomByTable),
     ]).then(groups => [...new Set(groups.flat())]);
 }
 
 export async function replacePresetRecord(record) {
     if (!isTrustedContentPresetRecord(record)) throw new Error(t("预设记录不符合玉子美化 Runtime API 合同"));
     const db = await openContentPresetRepository();
-    return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable, CONTENT_PRESET_STORES.appBindings], 'readwrite', tx => {
+    return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable, CONTENT_PRESET_STORES.appBindings, CONTENT_PRESET_STORES.bottomByTable], 'readwrite', tx => {
         tx.objectStore(CONTENT_PRESET_STORES.presets).put(record);
         return removeAllPresetBindings(tx, record.id).then(affectedSheetKeys => ({ record, affectedSheetKeys }));
     });
@@ -333,7 +351,7 @@ export async function deletePresetRecord(presetId) {
     const id = text(presetId);
     if (!id) throw new Error(t("预设 ID 不能为空"));
     const db = await openContentPresetRepository();
-    return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable, CONTENT_PRESET_STORES.appBindings], 'readwrite', tx => {
+    return runTransaction(db, [CONTENT_PRESET_STORES.presets, CONTENT_PRESET_STORES.activeByTable, CONTENT_PRESET_STORES.popupByTable, CONTENT_PRESET_STORES.appBindings, CONTENT_PRESET_STORES.bottomByTable], 'readwrite', tx => {
         tx.objectStore(CONTENT_PRESET_STORES.presets).delete(id);
         return removeAllPresetBindings(tx, id).then(affectedSheetKeys => ({ presetId: id, affectedSheetKeys }));
     });

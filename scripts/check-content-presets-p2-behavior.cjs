@@ -55,6 +55,10 @@ async function checkActions() {
     assert.strictEqual(first, second, '同 action 重入必须合流到同一 Promise');
     await first;
     assert.equal(backCalls, 1);
+    const bottom = createContentPresetActions({ disabled: true, isCurrent: () => true });
+    for (const action of ['back', 'previousTable', 'nextTable', 'editCurrentTable']) {
+        assert.equal((await bottom[action]()).status, 'unavailable', '底部保留动作接口但不执行手机导航');
+    }
 }
 
 async function checkScriptRuntime() {
@@ -156,6 +160,9 @@ async function checkScrollRegistry() {
     registry.write(key('chat-a', 'c'), 3);
     assert.equal(registry.read(key('chat-a', 'b')), null, 'LRU 必须淘汰最久未访问项');
     assert.equal(registry.read(key('chat-a', 'a')).scrollTop, 1);
+    registry.write({ ...key('chat-a', 'a'), surface: 'bottom' }, 42);
+    registry.clearByBinding(key('chat-a', 'a'));
+    assert.equal(registry.read({ ...key('chat-a', 'a'), surface: 'bottom' })?.scrollTop, 42, '清理手机滚动位置不得清理底部记录');
     registry.dispose();
     assert.equal(registry.size(), 0);
 }
