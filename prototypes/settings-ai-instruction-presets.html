@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 指令预设 · 设置二级页原型</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页补充样式：只用 shared 配色变量，白天 / 夜间自动跟随 */
+button.row { width: 100%; border: 0; background: none; font-family: inherit; color: inherit; text-align: left; }
+.row-label.fixed { flex: none; }
+#preset-value { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.group.gap { margin-top: 16px; }
+.msg-card + .msg-card { margin-top: 12px; }
+.msg-index { flex-shrink: 0; min-width: 28px; color: var(--text-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+.row input.msg-name { text-align: left; color: var(--text); font-weight: 600; }
+.role-seg button { padding: 4px 10px; }
+.msg-card textarea.field { min-height: 150px; }
+.dirty-badge { color: var(--danger); background: var(--fill); }
+.ph-row { flex-direction: column; align-items: flex-start; gap: 2px; }
+.ph-row .row-sub { margin: 0; }
+.is-loading { opacity: 0.5; }
+.notes ul { margin: 4px 0 8px; padding-left: 18px; }
+</style>
+</head>
+<body>
+<div class="toolbar"><span>原型预览：</span><button type="button" id="toggle-theme">切换白天 / 夜间</button><button type="button" id="sim-error">模拟读取失败</button></div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" aria-label="返回设置" data-toast="返回设置（原型不跳转）">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">AI 指令预设</h1>
+    </header>
+    <main class="scroll">
+        <p class="status-line" id="load-status" role="status">正在读取 AI 指令预设...</p>
+        <div id="page-body">
+        <h2 class="group-header">AI 指令预设</h2>
+        <section class="group">
+            <button type="button" class="row tappable" id="preset-row" aria-haspopup="dialog">
+                <span class="row-label">选择预设<span class="badge dirty-badge" id="dirty-badge" hidden>未保存</span></span>
+                <span class="row-value"><span id="preset-value"></span><span class="chev" aria-hidden="true">›</span></span>
+            </button>
+            <label class="row">
+                <span class="row-label fixed">预设名称</span>
+                <input class="inline" id="preset-name" maxlength="120" autocomplete="off">
+            </label>
+            <button type="button" class="row action" id="new-btn">新建 AI 指令预设</button>
+        </section>
+        <p class="group-footer" id="preset-footer"></p>
+
+        <h2 class="group-header">导入、导出与恢复</h2>
+        <section class="group">
+            <button type="button" class="row action" id="import-btn">导入</button>
+            <button type="button" class="row action" id="export-current-btn">导出当前</button>
+            <button type="button" class="row action" id="export-all-btn">导出全部</button>
+            <button type="button" class="row action" id="restore-current-btn">恢复当前</button>
+            <button type="button" class="row action" id="restore-all-btn">恢复全部</button>
+        </section>
+        <p class="group-footer">导入 JSON 文件。「恢复当前」仅对内置预设可用；「恢复全部」恢复四份内置预设，自定义预设不会删除。</p>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+        <h2 class="group-header">保存</h2>
+        <section class="group">
+            <button type="button" class="row action" id="save-btn">保存预设</button>
+            <button type="button" class="row action" id="save-as-btn">另存为</button>
+            <button type="button" class="row action" id="cleanup-btn" hidden>清理疑似异常空块</button>
+            <button type="button" class="row action danger" id="delete-btn">删除预设</button>
+        </section>
+        <p class="group-footer">名称不能与已有预设重复；内置预设不可删除。</p>
+        <h2 class="group-header" id="msg-header">消息块</h2>
+        <div id="msg-stack"></div>
+        <section class="group gap">
+            <button type="button" class="row action" id="add-msg-btn">＋ 添加消息块</button>
+        </section>
+        <p class="group-footer">消息块按顺序拼成请求，可用上移 / 下移调整顺序。</p>
+        <h2 class="group-header">占位符说明</h2>
+        <section class="group" id="ph-list"></section>
+        <p class="group-footer">把占位符写入任意消息块内容，发起请求时会替换为对应资料。</p>
+        </div>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<div class="notes">
+<b>原功能 → 新位置</b>
+<ul>
+<li>「选择预设」下拉 → 首组「选择预设」行 + YZ.sheet；内置预设带「内置」角标，新建未保存时列出「新建 AI 指令预设（未保存）」</li>
+<li>「新建 AI 指令预设」按钮、「预设名称」输入（最多 120 字）→ 首组</li>
+<li>导入 / 导出当前 / 导出全部 / 恢复当前 / 恢复全部 →「导入、导出与恢复」组；禁用条件照源码：导出当前需已保存，导出全部需有预设，恢复当前仅内置</li>
+<li>保存预设 / 另存为 / 删除预设 / 清理疑似异常空块（≥3 个连续「未命名 / system / 空内容」块才出现）→「保存」组；删除仅自定义可用；重名弹「预设名称重复」</li>
+<li>消息块卡片（#序号、名称、角色下拉、内容、上移 / 下移 / 删除）→ 每块一张分组卡：标题行（序号 + 名称）、角色分段控件 system / user / assistant、内容 textarea、操作行；首块禁上移、末块禁下移</li>
+<li>「添加消息块」→ 列表下方操作行，默认「新消息块 / system / 空内容」；无消息块时显示「当前预设没有消息块。」</li>
+<li>占位符说明 → 底部分组，14 项照 placeholders.js</li>
+<li>读取中 / 读取失败 → 顶部状态行（工具栏可模拟失败）；读取或处理中控件全部禁用</li>
+</ul>
+<b>新增 / 改动</b>
+<ul>
+<li>删除消息块：<b>新增确认</b>（源码直接删除）</li>
+<li>恢复当前：<b>新增确认</b>（源码直接覆盖）</li>
+<li>「未保存」角标：<b>新增</b>，新建预设或草稿与已保存内容不同时显示；有未保存修改时切换 / 新建预设，<b>新增确认</b>「放弃未保存的修改？」（源码静默丢弃草稿）</li>
+<li>导出在原型里只弹提示，不下载文件</li>
+<li>源码没有启用开关、独立的复制 / 重命名（由「另存为」与改名后「保存预设」承担），本页也没有媒体区块，原型均未添加</li>
+</ul>
+</div>
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+'use strict';
+const ROLES = ['system', 'user', 'assistant'];
+const PH = [
+['{{人物人设}}', '当前陪聊人物的姓名与完整人设。'], ['{{私聊人物}}', '人物名字。'], ['{{私聊主动人物}}', '联系人所有人名字。'],
+['{{群聊成员}}', '当前群聊成员的身份、角色与权限。'], ['{{群聊记忆}}', '当前私聊人物参加的群聊记忆。'], ['{{主动群聊记忆}}', '本轮主动私聊人物参加的群聊记忆。'],
+['{{私聊记忆}}', '当前群聊成员各自的私聊记忆。'], ['{{主动私聊记忆}}', '本轮主动群聊成员各自的私聊记忆。'], ['{{私聊主动记录}}', '本轮主动私聊候选会话的最近记录。'],
+['{{群聊记录}}', '当前群聊会话的最近消息记录。'], ['{{正文上下文}}', 'SillyTavern 当前正文的最近若干轮对话。'], ['{{世界书内容}}', '当前请求命中的世界书内容。'],
+['{{故事时间}}', '当前故事时间。'], ['{{可用表情}}', '可发送表情的 ID 与含义说明。'],
+];
+let uid = 0;
+const msg = (name, role, content) => ({ id: 'm' + (++uid), name, role, content });
+const E = '未命名消息块';
+let presets = [
+{ presetId: 'b1', name: '私聊回复', isBuiltIn: true, messages: [msg('角色设定', 'system', '你正在扮演{{私聊人物}}。\n{{人物人设}}'), msg('记忆', 'system', '{{私聊记忆}}\n{{群聊记忆}}\n{{世界书内容}}'), msg('回复要求', 'user', '现在是{{故事时间}}，用 QQ 私聊口吻回复，可用表情：{{可用表情}}')] },
+{ presetId: 'b2', name: '群聊回复', isBuiltIn: true, messages: [msg('群成员', 'system', '{{群聊成员}}'), msg('群聊记录', 'system', '{{群聊记录}}\n{{私聊记忆}}'), msg('回复要求', 'user', '以群成员身份接话。')] },
+{ presetId: 'b3', name: '私聊主动消息', isBuiltIn: true, messages: [msg('候选人物', 'system', '{{私聊主动人物}}\n{{私聊主动记录}}\n{{主动群聊记忆}}'), msg('发起要求', 'user', '挑选一位人物主动发起私聊。')] },
+{ presetId: 'b4', name: '群聊主动消息', isBuiltIn: true, messages: [msg('群聊背景', 'system', '{{群聊成员}}\n{{主动私聊记忆}}'), msg('发起要求', 'user', '让一位群成员主动开启话题。')] },
+{ presetId: 'c1', name: '我的私聊风格', isBuiltIn: false, messages: [msg('语气', 'system', '回复简短，偶尔吐槽。'), msg(E, 'system', ''), msg(E, 'system', ''), msg(E, 'system', ''), msg('示例回复', 'assistant', '嗯？找我有事？')] },
+];
+const ORIGIN = JSON.stringify(presets.filter(p => p.isBuiltIn));
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const S = { loading: true, busy: false, error: '', selectedId: '', draft: null, saved: '' };
+const find = (id) => presets.find((p) => p.presetId === id) || null;
+const newDraft = () => ({ presetId: '', name: '新建 AI 指令预设', isBuiltIn: false, messages: [msg('新消息块', 'system', '')] });
+const snap = (d) => JSON.stringify([d.name.trim(), d.messages.map((m) => [m.name.trim() || E, m.role, m.content])]);
+const changed = () => snap(S.draft) !== S.saved;
+const misread = (ms) => { // 照 draft.js：连续 ≥3 个「未命名 / system / 空内容」
+    const out = []; let s = -1;
+    const flush = (end) => { if (s >= 0 && end - s >= 3) for (let k = s; k < end; k += 1) out.push(k); s = -1; };
+    ms.forEach((m, i) => { if ((m.name.trim() || E) === E && m.role === 'system' && !m.content) { if (s < 0) s = i; } else flush(i); });
+    flush(ms.length);
+    return out;
+};
+const setDis = (el, off) => { el.disabled = off; el.setAttribute('aria-disabled', String(off)); };
+const select = (id) => {
+    const p = find(id);
+    S.selectedId = p ? id : '';
+    S.draft = p ? JSON.parse(JSON.stringify(p)) : newDraft();
+    S.saved = snap(S.draft);
+    render();
+};
+const renderMeta = () => {
+    const p = find(S.selectedId), n = misread(S.draft.messages).length, c = $('#cleanup-btn');
+    $('#dirty-badge').hidden = !!S.draft.presetId && !changed();
+    $('#preset-value').textContent = p ? p.name + (p.isBuiltIn ? '（内置）' : '') : '新建 AI 指令预设（未保存）';
+    c.hidden = n < 3;
+    c.textContent = `清理疑似异常空块（${n}）`;
+    setDis(c, S.loading || S.busy);
+};
+const card = (m, i, len, dis) => {
+    const d = dis ? ' disabled' : '', b = (act, txt, off, cls = '') => `<button type="button" class="mini-btn${cls}" data-act="${act}"${off || dis ? ' disabled' : ''}>${txt}</button>`;
+    return `<section class="group msg-card" data-i="${i}" aria-label="消息块 #${i + 1}">
+<div class="row"><span class="msg-index">#${i + 1}</span><input class="inline msg-name" data-f="name" maxlength="120" value="${esc(m.name)}" aria-label="消息块名称"${d}></div>
+<div class="row"><span class="row-label">角色</span><div class="seg role-seg" role="group" aria-label="角色">${ROLES.map((r) => `<button type="button" data-role="${r}" aria-pressed="${r === m.role}"${d}>${r}</button>`).join('')}</div></div>
+<label class="row block"><span class="field-label">内容</span><textarea class="field" data-f="content" rows="8"${d}>${esc(m.content)}</textarea></label>
+<div class="row"><div class="row-actions">${b('up', '上移', i === 0)}${b('down', '下移', i === len - 1)}${b('del', '删除', false, ' danger')}</div></div>
+</section>`;
+};
+
+const run = (fn) => { S.busy = true; render(); setTimeout(() => { S.busy = false; fn(); }, 500); };
+const guard = (go) => changed() ? YZ.confirm({ title: '放弃未保存的修改？', message: '当前草稿的修改尚未保存，切换后将丢失。', confirmText: '放弃', onConfirm: go }) : go();
+const render = () => {
+    const dis = S.loading || S.busy, d = S.draft, ls = $('#load-status');
+    ls.hidden = !S.loading && !S.error; ls.textContent = S.error || '正在读取 AI 指令预设...'; ls.classList.toggle('error', !!S.error);
+    $('#page-body').classList.toggle('is-loading', dis);
+    $('#preset-name').value = d.name; $('#preset-name').disabled = dis;
+    $('#preset-footer').textContent = '管理 QQ 聊天回复与主动消息的分段提示词。';
+    [['preset-row', 0], ['new-btn', 0], ['import-btn', 0], ['restore-all-btn', 0], ['save-btn', 0], ['save-as-btn', 0], ['add-msg-btn', 0],
+     ['export-current-btn', !d.presetId], ['export-all-btn', !presets.length], ['restore-current-btn', !(d.presetId && d.isBuiltIn)], ['delete-btn', !(d.presetId && !d.isBuiltIn)]]
+        .forEach(([id, off]) => setDis($('#' + id), dis || !!off));
+    $('#msg-stack').innerHTML = d.messages.length ? d.messages.map((m, i) => card(m, i, d.messages.length, dis)).join('')
+        : '<section class="group"><div class="row row-empty">当前预设没有消息块。</div></section>';
+    renderMeta();
+};
+const on = (id, fn) => $('#' + id).addEventListener('click', fn);
+on('preset-row', () => YZ.sheet({ title: '选择预设', groups: [{ options: [
+    ...(S.selectedId ? [] : [{ value: '', label: '新建 AI 指令预设（未保存）', selected: true }]),
+    ...presets.map((p) => ({ value: p.presetId, label: p.name || '未命名预设', selected: p.presetId === S.selectedId, ...(p.isBuiltIn ? { badge: '内置' } : {}) }))] }],
+    onSelect: (v) => { if (v !== S.selectedId) guard(() => select(v)); } }));
+on('new-btn', () => guard(() => select('')));
+$('#preset-name').addEventListener('input', (e) => { S.draft.name = e.target.value; renderMeta(); });
+const save = (as) => {
+    const d = S.draft, name = d.name.trim();
+    if (presets.some((p) => (as || p.presetId !== d.presetId) && p.name === name)) return YZ.alert({ title: '预设名称重复', message: '已经存在同名 AI 指令预设，请修改名称后再保存。' });
+    run(() => {
+        const messages = d.messages.map((m) => ({ ...m, name: m.name.trim() || E }));
+        let id = d.presetId;
+        if (as || !id) { id = 'c' + (++uid); presets.push({ presetId: id, name, isBuiltIn: false, messages }); } else Object.assign(find(id), { name, messages });
+        YZ.toast(as ? 'AI 指令预设已另存为新预设' : 'AI 指令预设已保存'); select(id);
+    });
+};
+on('save-btn', () => save(false));
+on('save-as-btn', () => save(true));
+
+on('delete-btn', () => {
+    const name = S.draft.name.trim() || '当前 AI 指令预设';
+    YZ.confirm({ title: '删除 AI 指令预设', message: `确定删除「${name}」吗？`, confirmText: '删除', onConfirm: () => run(() => {
+        presets = presets.filter((p) => p.presetId !== S.draft.presetId);
+        YZ.toast('AI 指令预设已删除'); select(presets[0]?.presetId || '');
+    }) });
+});
+const restoreBuiltIn = (ids) => { const o = JSON.parse(ORIGIN); presets = presets.map((p) => (ids.includes(p.presetId) ? o.find((x) => x.presetId === p.presetId) : p)); };
+on('restore-current-btn', () => YZ.confirm({ title: '恢复内置预设？', message: `将用内置内容覆盖「${find(S.selectedId).name}」，当前修改会丢失。`, confirmText: '恢复',
+    onConfirm: () => run(() => { restoreBuiltIn([S.selectedId]); YZ.toast('内置预设已恢复'); select(S.selectedId); }) }));
+on('restore-all-btn', () => YZ.confirm({ title: '恢复全部内置预设', message: '将恢复四份内置预设，自定义预设不会删除。', confirmText: '恢复',
+    onConfirm: () => run(() => { restoreBuiltIn(['b1', 'b2', 'b3', 'b4']); YZ.toast('四份内置预设已恢复'); select(find(S.selectedId) ? S.selectedId : presets[0].presetId); }) }));
+on('import-btn', () => $('#import-file').click());
+$('#import-file').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    let src; try { src = JSON.parse(await f.text()); } catch { return YZ.toast('导入文件不是有效的 JSON'); }
+    const list = Array.isArray(src?.presets) ? src.presets : [];
+    if (!list.length) return YZ.toast('导入 AI 指令预设失败');
+    run(() => {
+        const added = list.map((p) => ({ presetId: 'c' + (++uid), name: String(p.name || '未命名预设'), isBuiltIn: false, messages: (p.messages || []).map((m) => msg(String(m.name || E), ROLES.includes(m.role) ? m.role : 'system', String(m.content || ''))) }));
+        presets.push(...added); YZ.toast('AI 指令预设已导入'); select(added[0].presetId);
+    });
+});
+on('export-current-btn', () => YZ.toast('当前 AI 指令预设已导出'));
+on('export-all-btn', () => YZ.toast('全部 AI 指令预设已导出'));
+on('cleanup-btn', () => {
+    const idx = misread(S.draft.messages);
+    YZ.confirm({ title: '清理疑似异常空块', message: `将从当前草稿移除 ${idx.length} 个“未命名 / system / 空内容”消息块。清理后请检查并手动保存。`, confirmText: '清理',
+        onConfirm: () => { S.draft.messages = S.draft.messages.filter((_, i) => !idx.includes(i)); render(); } });
+});
+on('add-msg-btn', () => { S.draft.messages.push(msg('新消息块', 'system', '')); render(); });
+const stack = $('#msg-stack');
+stack.addEventListener('input', (e) => { const c = e.target.closest('.msg-card'), f = e.target.dataset.f; if (c && f) { S.draft.messages[+c.dataset.i][f] = e.target.value; renderMeta(); } });
+stack.addEventListener('click', (e) => {
+    const btn = e.target.closest('button'), c = btn?.closest('.msg-card'); if (!c || btn.disabled) return;
+    const i = +c.dataset.i, ms = S.draft.messages;
+    if (btn.dataset.role) { ms[i].role = btn.dataset.role; renderMeta(); return; }
+    const a = btn.dataset.act;
+    if (a === 'up' || a === 'down') { const j = a === 'up' ? i - 1 : i + 1; [ms[i], ms[j]] = [ms[j], ms[i]]; render(); }
+    if (a === 'del') YZ.confirm({ title: '删除消息块？', message: `确定删除「${ms[i].name.trim() || E}」吗？需保存预设后才会生效。`, confirmText: '删除', onConfirm: () => { ms.splice(i, 1); render(); } });
+});
+on('sim-error', () => { S.loading = true; S.error = ''; render(); setTimeout(() => { S.loading = false; S.error = '读取 AI 指令预设失败'; render(); }, 600); });
+S.draft = newDraft(); S.saved = snap(S.draft); render();
+setTimeout(() => { S.loading = false; select('b1'); }, 600);
+})();
+</script>
+</body>
+</html>

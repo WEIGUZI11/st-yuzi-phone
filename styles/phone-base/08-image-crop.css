@@ -10,7 +10,7 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    background: var(--yuzi-qq-overlay);
+    background: var(--yuzi-settings-layer-scrim);
     opacity: var(--yuzi-phone-crop-overlay-hidden-opacity);
     transition: opacity var(--yuzi-qq-transition) var(--yuzi-phone-crop-transition-timing);
 }
@@ -31,10 +31,11 @@
     padding: var(--yuzi-qq-dialog-padding);
     overflow-y: auto;
     overscroll-behavior: contain;
-    border: var(--yuzi-qq-line-width) solid var(--yuzi-qq-line);
-    border-radius: var(--yuzi-qq-radius-dialog);
-    background: var(--yuzi-qq-dialog-surface);
-    box-shadow: var(--yuzi-qq-shadow-dialog);
+    border: var(--yuzi-settings-row-divider-width) solid var(--yuzi-settings-group-separator);
+    border-radius: var(--yuzi-settings-alert-radius);
+    background: var(--yuzi-settings-group-card);
+    color: var(--yuzi-settings-text-primary);
+    box-shadow: var(--yuzi-settings-alert-shadow);
     display: flex;
     flex-direction: column;
     gap: var(--yuzi-qq-dialog-gap);
@@ -43,26 +44,29 @@
 .phone-image-crop-head {
     display: flex;
     flex-direction: column;
-    gap: var(--yuzi-qq-dialog-gap);
+    gap: var(--yuzi-settings-seg-item-padding-block);
+    text-align: center;
 }
 
 .phone-image-crop-title {
-    font-size: var(--yuzi-qq-title-size);
-    font-weight: var(--yuzi-qq-title-weight);
-    color: var(--yuzi-qq-text);
+    font-size: var(--yuzi-settings-alert-title-size);
+    font-weight: 600;
+    color: var(--yuzi-settings-text-primary);
 }
 
 .phone-image-crop-desc,
 .phone-image-crop-meta {
-    font-size: var(--yuzi-qq-caption-size);
-    line-height: var(--yuzi-qq-caption-line-height);
-    color: var(--yuzi-qq-muted);
+    font-size: var(--yuzi-settings-row-sub-size);
+    line-height: var(--yuzi-settings-group-footer-line-height);
+    color: var(--yuzi-settings-text-secondary);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
 }
 
 .phone-image-crop-stage-wrap {
-    border: var(--yuzi-qq-line-width) solid var(--yuzi-qq-line);
-    border-radius: var(--yuzi-qq-radius);
-    background: var(--yuzi-qq-dialog-muted);
+    border: 0;
+    border-radius: var(--yuzi-settings-group-radius);
+    background: var(--yuzi-phone-crop-stage-background);
     padding: var(--yuzi-qq-dialog-gap);
 }
 
@@ -74,7 +78,7 @@
     justify-content: center;
     overflow: hidden;
     border-radius: var(--yuzi-qq-radius);
-    background: var(--yuzi-qq-dialog-muted);
+    background: var(--yuzi-phone-crop-stage-background);
 }
 
 .phone-image-crop-image {
@@ -217,7 +221,7 @@
     z-index: var(--yuzi-phone-crop-action-z-index);
     padding-top: var(--yuzi-qq-dialog-gap);
     justify-content: space-between;
-    background: var(--yuzi-qq-dialog-surface);
+    background: var(--yuzi-settings-group-card);
 }
 
 .phone-image-crop-actions-main,

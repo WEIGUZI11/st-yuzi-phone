@@ -19,8 +19,8 @@ async function main() {
     const view = () => buildAppearancePageHtml({ layoutValues: settings.getPhoneSettings(), fontLibrary: { options: [{ id: 'user', name: '保存' }] } });
     assert.match(view(), /语言.*Language/, '语言入口无需识别中文');
     settings.savePhoneSetting('phoneLanguage', 'en');
-    assert.match(view(), />Upload</, '英文设置页面实际渲染英文');
-    assert.doesNotMatch(view(), />上传</);
+    assert.match(view(), />Upload background image</, '英文设置页面实际渲染英文');
+    assert.doesNotMatch(view(), />上传背景图</);
     assert.match(view(), /保存/, '用户名不能因与系统文案同名而翻译');
     const rawData = { sheet_settings: { name: '设置', content: [['保存', '删除'], ['<中文&>', '保存']] } };
     const rawBefore = structuredClone(rawData);
@@ -45,7 +45,7 @@ async function main() {
     assert.equal(invalid.message, 'Row update failed: invalid row index', '系统校验错误英译，错误码保持稳定');
     settings.savePhoneSetting('phoneLanguage', 'zh-CN');
     assert.deepEqual(collectAppearanceIconSlots(rawData), englishSlots, '图标身份、匹配名称、类型不随语言改变');
-    assert.match(view(), />上传</, '切回中文恢复原文');
+    assert.match(view(), />上传背景图</, '切回中文恢复原文');
     settings.flushPhoneSettingsSave();
     console.log('[通过] 语言设置默认、保存、回读、隔离与非法值保护');
 }

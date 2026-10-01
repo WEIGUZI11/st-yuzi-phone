@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · QQ · 聊天设置 / 群聊设置（iOS 分组列表原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 独立原型，不参与构建。只用 shared 颜色变量，白天 / 夜间自动跟随；示例头像颜色放在脚本数据里。 */
+.phone [hidden] { display: none !important; }
+.toolbar { flex-wrap: wrap; justify-content: center; max-width: 560px; }
+.toolbar label { display: inline-flex; align-items: center; gap: 4px; }
+.toolbar button[aria-pressed="true"] { font-weight: 600; }
+.nav-title:focus { outline: none; }
+.mt { margin-top: 12px; }
+.ava {
+    display: grid; place-items: center; flex-shrink: 0; border-radius: 50%;
+    font-style: normal; font-weight: 600;
+}
+
+/* 群资料卡 + 成员网格（复用 shared 的 picker-grid / pick-icon） */
+.group-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.group-card .ava { width: 52px; height: 52px; border-radius: 13px; font-size: 18px; }
+.group-card b { display: block; font-size: 17px; overflow-wrap: anywhere; }
+.member-grid { padding: 4px 10px 14px; gap: 14px 6px; }
+.member-grid .pick-icon i { border-radius: 50%; }
+.member-grid .is-self { cursor: default; }
+.member-grid .is-self:active { background: none; }
+.member-grid .add-tile i { background: var(--fill); color: var(--text-2); box-shadow: none; font-size: 26px; font-weight: 300; }
+.tile-role {
+    position: absolute; top: 0; right: 2px; padding: 0 5px; border-radius: 999px;
+    font-size: 10px; line-height: 16px; font-weight: 600;
+    color: var(--accent); background: var(--accent-soft);
+}
+.tile-role.owner { color: var(--card); background: var(--accent); }
+.bg-thumb {
+    width: 22px; height: 30px; border-radius: 4px;
+    background: linear-gradient(160deg, var(--accent-soft), var(--accent));
+}
+.lifecycle { margin-top: 28px; }
+
+/* 群成员资料 */
+.mp-cover {
+    position: relative; height: 150px; margin: 12px 16px 0; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent-soft), var(--fill-strong));
+}
+.mp-cover .ava {
+    position: absolute; left: 50%; bottom: -44px; transform: translateX(-50%);
+    width: 88px; height: 88px; font-size: 30px; box-shadow: 0 0 0 4px var(--page);
+}
+.mp-info { margin-top: 54px; padding: 0 20px; text-align: center; }
+.mp-name { margin: 0; font-size: 22px; color: var(--text); overflow-wrap: anywhere; }
+.mp-role { margin: 6px 0 0; min-height: 1.5em; font-size: 14px; color: var(--text-2); }
+.primary-btn {
+    display: block; width: calc(100% - 32px); min-height: 46px; margin: 28px 16px 0;
+    border: 0; border-radius: 12px; background: var(--accent); color: var(--card);
+    font: inherit; font-size: 17px; font-weight: 600; cursor: pointer;
+}
+.primary-btn:active { opacity: 0.85; }
+.primary-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 群成员编辑：身份区 */
+.ident { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.ident .ava { width: 52px; height: 52px; font-size: 20px; }
+.ident b { display: block; font-size: 17px; overflow-wrap: anywhere; }
+</style>
+</head>
+
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <span role="group" aria-label="视图"><button type="button" data-tb="view" data-v="private">私聊设置</button> <button type="button" data-tb="view" data-v="group">群聊设置</button></span>
+    <span role="group" aria-label="我的身份" data-group-only>我的身份：<button type="button" data-tb="role" data-v="owner">群主</button> <button type="button" data-tb="role" data-v="admin">管理员</button> <button type="button" data-tb="role" data-v="member">成员</button> <button type="button" data-tb="role" data-v="exited">已退出</button></span>
+    <span role="group" aria-label="群状态" data-group-only>群状态：<button type="button" data-tb="status" data-v="active">正常</button> <button type="button" data-tb="status" data-v="dissolved">已解散</button></span>
+    <span role="group" aria-label="全局世界书">全局世界书：<button type="button" data-tb="wb" data-v="on">开</button> <button type="button" data-tb="wb" data-v="off">关</button></span>
+</div>
+<div class="phone" id="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" id="nav-back">‹ 聊天</button>
+        <h1 class="nav-title" id="nav-title" tabindex="-1" style="margin:0">聊天设置</h1>
+    </header>
+    <main class="scroll" id="scroll">
+    <!-- A / B：私聊「聊天设置」与「群聊设置」共用一页，data-group-only 仅群聊显示 -->
+    <div id="pg-settings">
+        <section class="group mt" data-group-only aria-label="群资料">
+            <div class="group-card"><i class="ava" id="g-ava" aria-hidden="true"></i><div><b id="g-name"></b><span class="row-sub" id="g-status"></span></div></div>
+            <div class="picker-grid member-grid" id="member-grid" role="group" aria-label="群成员"></div>
+        </section>
+        <h2 class="group-header" id="h-profile">资料</h2>
+        <section class="group" aria-labelledby="h-profile">
+            <label class="row" id="row-gname" data-group-only><span class="row-label">群名称</span><input class="inline" id="f-gname"></label>
+            <label class="row"><span class="row-label">备注</span><input class="inline" id="f-remark"></label>
+            <div class="row tappable" role="button" tabindex="0" id="row-bg" aria-haspopup="dialog"><span class="row-label">聊天背景</span><span class="row-value"><span class="bg-thumb" id="bg-thumb" hidden></span><span id="bg-none">无</span><span class="chev" aria-hidden="true">›</span></span></div>
+        </section>
+
+        <h2 class="group-header" id="h-wb">世界书</h2>
+        <section class="group" aria-labelledby="h-wb">
+            <div class="row" id="row-wb-on"><span class="row-label" id="l-wb-on">启用会话世界书注入</span><label class="switch"><input type="checkbox" id="f-wb-on" aria-labelledby="l-wb-on" checked><span></span></label></div>
+            <div class="row" id="row-own-color"><span class="row-label" id="l-own-color">使用本会话设置（灯色）</span><label class="switch"><input type="checkbox" id="f-own-color" aria-labelledby="l-own-color"><span></span></label></div>
+            <div class="row" id="row-color"><span class="row-label" id="l-color">灯色</span><div class="seg" data-seg="color" role="group" aria-labelledby="l-color"><button type="button" data-value="blue" aria-pressed="true">蓝灯</button><button type="button" data-value="green" aria-pressed="false">绿灯</button></div></div>
+            <div class="row" id="row-own-depth"><span class="row-label" id="l-own-depth">使用本会话设置（深度）</span><label class="switch"><input type="checkbox" id="f-own-depth" aria-labelledby="l-own-depth"><span></span></label></div>
+            <div class="row" id="row-depth"><span class="row-label" id="l-depth">深度</span><div class="stepper" id="depth-stepper" data-min="0" data-step="1" role="group" aria-labelledby="l-depth"><button type="button" aria-label="减少深度">−</button><output id="f-depth" aria-live="polite">4</output><button type="button" aria-label="增加深度">+</button></div></div>
+            <label class="row" id="row-kw" hidden><span class="row-label">关键词</span><input class="inline" id="f-kw"></label>
+        </section>
+        <p class="group-footer" id="wb-off-note" hidden>全局世界书注入未开启，在 QQ 设置 › 世界书注入中开启。</p>
+        <p class="status-line" id="save-status" role="status"></p>
+        <p class="group-footer" data-private-only>删除会话：在消息列表中左滑该会话。</p>
+        <section class="group lifecycle" id="lifecycle-group" data-group-only><div class="row action danger" role="button" tabindex="0" id="btn-lifecycle"></div></section>
+    </div>
+    <!-- C：群成员资料 -->
+    <div id="pg-member" hidden>
+        <div class="mp-cover"><i class="ava" id="mp-ava" aria-hidden="true"></i></div>
+        <div class="mp-info"><h2 class="mp-name" id="mp-name"></h2><p class="mp-role" id="mp-role"></p></div>
+        <button type="button" class="primary-btn" id="btn-edit">编辑资料</button>
+    </div>
+    <!-- D：群成员编辑 -->
+    <div id="pg-editor" hidden>
+        <section class="group mt" aria-label="成员身份"><div class="ident"><i class="ava" id="ed-ava" aria-hidden="true"></i><div><b id="ed-name"></b><span class="row-sub" id="ed-role"></span></div></div></section>
+        <section class="group mt" id="ed-ops" aria-label="管理操作"></section>
+    </div>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<div class="notes">
+    <b>原功能 → 新位置（以 modules/qq-v2/ui/app.js 3057–3267、2018–2100 为准）：</b><br>
+    1. 标题「聊天设置」/「群聊设置」、返回 → 公共骨架标题栏「‹ 聊天」。<br>
+    2. 群资料（头像、群名、「N名成员」/「已退出 · N名成员」）→ 顶部资料卡；群头像只展示。<br>
+    3. 成员列表 → 资料卡内 4 列网格：自己（名字「我」、不可点、群主 / 管理员角标）、其他成员（可点进入群成员资料，空名「未命名」）、「添加成员」加号格（仅群正常、未退出、我是群主或管理员）。<br>
+    4. 群名称、备注、聊天背景、世界书各项 → 「资料」「世界书」两组；change 即保存，无保存按钮；深度校验失败在下方状态行提示「保存失败」。<br>
+    5. 解散 / 退出群聊 → 表单外最后一组红字整行，按 groupLifecycleAction：群主「解散群聊」，管理员 / 成员「退出群聊」，已退出或已解散不显示。<br>
+    6. 群成员资料 → 背景 + 大头像 + 名字 + 角色；仅 groupMemberManagementActions 非空时显示「编辑资料」。<br>
+    7. 群成员编辑 → 身份区 + 分组整行操作，权限矩阵与 groupMemberManagementActions 一致。<br>
+    <b>新增 / 改动：</b><br>
+    · 「资料」「世界书」分组标题为新增（源码无区块标题）。<br>
+    · 「全局世界书注入未开启……」footer 为新增说明；源码仅禁用开关。<br>
+    · 上传聊天背景：源码直接本地上传、无裁剪；原型改走 YZ.crop 3/4（<b>新增裁剪</b>）。删除聊天背景与源码一致，直接删除无确认。<br>
+    · 私聊页底部 footer 说明删除入口在消息列表左滑（新增说明，不加按钮）。源码中不存在置顶、免打扰、清空聊天记录，原型不新增。<br>
+    · 添加成员候选来自已有私聊好友（groupFriendCandidates），sheet footer 为新增说明。<br>
+    <b>原型模拟：</b>所有数据为示例；保存、上传、成员操作只更新页面状态并 toast，不连接真实小手机。顶部工具栏切换视图、我的身份、群状态、全局世界书。
+</div>
+
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+/* 示例数据；权限与文案按 app.js groupMemberManagementActions / groupLifecycleAction / chatStatusText */
+const $ = (id) => document.getElementById(id);
+const S = { view: 'private', role: 'owner', status: 'active', wb: true, page: 'settings', memberId: '', bg: false };
+const SELF = { name: '我', color: '#5B7A6A' };
+const G = { name: '周末读书会', color: '#C59A5B', ownerId: 'p1', adminIds: ['p2'], mutes: {} };
+const MEMBERS = [
+    { id: 'p1', name: '林檎', color: '#B07A6A' }, { id: 'p2', name: '阿澄', color: '#6A86B0' },
+    { id: 'p3', name: '', color: '#8A7AB0' }, { id: 'p4', name: '小满', color: '#7AA08A' },
+];
+const FRIENDS = [{ id: 'f1', name: '桃子', color: '#C27A8E' }, { id: 'f2', name: '白川', color: '#5B8AA0' }, { id: 'f3', name: '柚子', color: '#A0905B' }];
+const LABELS = { 'appoint-admin': '任命管理员', 'revoke-admin': '取消管理员', mute: '禁言', unmute: '解除禁言', kick: '移出群聊', 'transfer-owner': '转让群主' };
+const DANGER = ['kick', 'transfer-owner'];
+const DURATIONS = ['10 分钟', '1 小时', '1 天', '7 天', '永久'];
+const ROLE_TXT = { owner: '群主', admin: '管理员', member: '' };
+const exited = () => S.role === 'exited';
+const ownerId = () => (S.role === 'owner' ? '__self__' : G.ownerId);
+const roleOf = (id) => (id === ownerId() ? 'owner' : G.adminIds.includes(id) ? 'admin' : 'member');
+const nameOf = (m) => m.name || '未命名';
+const canManage = () => S.status === 'active' && !exited() && (S.role === 'owner' || S.role === 'admin');
+const lifecycle = () => (S.status !== 'active' || exited() ? '' : S.role === 'owner' ? 'dissolve' : 'leave');
+const actionsFor = (id) => {
+    if (S.status !== 'active' || exited() || roleOf(id) === 'owner') return [];
+    const muteOp = G.mutes[id] ? 'unmute' : 'mute';
+    if (S.role === 'owner') return [roleOf(id) === 'admin' ? 'revoke-admin' : 'appoint-admin', muteOp, 'kick', 'transfer-owner'];
+    return S.role === 'admin' && roleOf(id) === 'member' ? [muteOp, 'kick'] : [];
+};
+const paint = (el, m) => { el.textContent = (m.name || '未').slice(0, 1); el.style.background = m.color; el.style.color = '#fff'; };
+const setOff = (row, off) => {
+    row.classList.toggle('disabled-row', off);
+    row.setAttribute('aria-disabled', String(off));
+    row.querySelectorAll('input, button').forEach((c) => { c.disabled = off; });
+};
+const tile = (m, label, role, attrs = {}) => {
+    const t = document.createElement(attrs.button ? 'button' : 'div');
+    t.className = `pick-icon ${attrs.cls || ''}`;
+    if (attrs.button) {
+        t.type = 'button';
+        t.dataset.member = attrs.id;
+        t.setAttribute('aria-label', role ? `${label}，${role}` : label);
+    }
+    const i = document.createElement('i');
+    i.setAttribute('aria-hidden', 'true');
+    if (m) paint(i, m); else i.textContent = '+';
+    const s = document.createElement('span');
+    s.textContent = label;
+    t.append(i, s);
+    if (role) {
+        const b = document.createElement('small');
+        b.className = `tile-role${role === '群主' ? ' owner' : ''}`;
+        b.textContent = role;
+        t.append(b);
+    }
+    return t;
+};
+
+const syncTb = () => document.querySelectorAll('[data-tb]').forEach((b) => {
+    const cur = b.dataset.tb === 'wb' ? (S.wb ? 'on' : 'off') : S[b.dataset.tb];
+    b.setAttribute('aria-pressed', String(cur === b.dataset.v));
+});
+const renderSettings = () => {
+    const isGroup = S.view === 'group';
+    document.querySelectorAll('[data-group-only]').forEach((el) => { el.hidden = !isGroup; });
+    document.querySelectorAll('[data-private-only]').forEach((el) => { el.hidden = isGroup; });
+    setOff($('row-wb-on'), !S.wb);
+    $('wb-off-note').hidden = S.wb;
+    const ownColor = $('f-own-color').checked;
+    setOff($('row-color'), !ownColor);
+    setOff($('row-depth'), !$('f-own-depth').checked);
+    const green = document.querySelector('[data-seg="color"] [aria-pressed="true"]')?.dataset.value === 'green';
+    $('row-kw').hidden = !(ownColor && green);
+    $('bg-thumb').hidden = !S.bg;
+    $('bg-none').hidden = S.bg;
+    if (!isGroup) return;
+    paint($('g-ava'), G);
+    $('g-name').textContent = G.name;
+    $('g-status').textContent = `${exited() ? '已退出 · ' : ''}${MEMBERS.length + (exited() ? 0 : 1)}名成员`;
+    const grid = $('member-grid');
+    grid.replaceChildren();
+    if (!exited()) grid.append(tile(SELF, '我', ROLE_TXT[S.role], { cls: 'is-self' }));
+    MEMBERS.forEach((m) => grid.append(tile(m, nameOf(m), ROLE_TXT[roleOf(m.id)], { button: true, id: m.id })));
+    if (canManage()) grid.append(tile(null, '添加成员', '', { button: true, id: '__add__', cls: 'add-tile' }));
+    const gname = $('f-gname');
+    if (document.activeElement !== gname) gname.value = G.name;
+    setOff($('row-gname'), !canManage());
+    const act = lifecycle();
+    $('lifecycle-group').hidden = !act;
+    $('btn-lifecycle').textContent = act === 'dissolve' ? '解散群聊' : '退出群聊';
+};
+const NAV = {
+    settings: () => [S.view === 'group' ? '群聊设置' : '聊天设置', '‹ 聊天'],
+    member: () => ['群成员资料', '‹ 群聊设置'],
+    editor: () => ['编辑资料', '‹ 群成员资料'],
+};
+const memberById = (id) => MEMBERS.find((m) => m.id === id);
+const renderMember = () => {
+    const m = memberById(S.memberId);
+    if (!m) { go('settings'); return; }
+    paint($('mp-ava'), m);
+    $('mp-name').textContent = nameOf(m);
+    $('mp-role').textContent = ROLE_TXT[roleOf(m.id)];
+    $('btn-edit').hidden = actionsFor(m.id).length === 0;
+};
+const renderEditor = () => {
+    const m = memberById(S.memberId);
+    if (!m) { go('settings'); return; }
+    paint($('ed-ava'), m);
+    $('ed-name').textContent = nameOf(m);
+    $('ed-role').textContent = ROLE_TXT[roleOf(m.id)] || '普通成员';
+    const ops = actionsFor(m.id);
+    const box = $('ed-ops');
+    box.hidden = ops.length === 0;
+    box.replaceChildren(...ops.map((op) => {
+        const b = document.createElement('div');
+        b.className = `row action${DANGER.includes(op) ? ' danger' : ''}`;
+        b.setAttribute('role', 'button');
+        b.tabIndex = 0;
+        b.dataset.op = op;
+        b.textContent = LABELS[op];
+        return b;
+    }));
+};
+const render = () => {
+    syncTb();
+    ['settings', 'member', 'editor'].forEach((p) => { $(`pg-${p}`).hidden = S.page !== p; });
+    const [title, back] = NAV[S.page]();
+    $('nav-title').textContent = title;
+    $('nav-back').textContent = back;
+    if (S.page === 'settings') renderSettings();
+    else if (S.page === 'member') renderMember();
+    else renderEditor();
+};
+const go = (page, id) => {
+    S.page = page;
+    if (id) S.memberId = id;
+    render();
+    $('scroll').scrollTop = 0;
+    $('nav-title').focus();
+};
+
+// 群成员管理：确认后更新示例状态；踢出回到群聊设置，其余回到群成员资料
+const applyOp = (op, id, extra) => {
+    if (op === 'appoint-admin') G.adminIds.push(id);
+    else if (op === 'revoke-admin') G.adminIds = G.adminIds.filter((x) => x !== id);
+    else if (op === 'mute') G.mutes[id] = extra;
+    else if (op === 'unmute') delete G.mutes[id];
+    else if (op === 'kick') {
+        MEMBERS.splice(MEMBERS.findIndex((m) => m.id === id), 1);
+        delete G.mutes[id];
+        G.adminIds = G.adminIds.filter((x) => x !== id);
+    } else if (op === 'transfer-owner') {
+        G.ownerId = id;
+        G.adminIds = G.adminIds.filter((x) => x !== id);
+        S.role = 'member';
+    }
+    YZ.toast(`原型：已${LABELS[op]}`);
+    go(op === 'kick' ? 'settings' : 'member');
+};
+const confirmOp = (op, id, extra) => YZ.confirm({
+    title: LABELS[op],
+    message: `${LABELS[op]}：${nameOf(memberById(id))}`,
+    confirmText: LABELS[op],
+    danger: DANGER.includes(op),
+    onConfirm: () => applyOp(op, id, extra),
+});
+const startOp = (op, id) => {
+    if (op !== 'mute') { confirmOp(op, id); return; }
+    YZ.sheet({
+        title: '禁言时长',
+        groups: [{ options: DURATIONS.map((d) => ({ value: d, label: d })) }],
+        onSelect: (d) => confirmOp(op, id, d),
+    });
+};
+
+// change 即保存：深度按源码校验；群名称为空不保存
+const setStatus = (text, error = false) => { const el = $('save-status'); el.textContent = text; el.classList.toggle('error', error); };
+const save = () => {
+    if (!/^\d+$/.test($('f-depth').textContent.trim())) { setStatus('保存失败：深度必须是 0 或更大的整数', true); return; }
+    setStatus('原型：已保存');
+};
+$('pg-settings').addEventListener('change', (e) => {
+    if (e.target.id === 'f-gname') {
+        const v = e.target.value.trim();
+        if (!v) { setStatus('群名称不能为空', true); e.target.value = G.name; return; }
+        G.name = v;
+    }
+    save();
+    renderSettings();
+});
+$('pg-settings').addEventListener('yz:seg', () => { save(); renderSettings(); });
+// 步进器由 shared 的 document 监听先加减，这里随后保存
+document.addEventListener('click', (e) => { if (e.target.closest('#depth-stepper button') && !isOffDepth()) save(); });
+const isOffDepth = () => $('row-depth').classList.contains('disabled-row');
+
+document.querySelector('.toolbar').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tb]');
+    if (!b) return;
+    const { tb, v } = b.dataset;
+    if (tb === 'wb') S.wb = v === 'on'; else S[tb] = v;
+    if (tb === 'view' || S.page !== 'settings') S.page = 'settings';
+    render();
+});
+$('nav-back').addEventListener('click', () => {
+    if (S.page === 'editor') go('member');
+    else if (S.page === 'member') go('settings');
+    else YZ.toast('返回聊天（原型不跳转）');
+});
+$('row-bg').addEventListener('click', () => YZ.actionSheet({
+    title: '聊天背景',
+    actions: [
+        { label: '上传聊天背景', onSelect: () => YZ.crop({ title: '裁剪聊天背景', aspect: '3 / 4', onConfirm: () => { S.bg = true; renderSettings(); YZ.toast('原型：聊天背景已更新'); } }) },
+        ...(S.bg ? [{ label: '删除聊天背景', danger: true, onSelect: () => { S.bg = false; renderSettings(); YZ.toast('原型：已删除聊天背景'); } }] : []),
+    ],
+}));
+$('member-grid').addEventListener('click', (e) => {
+    const t = e.target.closest('button[data-member]');
+    if (!t) return;
+    if (t.dataset.member !== '__add__') { go('member', t.dataset.member); return; }
+    const candidates = FRIENDS.filter((f) => !MEMBERS.some((m) => m.id === f.id));
+    if (!candidates.length) { YZ.alert({ title: '没有可添加的现有 QQ 好友' }); return; }
+    YZ.sheet({
+        title: '添加成员',
+        groups: [{ options: candidates.map((f) => ({ value: f.id, label: f.name })) }],
+        footer: '只能添加已有的 QQ 好友，添加后对方立即出现在成员列表。',
+        onSelect: (id) => { MEMBERS.push(candidates.find((f) => f.id === id)); renderSettings(); YZ.toast('原型：已添加成员'); },
+    });
+});
+$('btn-lifecycle').addEventListener('click', () => {
+    const dissolve = lifecycle() === 'dissolve';
+    const label = dissolve ? '解散群聊' : '退出群聊';
+    YZ.confirm({
+        title: `${label}？`,
+        message: dissolve ? '解散后所有成员都不能继续发言，历史消息会保留。' : '退出后你不能继续发言，但仍可旁观群内后续消息。',
+        cancelText: '取消',
+        confirmText: label,
+        onConfirm: () => { if (dissolve) S.status = 'dissolved'; else S.role = 'exited'; render(); YZ.toast(`原型：已${label}`); },
+    });
+});
+$('btn-edit').addEventListener('click', () => go('editor'));
+$('ed-ops').addEventListener('click', (e) => { const b = e.target.closest('[data-op]'); if (b) startOp(b.dataset.op, S.memberId); });
+render();
+</script>
+</body>
+</html>
+

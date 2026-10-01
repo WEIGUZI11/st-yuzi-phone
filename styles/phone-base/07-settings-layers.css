@@ -1,0 +1,285 @@
+/* ========================================
+   玉子的手机 — 设置公共弹层
+   作用：底部选择面板（sheet）、操作菜单（action sheet）与选项行
+   规则：视觉值只读 --yuzi-settings-* token，见 docs/phone-ui-variables.md「设置公共弹层」
+   ======================================== */
+
+.phone-ios-layer {
+    position: absolute;
+    inset: 0;
+    z-index: var(--yuzi-settings-layer-z-index);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    box-sizing: border-box;
+    background: var(--yuzi-settings-layer-scrim);
+    opacity: 0;
+    transition: opacity var(--yuzi-settings-layer-transition) var(--yuzi-settings-layer-easing);
+}
+
+.phone-ios-layer.is-visible {
+    opacity: 1;
+}
+
+.phone-ios-sheet {
+    display: flex;
+    flex-direction: column;
+    max-height: var(--yuzi-settings-sheet-max-height);
+    padding-bottom: var(--yuzi-settings-sheet-padding-bottom);
+    box-sizing: border-box;
+    border-radius: var(--yuzi-settings-sheet-radius) var(--yuzi-settings-sheet-radius) 0 0;
+    background: var(--yuzi-settings-group-page);
+    color: var(--yuzi-settings-text-primary);
+    box-shadow: var(--yuzi-settings-sheet-shadow);
+    transform: translateY(100%);
+    transition: transform var(--yuzi-settings-layer-transition) var(--yuzi-settings-layer-easing);
+}
+
+.phone-ios-layer.is-visible .phone-ios-sheet {
+    transform: translateY(0);
+}
+
+.phone-ios-sheet-grabber {
+    flex-shrink: 0;
+    width: var(--yuzi-settings-sheet-grabber-width);
+    height: var(--yuzi-settings-sheet-grabber-height);
+    margin: var(--yuzi-settings-sheet-grabber-margin) auto 0;
+    border-radius: var(--yuzi-phone-radius-pill);
+    background: var(--yuzi-settings-group-fill-strong);
+}
+
+.phone-ios-sheet-head {
+    position: relative;
+    flex-shrink: 0;
+    min-height: var(--yuzi-settings-sheet-head-height);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--yuzi-settings-sheet-head-inset);
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.phone-ios-sheet-title {
+    margin: 0;
+    max-width: 100%;
+    font-size: var(--yuzi-settings-sheet-title-size);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.phone-ios-sheet-subtitle {
+    margin: 0;
+    max-width: 100%;
+    font-size: var(--yuzi-settings-row-sub-size);
+    color: var(--yuzi-settings-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.phone-ios-sheet-done {
+    position: absolute;
+    top: 50%;
+    right: var(--yuzi-settings-action-sheet-inset);
+    transform: translateY(-50%);
+    padding: var(--yuzi-settings-seg-item-padding-block) var(--yuzi-settings-row-padding-block);
+    border: 0;
+    background: transparent;
+    color: var(--yuzi-settings-accent);
+    font: inherit;
+    font-size: var(--yuzi-settings-sheet-title-size);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.phone-ios-sheet-done:focus-visible {
+    outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-accent);
+    border-radius: var(--yuzi-settings-seg-item-radius);
+}
+
+.phone-ios-sheet-body {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 var(--yuzi-settings-sheet-body-padding);
+    scrollbar-width: none;
+}
+
+.phone-ios-sheet-body::-webkit-scrollbar {
+    display: none;
+}
+
+.phone-ios-option {
+    cursor: pointer;
+}
+
+.phone-ios-option:active,
+.phone-ios-option:focus-visible {
+    outline: none;
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-ios-option-check {
+    flex-shrink: 0;
+    visibility: hidden;
+    color: var(--yuzi-settings-accent);
+    font-size: var(--yuzi-settings-sheet-title-size);
+    font-weight: 700;
+}
+
+.phone-ios-option[aria-selected="true"] .phone-ios-option-check {
+    visibility: visible;
+}
+
+
+/* 操作菜单（action sheet）：图标来源选择等 */
+.phone-ios-action-sheet {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yuzi-settings-action-sheet-gap);
+    margin: 0 var(--yuzi-settings-action-sheet-inset) var(--yuzi-settings-action-sheet-bottom);
+    transform: translateY(100%);
+    transition: transform var(--yuzi-settings-layer-transition) var(--yuzi-settings-layer-easing);
+}
+
+.phone-ios-layer.is-visible .phone-ios-action-sheet {
+    transform: translateY(0);
+}
+
+.phone-ios-action-group {
+    overflow: hidden;
+    border-radius: var(--yuzi-settings-sheet-radius);
+    background: var(--yuzi-settings-group-card);
+}
+
+.phone-ios-action-caption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--yuzi-settings-group-header-gap);
+    padding: var(--yuzi-settings-action-caption-padding);
+    font-size: var(--yuzi-settings-group-header-size);
+    color: var(--yuzi-settings-text-secondary);
+    text-align: center;
+}
+
+.phone-ios-action-btn {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: var(--yuzi-settings-action-button-min-height);
+    border: 0;
+    background: transparent;
+    color: var(--yuzi-settings-accent);
+    font: inherit;
+    font-size: var(--yuzi-settings-action-button-size);
+    cursor: pointer;
+}
+
+.phone-ios-action-caption + .phone-ios-action-btn::before,
+.phone-ios-action-btn + .phone-ios-action-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--yuzi-settings-row-divider-width);
+    background: var(--yuzi-settings-group-separator);
+}
+
+.phone-ios-action-btn:active,
+.phone-ios-action-btn:focus-visible {
+    outline: none;
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-ios-action-btn.is-danger {
+    color: var(--yuzi-settings-group-danger);
+}
+
+.phone-ios-action-btn.is-cancel {
+    font-weight: 600;
+}
+
+/* 居中确认框：全局 showConfirmDialog / showAlertDialog 共用 */
+.phone-confirm-dialog-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: var(--yuzi-settings-layer-z-index);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--yuzi-settings-layer-scrim);
+    opacity: 0;
+    transition: opacity var(--yuzi-settings-layer-transition) var(--yuzi-settings-layer-easing);
+}
+
+.phone-confirm-dialog-overlay.phone-confirm-dialog-show {
+    opacity: 1;
+}
+
+.phone-confirm-dialog {
+    width: var(--yuzi-settings-alert-width);
+    max-width: calc(100% - var(--yuzi-settings-row-padding-inline) * 2);
+    overflow: hidden;
+    border-radius: var(--yuzi-settings-alert-radius);
+    background: var(--yuzi-settings-group-card);
+    box-shadow: var(--yuzi-settings-alert-shadow);
+    text-align: center;
+    transform: scale(1.08);
+    transition: transform var(--yuzi-settings-layer-transition) var(--yuzi-settings-layer-easing);
+}
+
+.phone-confirm-dialog-show .phone-confirm-dialog {
+    transform: scale(1);
+}
+
+.phone-confirm-dialog-title {
+    padding: var(--yuzi-settings-alert-padding) var(--yuzi-settings-row-padding-inline) 0;
+    font-size: var(--yuzi-settings-alert-title-size);
+    font-weight: 600;
+    color: var(--yuzi-settings-text-primary);
+}
+
+.phone-confirm-dialog-message {
+    padding: var(--yuzi-settings-seg-item-padding-block) var(--yuzi-settings-row-padding-inline) var(--yuzi-settings-alert-padding);
+    font-size: var(--yuzi-settings-alert-message-size);
+    line-height: var(--yuzi-settings-group-footer-line-height);
+    color: var(--yuzi-settings-text-secondary);
+    white-space: pre-line;
+}
+
+.phone-confirm-dialog-buttons {
+    display: flex;
+    border-top: var(--yuzi-settings-row-divider-width) solid var(--yuzi-settings-group-separator);
+}
+
+.phone-confirm-dialog-btn {
+    flex: 1;
+    min-height: var(--yuzi-settings-alert-button-min-height);
+    border: 0;
+    background: transparent;
+    color: var(--yuzi-settings-accent);
+    font: inherit;
+    font-size: var(--yuzi-settings-alert-button-size);
+    cursor: pointer;
+}
+
+.phone-confirm-dialog-btn + .phone-confirm-dialog-btn {
+    border-left: var(--yuzi-settings-row-divider-width) solid var(--yuzi-settings-group-separator);
+}
+
+.phone-confirm-dialog-btn:active,
+.phone-confirm-dialog-btn:focus-visible {
+    outline: none;
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-confirm-dialog-confirm {
+    font-weight: 600;
+    color: var(--yuzi-settings-group-danger);
+}

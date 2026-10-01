@@ -1,0 +1,534 @@
+/* ========================================
+   玉子的手机 — 设置分组列表（iOS grouped list）
+   作用：设置二级页的公共骨架、行、控件与图标网格
+   规则：视觉值只读 --yuzi-settings-* token，见 docs/phone-ui-variables.md「设置分组列表」
+   ======================================== */
+
+.phone-settings-scroll.phone-ios-grouped-page {
+    background: var(--yuzi-settings-group-page);
+}
+
+.phone-ios-grouped-page .phone-settings-page-stack {
+    gap: 0;
+    padding-bottom: var(--yuzi-settings-group-block-gap);
+}
+
+.phone-ios-group-header {
+    margin: var(--yuzi-settings-group-block-gap) var(--yuzi-settings-group-text-inset) var(--yuzi-settings-group-header-gap);
+    font-size: var(--yuzi-settings-group-header-size);
+    font-weight: 400;
+    color: var(--yuzi-settings-text-secondary);
+}
+
+.phone-ios-group {
+    margin: 0;
+    overflow: hidden;
+    border-radius: var(--yuzi-settings-group-radius);
+    background: var(--yuzi-settings-group-card);
+}
+
+.phone-ios-group + .phone-ios-group {
+    margin-top: var(--yuzi-settings-group-stack-gap);
+}
+
+.phone-ios-group-footer {
+    margin: var(--yuzi-settings-group-header-gap) var(--yuzi-settings-group-text-inset) 0;
+    font-size: var(--yuzi-settings-group-footer-size);
+    line-height: var(--yuzi-settings-group-footer-line-height);
+    color: var(--yuzi-settings-text-faint);
+}
+
+.phone-ios-row {
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--yuzi-settings-row-min-height);
+    display: flex;
+    align-items: center;
+    gap: var(--yuzi-settings-row-gap);
+    margin: 0;
+    padding: var(--yuzi-settings-row-padding-block) var(--yuzi-settings-row-padding-inline);
+    border: 0;
+    background: transparent;
+    color: var(--yuzi-settings-text-primary);
+    font: inherit;
+    font-size: var(--yuzi-settings-row-label-size);
+    text-align: left;
+}
+
+.phone-ios-row + .phone-ios-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: var(--yuzi-settings-row-padding-inline);
+    right: 0;
+    height: var(--yuzi-settings-row-divider-width);
+    background: var(--yuzi-settings-group-separator);
+    pointer-events: none;
+}
+
+.phone-ios-row-label {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.phone-ios-row-sub {
+    display: block;
+    margin-top: var(--yuzi-settings-seg-padding);
+    font-size: var(--yuzi-settings-row-sub-size);
+    color: var(--yuzi-settings-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.phone-ios-row-value {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--yuzi-settings-seg-item-padding-block);
+    min-width: 0;
+    max-width: 60%;
+    font-size: var(--yuzi-settings-row-value-size);
+    color: var(--yuzi-settings-text-secondary);
+}
+
+.phone-ios-row-value-text {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.phone-ios-row-chevron {
+    flex-shrink: 0;
+    font-size: var(--yuzi-settings-row-chevron-size);
+    line-height: 1;
+    color: var(--yuzi-settings-text-faint);
+}
+
+
+.phone-ios-row.is-tappable,
+.phone-ios-row.is-action {
+    cursor: pointer;
+}
+
+.phone-ios-row.is-tappable:active,
+.phone-ios-row.is-action:active,
+.phone-ios-row.is-tappable:focus-visible,
+.phone-ios-row.is-action:focus-visible {
+    outline: none;
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-ios-row.is-action {
+    justify-content: center;
+    text-align: center;
+    color: var(--yuzi-settings-accent);
+}
+
+.phone-ios-row.is-action.is-danger {
+    color: var(--yuzi-settings-group-danger);
+}
+
+.phone-ios-row.is-action:disabled,
+.phone-ios-row.is-action[aria-disabled="true"] {
+    color: var(--yuzi-settings-text-faint);
+    cursor: default;
+    background: transparent;
+}
+
+.phone-ios-row.has-thumb + .phone-ios-row::before,
+.phone-ios-row + .phone-ios-row.has-thumb::before {
+    left: calc(var(--yuzi-settings-row-padding-inline) * 2 + var(--yuzi-settings-thumb-size));
+}
+
+.phone-ios-badge {
+    display: inline-block;
+    margin-left: var(--yuzi-settings-seg-item-padding-block);
+    padding: 0 var(--yuzi-settings-badge-padding-inline);
+    border-radius: var(--yuzi-phone-radius-pill);
+    font-size: var(--yuzi-settings-badge-size);
+    font-weight: 600;
+    vertical-align: middle;
+    color: var(--yuzi-settings-accent);
+    background: var(--yuzi-settings-accent-soft);
+}
+
+.phone-ios-badge.is-muted {
+    color: var(--yuzi-settings-text-secondary);
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-ios-badge.is-danger {
+    color: var(--yuzi-settings-group-danger);
+    background: var(--yuzi-settings-danger-soft);
+}
+
+.phone-ios-thumb {
+    flex-shrink: 0;
+    width: var(--yuzi-settings-thumb-size);
+    height: var(--yuzi-settings-thumb-size);
+    border-radius: var(--yuzi-settings-thumb-radius);
+    object-fit: cover;
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-ios-thumb.is-large {
+    width: var(--yuzi-settings-preview-size);
+    height: var(--yuzi-settings-preview-size);
+    border-radius: var(--yuzi-settings-preview-radius);
+}
+
+.phone-ios-seg {
+    flex-shrink: 0;
+    display: inline-flex;
+    padding: var(--yuzi-settings-seg-padding);
+    border-radius: var(--yuzi-settings-seg-radius);
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-ios-seg-item {
+    border: 0;
+    padding: var(--yuzi-settings-seg-item-padding-block) var(--yuzi-settings-seg-item-padding-inline);
+    border-radius: var(--yuzi-settings-seg-item-radius);
+    background: transparent;
+    color: var(--yuzi-settings-text-primary);
+    font: inherit;
+    font-size: var(--yuzi-settings-seg-item-size);
+    cursor: pointer;
+}
+
+.phone-ios-seg-item[aria-pressed="true"] {
+    font-weight: 600;
+    background: var(--yuzi-settings-group-seg-active);
+    box-shadow: var(--yuzi-settings-seg-active-shadow);
+}
+
+.phone-ios-seg-item:focus-visible {
+    outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-accent);
+}
+
+
+.phone-ios-stepper {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--yuzi-settings-stepper-gap);
+}
+
+.phone-ios-stepper-value {
+    min-width: var(--yuzi-settings-stepper-value-width);
+    text-align: right;
+    font-size: var(--yuzi-settings-row-value-size);
+    font-variant-numeric: tabular-nums;
+    color: var(--yuzi-settings-text-secondary);
+}
+
+.phone-ios-stepper-btn {
+    width: var(--yuzi-settings-stepper-button-width);
+    height: var(--yuzi-settings-stepper-button-height);
+    border: 0;
+    border-radius: var(--yuzi-settings-stepper-button-radius);
+    background: var(--yuzi-settings-group-fill);
+    color: var(--yuzi-settings-text-primary);
+    font: inherit;
+    font-size: var(--yuzi-settings-row-chevron-size);
+    line-height: 1;
+    cursor: pointer;
+}
+
+.phone-ios-stepper-btn:active {
+    background: var(--yuzi-settings-group-fill-strong);
+}
+
+.phone-ios-stepper-btn:disabled {
+    color: var(--yuzi-settings-text-faint);
+    cursor: default;
+}
+
+.phone-ios-stepper-btn:focus-visible {
+    outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-accent);
+}
+
+.phone-ios-slider-row {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--yuzi-settings-row-gap);
+}
+
+.phone-ios-slider-row input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--yuzi-settings-accent);
+}
+
+.phone-ios-slider-glyph {
+    flex-shrink: 0;
+    color: var(--yuzi-settings-text-secondary);
+    font-size: var(--yuzi-settings-row-sub-size);
+}
+
+.phone-ios-slider-glyph.is-large {
+    font-size: var(--yuzi-settings-sheet-title-size);
+}
+
+.phone-ios-usage-bar {
+    display: block;
+    height: var(--yuzi-settings-usage-bar-height);
+    margin-top: var(--yuzi-settings-group-header-gap);
+    overflow: hidden;
+    border-radius: var(--yuzi-phone-radius-pill);
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-ios-usage-bar > span {
+    display: block;
+    width: var(--yuzi-settings-usage-ratio, 0%);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--yuzi-settings-accent);
+}
+
+.phone-ios-usage-bar.is-high > span {
+    background: var(--yuzi-settings-group-danger);
+}
+
+.phone-ios-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--yuzi-settings-icon-grid-columns), minmax(0, 1fr));
+    gap: var(--yuzi-settings-icon-grid-row-gap) var(--yuzi-settings-icon-grid-column-gap);
+    padding: var(--yuzi-settings-icon-grid-padding);
+}
+
+.phone-ios-icon-cell {
+    position: relative;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--yuzi-settings-group-header-gap);
+    padding: var(--yuzi-settings-group-header-gap) 0;
+    border: 0;
+    border-radius: var(--yuzi-settings-group-radius);
+    background: transparent;
+    color: var(--yuzi-settings-text-primary);
+    font: inherit;
+    font-size: var(--yuzi-settings-icon-cell-label-size);
+    cursor: pointer;
+}
+
+.phone-ios-icon-cell:active,
+.phone-ios-icon-cell:focus-visible {
+    outline: none;
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-ios-icon-cell:disabled {
+    cursor: default;
+    opacity: var(--yuzi-phone-nav-disabled-opacity);
+}
+
+.phone-ios-icon-cell-art {
+    position: relative;
+    width: var(--yuzi-settings-icon-cell-size);
+    height: var(--yuzi-settings-icon-cell-size);
+    display: grid;
+    place-items: center;
+    overflow: visible;
+    border-radius: var(--yuzi-settings-icon-cell-radius);
+    background: var(--yuzi-settings-group-fill);
+    color: var(--yuzi-settings-text-secondary);
+}
+
+.phone-ios-icon-cell-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.phone-ios-icon-cell.is-custom .phone-ios-icon-cell-art::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--yuzi-settings-icon-custom-dot-border) * -1);
+    right: calc(var(--yuzi-settings-icon-custom-dot-border) * -1);
+    width: var(--yuzi-settings-icon-custom-dot-size);
+    height: var(--yuzi-settings-icon-custom-dot-size);
+    box-sizing: border-box;
+    border: var(--yuzi-settings-icon-custom-dot-border) solid var(--yuzi-settings-group-card);
+    border-radius: var(--yuzi-phone-radius-pill);
+    background: var(--yuzi-settings-accent);
+}
+
+.phone-ios-icon-cell.is-match .phone-ios-icon-cell-art {
+    box-shadow: 0 0 0 var(--yuzi-settings-icon-custom-dot-border) var(--yuzi-settings-group-card), 0 0 0 calc(var(--yuzi-settings-icon-custom-dot-border) * 2) var(--yuzi-settings-accent);
+}
+
+.phone-ios-icon-cell-label {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.phone-ios-row-empty {
+    justify-content: center;
+    color: var(--yuzi-settings-text-faint);
+}
+
+.phone-ios-row-del {
+    flex-shrink: 0;
+    padding: var(--yuzi-settings-seg-item-padding-block) var(--yuzi-settings-seg-padding);
+    border: 0;
+    background: transparent;
+    color: var(--yuzi-settings-group-danger);
+    font: inherit;
+    font-size: var(--yuzi-settings-row-value-size);
+    cursor: pointer;
+}
+
+.phone-ios-row-del:focus-visible {
+    outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-group-danger);
+    border-radius: var(--yuzi-settings-seg-item-radius);
+}
+
+/* 开关：原生 checkbox 透明覆盖在自绘轨道上，保留键盘与读屏语义 */
+.phone-ios-switch {
+    position: relative;
+    flex-shrink: 0;
+    width: var(--yuzi-settings-switch-width);
+    height: var(--yuzi-settings-switch-height);
+}
+
+#yuzi-phone-standalone .yuzi-phone-shell .phone-ios-switch > input[type="checkbox"],
+.phone-ios-switch > input[type="checkbox"] {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.phone-ios-switch-track {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--yuzi-phone-radius-pill);
+    background: var(--yuzi-settings-group-fill-strong);
+    transition: background var(--yuzi-settings-switch-transition);
+}
+
+.phone-ios-switch-track::after {
+    content: "";
+    position: absolute;
+    top: var(--yuzi-settings-switch-padding);
+    left: var(--yuzi-settings-switch-padding);
+    width: var(--yuzi-settings-switch-thumb-size);
+    height: var(--yuzi-settings-switch-thumb-size);
+    border-radius: var(--yuzi-phone-radius-pill);
+    background: var(--yuzi-phone-color-white);
+    box-shadow: var(--yuzi-settings-switch-thumb-shadow);
+    transition: transform var(--yuzi-settings-switch-transition);
+}
+
+.phone-ios-switch > input:checked + .phone-ios-switch-track {
+    background: var(--yuzi-settings-accent);
+}
+
+.phone-ios-switch > input:checked + .phone-ios-switch-track::after {
+    transform: translateX(calc(var(--yuzi-settings-switch-width) - var(--yuzi-settings-switch-thumb-size) - var(--yuzi-settings-switch-padding) * 2));
+}
+
+.phone-ios-switch > input:focus-visible + .phone-ios-switch-track {
+    outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-accent);
+    outline-offset: var(--yuzi-phone-form-focus-ring-offset);
+}
+
+/* 字体预览块 */
+.phone-ios-font-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--yuzi-settings-seg-item-padding-block);
+    padding: var(--yuzi-settings-font-preview-padding);
+    text-align: center;
+}
+
+.phone-ios-font-preview-title {
+    font-size: var(--yuzi-settings-font-preview-title-size);
+    font-weight: 600;
+    color: var(--yuzi-settings-text-primary);
+}
+
+.phone-ios-font-preview-sample {
+    font-size: var(--yuzi-settings-font-preview-sample-size);
+    color: var(--yuzi-settings-text-secondary);
+}
+
+/* 折叠区与行内输入 */
+.phone-ios-details > summary {
+    list-style: none;
+}
+
+.phone-ios-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.phone-ios-details > summary .phone-ios-row-chevron {
+    display: inline-block;
+    transition: transform var(--yuzi-settings-switch-transition);
+}
+
+.phone-ios-details[open] > summary .phone-ios-row-chevron {
+    transform: rotate(90deg);
+}
+
+.phone-ios-details > .phone-ios-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: var(--yuzi-settings-row-padding-inline);
+    right: 0;
+    height: var(--yuzi-settings-row-divider-width);
+    background: var(--yuzi-settings-group-separator);
+    pointer-events: none;
+}
+
+.phone-ios-row-field-label {
+    flex-shrink: 0;
+    width: var(--yuzi-settings-field-label-width);
+}
+
+#yuzi-phone-standalone .yuzi-phone-shell input.phone-ios-inline-input,
+.phone-ios-inline-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--yuzi-settings-text-secondary);
+    font: inherit;
+    font-size: var(--yuzi-settings-row-value-size);
+    text-align: right;
+    outline: none;
+}
+
+.phone-ios-inline-input::placeholder {
+    color: var(--yuzi-settings-text-faint);
+}
+
+/* 美化包卡片头 */
+.phone-ios-pack-head {
+    padding-block: var(--yuzi-settings-pack-head-padding-block);
+}
+
+.phone-ios-pack-title {
+    font-weight: 600;
+}
+

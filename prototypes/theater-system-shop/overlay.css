@@ -1,0 +1,45 @@
+/* 售空、背包、弹层、轻提示与动效：扁平色块，无描边、无发光、无毛玻璃。 */
+.ss-item.is-sold { background: var(--ss-card2); }
+.ss-item.is-sold > * { opacity: .35; filter: grayscale(1); }
+.ss-item.is-sold::before { content: "已售空"; position: absolute; top: 42%; left: 50%; z-index: 1; padding: 3px 12px; border-radius: 8px; background: var(--t-red); color: var(--ss-on-tier); font-weight: 800; white-space: nowrap; transform: translate(-50%, -50%) rotate(-10deg); }
+
+.ss-bag { display: flex; flex-wrap: wrap; gap: 8px; }
+.ss-bag-item { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 12px; background: color-mix(in srgb, var(--c) 12%, var(--ss-card)); font-size: 12px; transition: background .15s; }
+.ss-bag-item:hover { background: color-mix(in srgb, var(--c) 24%, var(--ss-card)); }
+.ss-bag-item.tier-black { background: var(--ss-black-bg); color: var(--ss-black-fg); }
+.ss-bag-item::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.ss-empty { flex: 1 1 100%; grid-column: 1 / -1; margin: 0; padding: 18px; border-radius: 14px; background: var(--ss-card2); text-align: center; font-size: 12px; color: var(--ss-sub); }
+
+.ss-layer { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; padding: 24px; background: var(--ss-mask); }
+.ss-layer[hidden] { display: none; }
+.ss-dialog { width: 100%; max-width: 300px; padding: 22px; border-radius: 22px; background: var(--ss-card); animation: ss-pop .2s; }
+.ss-dialog h3 { margin: 0 0 8px; font-size: 16px; }
+.ss-dialog p { margin: 0 0 16px; font-size: 13px; color: var(--ss-sub); }
+.ss-dialog-btns { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* 背包物品详情弹窗 */
+.ss-detail { background: color-mix(in srgb, var(--c) 8%, var(--ss-card)); }
+.ss-detail.tier-black { --ss-sub: var(--ss-black-sub); background: var(--ss-black-bg); color: var(--ss-black-fg); }
+.ss-detail.tier-black .ss-item-grade { background: var(--ss-black-fg); color: var(--ss-black-bg); }
+.ss-detail-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ss-detail-world { font-size: 11px; color: var(--ss-sub); }
+.ss-dialog .ss-detail-name { margin: 0 0 14px; font-size: 20px; color: color-mix(in srgb, var(--c) 78%, var(--ss-fg)); }
+.ss-detail.tier-black .ss-detail-name { color: var(--ss-black-fg); }
+.ss-detail-label { margin-bottom: 4px; font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--ss-accent-ink); }
+.ss-dialog .ss-detail-desc { padding: 10px 12px; border-radius: 12px; background: var(--ss-card2); color: inherit; line-height: 1.6; }
+
+.ss-levelup { text-align: center; background: color-mix(in srgb, var(--c) 18%, var(--ss-card)); }
+.ss-levelup.tier-black { background: var(--ss-black-bg); color: var(--ss-black-fg); }
+.ss-levelup h3 { font-size: 11px; letter-spacing: .3em; color: var(--ss-accent-ink); }
+.ss-levelup-name { margin: 12px 0; font-size: 26px; font-weight: 900; color: color-mix(in srgb, var(--c) 82%, var(--ss-fg)); }
+.ss-levelup.tier-black .ss-levelup-name { color: var(--ss-black-fg); }
+
+.ss-toast { position: absolute; left: 50%; bottom: 48px; z-index: 12; max-width: 80%; padding: 8px 16px; border-radius: 999px; background: var(--ss-toast-bg); color: var(--ss-toast-fg); font-size: 13px; opacity: 0; pointer-events: none; transform: translate(-50%, 20px); transition: .25s; }
+.ss-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@keyframes ss-blink { 50% { opacity: .45; } }
+@keyframes ss-bump { 40% { transform: scale(1.15); } }
+@keyframes ss-pop { from { opacity: 0; transform: scale(.94); } }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+}

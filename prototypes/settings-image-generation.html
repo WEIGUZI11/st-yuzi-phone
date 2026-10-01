@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · 设置 · 生图（iOS 分组列表原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 独立原型，不参与构建。只用 shared 颜色变量，白天 / 夜间自动跟随。 */
+.phone [hidden] { display: none !important; }
+.row-btn { width: 100%; border: 0; background: none; font: inherit; color: var(--text); text-align: left; }
+.row.row-btn:disabled { color: var(--text-3); cursor: default; }
+.row-btn:focus-visible, .test-thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pick-value { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick-value.is-empty, .preview-box.is-empty { color: var(--text-3); }
+.pick-value.is-bad, .map-title.is-bad { color: var(--danger); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mini-btn:disabled { opacity: 0.45; cursor: default; }
+.ai-out { white-space: pre-wrap; overflow-wrap: anywhere; }
+.test-thumb {
+    display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; border-radius: 10px; cursor: zoom-in;
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft) 60%, var(--fill-strong));
+}
+.test-big {
+    width: 100%; aspect-ratio: 3 / 4; border-radius: 12px;
+    background: linear-gradient(160deg, var(--accent), var(--accent-soft) 60%, var(--fill-strong));
+}
+.map-list { display: flex; flex-direction: column; gap: 12px; }
+.map-empty .empty { margin: 0; }
+.map-head { display: flex; align-items: center; gap: 6px; padding: 10px 16px; }
+.map-title { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+.map-ops { margin-top: 12px; }
+</style>
+</head>
+
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <button type="button" id="sim-loading" aria-pressed="false">模拟预设读取中</button>
+    <button type="button" id="sim-noapi" aria-pressed="false">模拟预设接口未接入</button>
+    <button type="button" id="sim-fail" aria-pressed="false">模拟生成失败</button>
+</div>
+<div class="phone" id="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" aria-label="返回设置">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">生图设置</h1>
+    </header>
+    <main class="scroll">
+
+        <h2 class="group-header">生图接口</h2>
+        <section class="group">
+            <div class="row"><span class="row-label" id="lb-zhj">智慧姬</span><label class="switch"><input type="checkbox" id="api-zhj" aria-labelledby="lb-zhj" checked><span></span></label></div>
+            <div class="row"><span class="row-label" id="lb-bbh">柏宝绘</span><label class="switch"><input type="checkbox" id="api-bbh" aria-labelledby="lb-bbh"><span></span></label></div>
+        </section>
+        <p class="group-footer">接口配置跟随对应插件；最多选择一个，都不勾选则关闭生图。图片保存到：user/images/yuzi-phone-generated/</p>
+
+        <h2 class="group-header">生图按钮显示位置</h2>
+        <section class="group">
+            <div class="row"><span class="row-label" id="lb-qq">QQ 生图按钮</span><label class="switch"><input type="checkbox" id="btn-qq" aria-labelledby="lb-qq" checked><span></span></label></div>
+            <div class="row"><span class="row-label" id="lb-square">广场生图按钮</span><label class="switch"><input type="checkbox" id="btn-square" aria-labelledby="lb-square"><span></span></label></div>
+            <div class="row"><span class="row-label" id="lb-forum">论坛生图按钮</span><label class="switch"><input type="checkbox" id="btn-forum" aria-labelledby="lb-forum"><span></span></label></div>
+            <div class="row"><span class="row-label" id="lb-live">直播生图按钮</span><label class="switch"><input type="checkbox" id="btn-live" aria-labelledby="lb-live"><span></span></label></div>
+        </section>
+        <p class="group-footer">表格按钮默认关闭；取消勾选不隐藏已生成图片。</p>
+
+        <div id="table-sec">
+            <h2 class="group-header">表格美化生图</h2>
+            <section class="group" id="table-list"></section>
+            <p class="group-footer">控制各表格的生图按钮是否显示。</p>
+        </div>
+
+        <h2 class="group-header">中文提示词转换</h2>
+        <section class="group">
+            <div class="row"><span class="row-label" id="lb-cv">启用中文 → Tag 转换</span><label class="switch"><input type="checkbox" id="cv-on" aria-labelledby="lb-cv"><span></span></label></div>
+            <button type="button" class="row row-btn tappable" id="pick-preset"><span class="row-label">生图预设</span><span class="row-value"><span class="pick-value" id="preset-val"></span><span class="chev" aria-hidden="true">›</span></span></button>
+
+            <button type="button" class="row row-btn tappable" id="pick-api"><span class="row-label">转换 API 预设</span><span class="row-value"><span class="pick-value" id="api-val"></span><span class="chev" aria-hidden="true">›</span></span></button>
+            <div class="row"><label class="row-label" for="tag-inc">标签提取</label><input class="inline" id="tag-inc" type="text" placeholder="例如：content"></div>
+            <div class="row"><label class="row-label" for="tag-exc">标签排除</label><input class="inline" id="tag-exc" type="text" placeholder="例如：analysis、meta"></div>
+            <div class="row"><p class="status-line" id="cv-status" role="status" style="margin:0"></p></div>
+            <div class="row"><div class="btn-row">
+                <button type="button" class="mini-btn primary" id="preset-import">导入生图预设</button>
+                <button type="button" class="mini-btn" id="preset-export">导出当前</button>
+                <button type="button" class="mini-btn danger" id="preset-delete">删除当前</button>
+                <input type="file" id="preset-file" accept=".json" hidden>
+            </div></div>
+        </section>
+        <p class="group-footer">使用所选 API 和生图预设转换提示词，再交给所选生图接口。</p>
+
+        <h2 class="group-header">测试生图</h2>
+        <section class="group">
+            <div class="row"><label class="row-label" for="test-names">人物名字</label><input class="inline" id="test-names" type="text" placeholder="例如：星野铃；木下"></div>
+            <div class="row block"><label class="field-label" for="test-desc">图片描述</label><textarea class="field" id="test-desc" placeholder="输入图片里发生的事情"></textarea></div>
+            <div class="row block"><span class="field-label">中文提示词</span><div class="preview-box ai-out" id="test-preview" aria-live="polite"></div></div>
+            <div class="row block" id="ai-row" hidden><span class="field-label">AI 输出</span><div class="preview-box mono ai-out" id="ai-out"></div></div>
+            <button type="button" class="row row-btn action" id="test-run">测试生成</button>
+            <div class="row" id="test-status-row" hidden><p class="status-line" id="test-status" role="status" style="margin:0"></p></div>
+            <div class="row block" id="test-img-row" hidden><button type="button" class="test-thumb" id="test-thumb" aria-label="点击放大查看测试生成图片"></button></div>
+        </section>
+        <p class="group-footer">多个人名用分号分隔（; 或；）。</p>
+
+
+        <h2 class="group-header">角色资料映射</h2>
+        <section class="group">
+            <button type="button" class="row row-btn action" id="map-add">添加映射</button>
+        </section>
+        <div class="group map-empty" id="map-empty" style="margin-top:12px"><p class="empty">未配置映射，也可用人名和描述生图。</p></div>
+        <div class="map-list" id="map-list" style="margin-top:12px"></div>
+        <section class="group map-ops">
+            <button type="button" class="row row-btn action danger" id="map-clear">清空映射</button>
+        </section>
+        <p class="group-footer">按映射顺序匹配，命中即停；字段按表格列顺序拼接。</p>
+
+        <h2 class="group-header">请求设置</h2>
+        <section class="group">
+            <div class="row"><span class="row-label">等待超时（秒）</span>
+                <div class="stepper" data-min="30" data-max="1800" data-step="30" data-unit=""><button type="button" aria-label="减少等待超时">−</button><output>300</output><button type="button" aria-label="增加等待超时">+</button></div></div>
+        </section>
+        <p class="group-footer">智慧姬超时仅停止等待；柏宝绘超时会请求取消。</p>
+        <div style="height:24px"></div>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<div class="notes">
+    <b>原功能 → 新位置（源码 pages/image-generation.js）：</b><br>
+    生图接口单选勾选（智慧姬 / 柏宝绘）→「生图接口」两个互斥 switch，可都不开；保存路径说明 → 分组说明。<br>
+    QQ / 广场 / 论坛 / 直播生图按钮 →「生图按钮显示位置」switch，默认值不变。<br>
+    各表格生图按钮 →「表格美化生图」，无表格来源时整组隐藏。<br>
+    中文 → Tag 转换开关、生图预设下拉、转换 API 预设下拉、标签提取 / 排除、状态提示、导入 / 导出 / 删除 →「中文提示词转换」；下拉改为行 + YZ.sheet。<br>
+    测试人名 / 描述 / 中文提示词预览 / AI 输出 / 测试生成 / 结果图 →「测试生图」；结果图点击用 formSheet 放大。<br>
+    角色资料映射（添加 / 上移 / 下移 / 删除 / 资料表 / 名字字段 / 提示词字段 / 清空）→「角色资料映射」卡片；字段复选改 switch，失效列保持勾选并禁用。<br>
+    等待超时数字输入 →「请求设置」stepper（30–1800，步长 30，默认 300）。<br>
+    <b>新增 / 改动交互：</b>清空映射、删除映射、切换人物资料表（已选字段时）增加二次确认；未开任何接口时测试生成给出提示。工具栏三个模拟按钮仅用于演示。<br>
+    <b>未新增功能：</b>严格按源码重绘，不提供「新建 / 重命名预设」，也不提供「模型配置」（接口配置跟随对应插件）。
+</div>
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const later = (fn, ms) => setTimeout(fn, ms);
+// 演示开关：工具栏切换
+const sim = { loading: false, noapi: false, fail: false };
+// 示例数据：生图预设、转换 API 预设、角色资料映射、表格来源
+const state = {
+    presets: [{ id: 'p1', name: '二次元通用' }, { id: 'p2', name: '空白模板', empty: true }],
+    presetId: 'p1',
+    apis: [{ id: 'a1', name: '默认 API' }, { id: 'a2', name: '共享 API', readonly: true }],
+    apiId: 'a1',
+    busy: false,
+    generating: false,
+    nextMap: 3,
+    maps: [
+        { id: 'm1', tableId: 't1', tableName: '角色档案', nameField: '姓名', fields: ['外貌', '服装', '旧字段'] },
+        { id: 'm2', tableId: 'gone', tableName: '旧版资料表', nameField: '名字', fields: ['描述'] },
+    ],
+};
+const tables = [
+    { id: 't1', name: '角色档案', cols: ['姓名', '外貌', '服装', '性格'] },
+    { id: 't2', name: 'NPC 列表', cols: ['名称', '身份', '外观'] },
+    { id: 't3', name: '物品清单', cols: [] },
+];
+const curPreset = () => state.presets.find((p) => p.id === state.presetId) || null;
+const curApi = () => state.apis.find((a) => a.id === state.apiId) || null;
+const hasValidPreset = () => state.presets.some((p) => !p.empty);
+const presetUnavailable = () => sim.loading || sim.noapi;
+function setPick(el, text, empty, bad) {
+    el.textContent = text;
+    el.classList.toggle('is-empty', !!empty);
+    el.classList.toggle('is-bad', !!bad);
+}
+// 中文转换：按状态刷新控件与状态行
+function renderConvert() {
+    const p = curPreset();
+    const a = curApi();
+    setPick($('preset-val'), state.presetId ? (p ? p.name + (p.empty ? '（空预设）' : '') : '当前预设不可用') : '请选择生图预设', !state.presetId, state.presetId && !p);
+    setPick($('api-val'), state.apiId ? (a ? a.name + (a.readonly ? '（只读）' : '') : '当前转换 API 预设不可用') : '请选择转换 API 预设', !state.apiId, state.apiId && !a);
+    $('cv-on').disabled = presetUnavailable() || state.busy || !hasValidPreset();
+    $('pick-preset').disabled = presetUnavailable() || state.busy;
+    $('pick-api').disabled = state.busy;
+    ['preset-import', 'preset-export', 'preset-delete'].forEach((id) => { $(id).disabled = state.busy || sim.loading; });
+    let text = '已选择生图预设后，转换接口才会参与生图请求。';
+    if (sim.noapi) text = '生图预设接口尚未接入';
+    else if (sim.loading) text = '生图预设读取中或暂不可用';
+    else if (!hasValidPreset()) text = '尚未导入有效的生图预设';
+    $('cv-status').textContent = text;
+}
+function renderAll() {
+    renderTables();
+    renderConvert();
+    renderPreview();
+    renderMaps();
+}
+// 角色资料映射：卡片按钮与字段开关（事件委托）
+$('map-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn || btn.disabled) return;
+    const m = findMap(btn.closest('[data-map]').dataset.map);
+    const i = state.maps.indexOf(m);
+    const act = btn.dataset.act;
+    if (act === 'up' || act === 'down') {
+        const j = act === 'up' ? i - 1 : i + 1;
+        [state.maps[i], state.maps[j]] = [state.maps[j], state.maps[i]];
+        mapsChanged();
+        // 重绘后把焦点还给移动后卡片的同一按钮；到顶 / 到底时退到删除按钮
+        const card = $('map-list').querySelector(`[data-map="${m.id}"]`);
+        const next = card && card.querySelector(`[data-act="${act}"]:not(:disabled)`) || card && card.querySelector('[data-act="del"]');
+        if (next) next.focus();
+    } else if (act === 'del') {
+        YZ.confirm({
+            title: `删除映射 ${i + 1}？`, message: '删除后无法恢复。', confirmText: '删除',
+            onConfirm: () => { state.maps.splice(state.maps.indexOf(m), 1); mapsChanged(); },
+        });
+    } else if (act === 'table') pickTable(m);
+    else if (act === 'name') pickName(m);
+});
+$('map-list').addEventListener('change', (e) => {
+    const inp = e.target.closest('input[data-field]');
+    if (!inp) return;
+    const m = findMap(inp.closest('[data-map]').dataset.map);
+    const f = inp.dataset.field;
+    m.fields = inp.checked ? [...m.fields, f] : m.fields.filter((x) => x !== f);
+    renderPreview();
+});
+
+// 角色资料映射：渲染卡片、选表、选名字字段
+const findMap = (id) => state.maps.find((m) => m.id === id);
+const tableOf = (m) => tables.find((t) => t.id === m.tableId) || null;
+function mapsChanged() { renderMaps(); renderPreview(); }
+let swSeq = 0;
+const fieldSwitch = (m, f, on, stale) => {
+    const k = `f-${m.id}-${swSeq++}`;
+    return `<div class="row"><span class="row-label" id="lb-${k}">${esc(f)}${stale ? '<span class="row-sub">当前不可用，保持勾选</span>' : ''}</span><label class="switch"><input type="checkbox" id="${k}" aria-labelledby="lb-${k}" data-field="${esc(f)}"${on ? ' checked' : ''}${stale ? ' disabled' : ''}><span></span></label></div>`;
+};
+function fieldRows(m, t) {
+    const valid = t && m.nameField ? t.cols.filter((c) => c !== m.nameField) : [];
+    const stale = m.fields.filter((f) => !valid.includes(f));
+    let html = valid.map((c) => fieldSwitch(m, c, m.fields.includes(c), false)).join('') + stale.map((f) => fieldSwitch(m, f, true, true)).join('');
+    if (!valid.length) html += '<div class="row"><p class="status-line" style="margin:0">请先选择有表头的表格和名字字段</p></div>';
+    return html;
+}
+function renderMaps() {
+    const n = state.maps.length;
+    $('map-empty').hidden = n > 0;
+    $('map-list').hidden = !n;
+    $('map-clear').disabled = !n;
+    $('map-list').innerHTML = state.maps.map((m, i) => {
+        const t = tableOf(m);
+        const bad = !!m.tableId && !t;
+        const tableText = !m.tableId ? '请选择表格' : t ? t.name : `${m.tableName}（当前不可用）`;
+        const canName = !!t && t.cols.length > 0;
+        return `<section class="group" data-map="${m.id}">
+<div class="map-head"><span class="map-title${bad ? ' is-bad' : ''}">映射 ${i + 1}${bad ? ' · 当前不可用' : ''}</span>
+<button type="button" class="mini-btn" data-act="up" aria-label="上移映射 ${i + 1}"${i === 0 ? ' disabled' : ''}>上移</button>
+<button type="button" class="mini-btn" data-act="down" aria-label="下移映射 ${i + 1}"${i === n - 1 ? ' disabled' : ''}>下移</button>
+<button type="button" class="mini-btn danger" data-act="del" aria-label="删除映射 ${i + 1}">删除</button></div>
+<button type="button" class="row row-btn tappable" data-act="table"><span class="row-label">人物资料表</span><span class="row-value"><span class="pick-value${m.tableId ? '' : ' is-empty'}${bad ? ' is-bad' : ''}">${esc(tableText)}</span><span class="chev" aria-hidden="true">›</span></span></button>
+<button type="button" class="row row-btn tappable" data-act="name"${canName ? '' : ' disabled'}><span class="row-label">名字匹配字段</span><span class="row-value"><span class="pick-value${m.nameField ? '' : ' is-empty'}">${esc(m.nameField || '请选择名字字段')}</span><span class="chev" aria-hidden="true">›</span></span></button>
+<div class="row block"><span class="field-label">写入提示词的字段</span></div>
+${fieldRows(m, t)}
+</section>`;
+    }).join('');
+}
+function pickTable(m) {
+    YZ.sheet({
+        title: '人物资料表',
+        groups: [{ options: tables.map((t) => ({ value: t.id, label: t.name, sub: t.cols.length ? `${t.cols.length} 列` : '无表头', selected: t.id === m.tableId })) }],
+        footer: '切换后会清空名字字段与提示词字段。',
+        onSelect: (v) => {
+            if (v === m.tableId) return;
+            const apply = () => { m.tableId = v; m.tableName = tables.find((x) => x.id === v).name; m.nameField = ''; m.fields = []; mapsChanged(); };
+            if (m.nameField || m.fields.length) YZ.confirm({ title: '切换人物资料表？', message: '切换后会清空已选的名字字段与提示词字段。', confirmText: '切换', onConfirm: apply });
+            else apply();
+        },
+    });
+}
+function pickName(m) {
+    const t = tableOf(m);
+    if (!t) return;
+    YZ.sheet({
+        title: '名字匹配字段',
+        groups: [{ options: t.cols.map((c) => ({ value: c, label: c, selected: c === m.nameField })) }],
+        onSelect: (v) => { m.nameField = v; m.fields = m.fields.filter((f) => f !== v); mapsChanged(); },
+    });
+}
+
+// 表格美化生图：沿用示例表格来源，每表一个开关（默认关）
+function renderTables() {
+    $('table-sec').hidden = !tables.length;
+    $('table-list').innerHTML = tables.map((t) => `<div class="row"><span class="row-label" id="lb-tbl-${t.id}">${esc(t.name)}</span><label class="switch"><input type="checkbox" id="tbl-${t.id}" aria-labelledby="lb-tbl-${t.id}"><span></span></label></div>`).join('');
+}
+// 测试生图：中文提示词实时预览（按第一条可用映射示意拼接）
+const namesOf = () => $('test-names').value.split(/[;；]/).map((s) => s.trim()).filter(Boolean);
+function renderPreview() {
+    const names = namesOf();
+    const desc = $('test-desc').value.trim();
+    const box = $('test-preview');
+    const empty = !names.length && !desc;
+    box.classList.toggle('is-empty', empty);
+    if (empty) { box.textContent = '输入人名或描述后预览。'; return; }
+    const m = state.maps.find((x) => x.nameField && tables.some((t) => t.id === x.tableId));
+    const t = m && tables.find((x) => x.id === m.tableId);
+    const cols = t ? t.cols.filter((c) => m.fields.includes(c)) : [];
+    const lines = names.map((n) => (cols.length ? `${n}：${cols.map((c) => `${c}（示例）`).join('，')}` : n));
+    if (desc) lines.push(`场景：${desc}`);
+    box.textContent = lines.join('\n');
+}
+$('test-names').addEventListener('input', renderPreview);
+$('test-desc').addEventListener('input', renderPreview);
+// 生图接口：两个开关互斥，可都不开
+['api-zhj', 'api-bbh'].forEach((id, k, ids) => $(id).addEventListener('change', (e) => {
+    if (e.target.checked) $(ids[1 - k]).checked = false;
+}));
+// 中文转换：无有效预设 / 空预设时自动关闭
+function guardConvert() {
+    const on = $('cv-on');
+    if (!on.checked) return;
+    const p = curPreset();
+    if (!hasValidPreset()) { on.checked = false; YZ.toast('当前没有有效的生图预设，已自动关闭中文转换。'); }
+    else if (p && p.empty) { on.checked = false; YZ.toast('所选生图预设为空，已自动关闭中文转换。'); }
+}
+$('cv-on').addEventListener('change', guardConvert);
+$('pick-preset').addEventListener('click', () => YZ.sheet({
+    title: '生图预设',
+    groups: [{ options: state.presets.map((p) => ({ value: p.id, label: p.name + (p.empty ? '（空预设）' : ''), selected: p.id === state.presetId })) }],
+    onSelect: (v) => { state.presetId = v; renderConvert(); guardConvert(); },
+}));
+$('pick-api').addEventListener('click', () => YZ.sheet({
+    title: '转换 API 预设',
+    groups: [{ options: state.apis.map((a) => ({ value: a.id, label: a.name + (a.readonly ? '（只读）' : ''), selected: a.id === state.apiId })) }],
+    onSelect: (v) => { state.apiId = v; renderConvert(); },
+}));
+
+// 映射：添加 / 清空（清空为新增确认）
+$('map-add').addEventListener('click', () => { state.maps.push({ id: 'm' + state.nextMap++, tableId: '', tableName: '', nameField: '', fields: [] }); mapsChanged(); });
+$('map-clear').addEventListener('click', () => YZ.confirm({ title: '清空映射？', message: '将删除全部角色资料映射，删除后无法恢复。', confirmText: '清空', onConfirm: () => { state.maps = []; mapsChanged(); } }));
+// 生图预设：导入 / 导出 / 删除（模拟）
+const noApi = (verb) => YZ.alert({ title: `无法${verb}生图预设`, message: `当前设置页还没有接入生图预设${verb}接口。`, confirmText: '知道了' });
+$('preset-import').addEventListener('click', () => { if (sim.noapi) { noApi('导入'); return; } $('preset-file').click(); });
+$('preset-file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    const name = f.name.replace(/\.json$/i, '') || '导入预设';
+    const id = 'p' + Date.now();
+    state.presets.push({ id, name });
+    state.presetId = id;
+    renderConvert();
+    YZ.toast(`已导入 1 个生图预设，并自动选中「${name}」。`);
+});
+$('preset-export').addEventListener('click', () => {
+    if (sim.noapi) { noApi('导出'); return; }
+    const p = curPreset();
+    YZ.toast(p ? `已导出生图预设「${p.name}」。` : '请先选择要导出的生图预设。');
+});
+$('preset-delete').addEventListener('click', () => {
+    if (sim.noapi) { noApi('删除'); return; }
+    const p = curPreset();
+    if (!p) { YZ.toast('请先选择要删除的生图预设。'); return; }
+    YZ.confirm({ title: '删除生图预设', message: `确定删除「${p.name}」吗？删除后无法恢复。`, confirmText: '删除', onConfirm: () => {
+        state.busy = true; renderConvert();
+        later(() => {
+            state.presets = state.presets.filter((x) => x !== p);
+            state.presetId = ''; state.busy = false;
+            renderConvert(); guardConvert();
+            YZ.toast(`已删除生图预设「${p.name}」。`);
+        }, 400);
+    } });
+});
+// 测试生图
+function setStatus(text, err) { $('test-status-row').hidden = false; $('test-status').textContent = text; $('test-status').classList.toggle('error', err); }
+$('test-run').addEventListener('click', () => {
+    if (state.generating) return;
+    const api = $('api-bbh').checked ? '柏宝绘' : $('api-zhj').checked ? '智慧姬' : '';
+    if (!api) { YZ.alert({ title: '未开启生图接口', message: '请先在「生图接口」中开启智慧姬或柏宝绘。', confirmText: '知道了' }); return; }
+    const btn = $('test-run');
+    state.generating = true; btn.disabled = true; btn.textContent = '生成中…';
+    $('test-img-row').hidden = true;
+    setStatus(`正在请求${api}…`, false);
+    later(() => {
+        state.generating = false; btn.disabled = false; btn.textContent = '测试生成';
+        if (sim.fail) { setStatus('测试生成失败', true); YZ.toast('生图接口没有返回可显示的图片'); return; }
+        const cv = $('cv-on').checked;
+        $('ai-row').hidden = !cv;
+        if (cv) $('ai-out').textContent = '1girl, solo, school uniform, cherry blossoms, smile';
+        setStatus('测试图片已生成并保存', false);
+        $('test-img-row').hidden = false;
+    }, 1200);
+});
+$('test-thumb').addEventListener('click', () => YZ.formSheet({ title: '测试生成图片', bodyHtml: '<div class="test-big" role="img" aria-label="测试生成图片（放大）"></div>' }));
+// 工具栏演示开关
+[['sim-loading', 'loading'], ['sim-noapi', 'noapi'], ['sim-fail', 'fail']].forEach(([id, k]) => $(id).addEventListener('click', (e) => {
+    sim[k] = !sim[k];
+    e.currentTarget.setAttribute('aria-pressed', String(sim[k]));
+    renderConvert();
+}));
+
+setTimeout(renderAll, 0);
+})();
+</script>
+</body>
+</html>
+

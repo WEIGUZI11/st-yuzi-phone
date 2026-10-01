@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · 设置 · 读取世界书（原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页局部样式：颜色只用 shared 配色变量 */
+.nav-action {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    border: 0; background: none; color: var(--accent); font: inherit; font-size: 17px;
+    padding: 6px 8px; cursor: pointer;
+}
+.nav-action:disabled { color: var(--text-3); cursor: default; }
+.nav-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+button.row.action { width: 100%; border: 0; background: none; font: inherit; font-size: 16px; }
+button.row.action:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.search-row.wb-search { margin: 0 16px 10px; }
+.wb-status { flex: 1; min-width: 0; font-size: 14px; color: var(--text-2); }
+.wb-entries { margin-top: 10px; }
+.entry-title { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry .row-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry.is-disabled .entry-title { color: var(--text-3); }
+.entry .switch input:disabled { cursor: not-allowed; }
+.entry .switch input:disabled + span { opacity: 0.45; }
+.entry-tags { display: flex; gap: 4px; flex-shrink: 0; }
+.empty.is-error { color: var(--danger); }
+.empty.is-loading { color: var(--text-2); }
+.toolbar { flex-wrap: wrap; justify-content: center; max-width: 420px; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <button type="button" data-demo="loading">加载中</button>
+    <button type="button" data-demo="error">错误</button>
+    <button type="button" data-demo="empty">空列表</button>
+    <button type="button" data-demo="normal">恢复数据</button>
+</div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" aria-label="返回设置">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">读取世界书</h1>
+        <button type="button" class="nav-action" id="phone-worldbook-reading-refresh">刷新</button>
+    </header>
+    <main class="scroll">
+        <h2 class="group-header">自动排除关键词</h2>
+        <section class="group">
+            <div class="row block">
+                <label class="field-label" for="phone-worldbook-reading-blocked-keywords">关键词（每行一个）</label>
+                <textarea class="field" id="phone-worldbook-reading-blocked-keywords" rows="6" spellcheck="false" placeholder="例如：MVU">MVU</textarea>
+            </div>
+            <button type="button" class="row action" id="phone-worldbook-reading-blocked-keywords-save">保存排除词</button>
+        </section>
+        <p class="group-footer">条目 comment 包含任一关键词时自动取消勾选；不检查条目正文。每行一个关键词。</p>
+
+        <h2 class="group-header">条目范围</h2>
+        <label class="search-row wb-search">
+            <span class="sr-only">搜索条目</span>
+            <input type="search" id="phone-worldbook-reading-search" placeholder="输入条目名、书名或 UID" autocomplete="off">
+        </label>
+        <section class="group">
+            <div class="row">
+                <span class="wb-status" id="phone-worldbook-reading-status" aria-live="polite"></span>
+                <div class="row-actions">
+                    <button type="button" class="mini-btn" id="phone-worldbook-reading-select-all">全选</button>
+                    <button type="button" class="mini-btn" id="phone-worldbook-reading-deselect-all">取消全选</button>
+                </div>
+            </div>
+        </section>
+        <section class="group wb-entries" id="phone-worldbook-reading-entries" aria-label="世界书条目"></section>
+        <p class="group-footer">默认读取当前角色主世界书和附加世界书中的所有未禁用条目。</p>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+
+<section class="notes" aria-label="原型说明">
+    <b>原功能 → 新位置</b><br>
+    1. 标题栏「刷新」#phone-worldbook-reading-refresh → nav 右侧文字按钮（标题栏结构不变）。<br>
+    2. 「自动排除关键词」textarea（rows=6，placeholder「例如：MVU」）+「保存排除词」→ 同名分组：块行 textarea + 行内动作按钮；原区块描述移到 group-footer。保存时按行拆分、trim、去空、去重后重算勾选，无 toast（与现状一致）。<br>
+    3. 「条目范围」搜索框（label「搜索条目」）→ 分组标题下方 search-row，label 改为读屏可见文本；按条目名 / 书名 / UID 不区分大小写实时过滤。<br>
+    4. 「全选 / 取消全选」→ 状态行右侧 mini-btn，只作用于当前搜索结果中的未禁用条目。<br>
+    5. 状态行「已选择 {selected}/{enabled} 个未禁用条目」→ 与按钮同一行；计数始终按全部条目统计，不受搜索影响。<br>
+    6. 条目复选框 → shared switch；标题为 comment ?? name，空时「条目 {uid}」；副标题「{书名} · 主世界书/附加世界书」；已禁用条目开关 disabled 且标题置灰。<br>
+    7. 列表四种状态 → 卡片内 .empty：「正在读取角色世界书...」、错误文本（危险色）、「未找到匹配的条目」、「当前角色没有可读取的世界书条目」。失败仍以内联错误块替换列表，不用 toast。<br>
+    <b>新增 / 改动建议</b><br>
+    · 「已排除」灰标签（改动建议）：现状被关键词排除的条目只显示为未勾选，无任何提示。现状下手动打开其开关会写入偏好，但重载后仍为关闭；原型如实演示这个回弹，并建议正式版直接禁用其开关。<br>
+    · 「已禁用」灰标签（改动建议）：现状只有 is-disabled 置灰。<br>
+    · 刷新显示加载（改动建议）：现状刷新调用 load(false)，不重绘加载态，列表只会在结果返回后静默更新；原型点击刷新后显示约 0.8 秒加载态，期间按钮置灰。<br>
+    · 保存排除词 / 切换条目失败时，现状同样用错误块替换整个列表，直到下一次成功读取，原型「错误」按钮可预览该形态。<br>
+    · 顶部工具栏「加载中 / 错误 / 空列表 / 恢复数据」仅为原型预览；返回按钮在原型中只弹出预览提示。<br>
+    · 未展示：catalog 会过滤 QQ 投影条目（YuziQQ｜ 前缀或 yuziPhoneQQV2），以及没有 uid、没有书名的条目，它们不出现在列表里。
+</section>
+
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+    const $ = (id) => document.getElementById(id);
+    const els = {
+        refresh: $('phone-worldbook-reading-refresh'),
+        keywords: $('phone-worldbook-reading-blocked-keywords'),
+        save: $('phone-worldbook-reading-blocked-keywords-save'),
+        search: $('phone-worldbook-reading-search'),
+        all: $('phone-worldbook-reading-select-all'),
+        none: $('phone-worldbook-reading-deselect-all'),
+        status: $('phone-worldbook-reading-status'),
+        list: $('phone-worldbook-reading-entries'),
+    };
+    // 示例数据：2 本书 / 8 个条目，含已禁用、被 MVU 排除、无标题（回退「条目 {uid}」）、偏好里已手动关闭
+    const SAMPLE = [
+        { book: '玉子日常', role: 'primary', uid: '0', comment: '玉子·基础人设' },
+        { book: '玉子日常', role: 'primary', uid: '1', comment: '商店街地图' },
+        { book: '玉子日常', role: 'primary', uid: '2', comment: 'MVU 变量面板' },
+        { book: '玉子日常', role: 'primary', uid: '3', comment: '旧版设定（停用）', disabled: true },
+        { book: '玉子日常', role: 'primary', uid: '4', comment: '' },
+        { book: '兔山年糕店', role: 'additional', uid: '10', comment: '年糕店菜单' },
+        { book: '兔山年糕店', role: 'additional', uid: '11', comment: '[MVU] 状态栏' },
+        { book: '兔山年糕店', role: 'additional', uid: '12', comment: '德拉·鸟类设定' },
+    ];
+    const state = {
+        entries: SAMPLE,
+        prefs: { '兔山年糕店': { '12': false } }, // 与 catalog 一致：只记录 false，缺省即选中
+        keywords: ['MVU'],
+        query: '',
+        loading: false,
+        error: '',
+    };
+    const title = (e) => e.comment.trim() || `条目 ${e.uid}`;
+    const blocked = (e) => state.keywords.some((k) => e.comment.includes(k));
+    const selected = (e) => !e.disabled && !blocked(e) && state.prefs[e.book]?.[e.uid] !== false;
+    const matches = (e) => {
+        const q = state.query.trim().toLocaleLowerCase();
+        return !q || [title(e), e.book, e.uid].some((v) => v.toLocaleLowerCase().includes(q));
+    };
+    const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ESC[c]);
+
+    function entryRow(e, i) {
+        const isBlocked = !e.disabled && blocked(e);
+        const tags = (e.disabled ? '<span class="status-tag">已禁用</span>' : '')
+            + (isBlocked ? '<span class="status-tag">已排除</span>' : '');
+        return `<div class="row entry${e.disabled ? ' is-disabled' : ''}">
+            <span class="row-label">
+                <span class="entry-title" id="wb-entry-title-${i}">${esc(title(e))}</span>
+                <span class="row-sub">${esc(e.book)} · ${e.role === 'primary' ? '主世界书' : '附加世界书'}</span>
+            </span>
+            ${tags ? `<span class="entry-tags">${tags}</span>` : ''}
+            <label class="switch"><input type="checkbox" data-book="${esc(e.book)}" data-uid="${esc(e.uid)}"
+                aria-labelledby="wb-entry-title-${i}"${selected(e) ? ' checked' : ''}${e.disabled ? ' disabled' : ''}><span></span></label>
+        </div>`;
+    }
+
+    function render() {
+        const enabled = state.entries.filter((e) => !e.disabled);
+        // 计数按全部条目统计，不受搜索影响（与源码 buildWorldbookReadingView 一致）
+        els.status.textContent = `已选择 ${enabled.filter(selected).length}/${enabled.length} 个未禁用条目`;
+        let html;
+        if (state.loading) html = '<div class="empty is-loading" role="status">正在读取角色世界书...</div>';
+        else if (state.error) html = `<div class="empty is-error" role="alert">${esc(state.error)}</div>`;
+        else {
+            const list = state.entries.filter(matches);
+            html = list.length ? list.map(entryRow).join('')
+                : `<div class="empty">${state.query.trim() ? '未找到匹配的条目' : '当前角色没有可读取的世界书条目'}</div>`;
+        }
+        els.list.innerHTML = html;
+    }
+    // 与 catalog.setSelected 一致：关闭写 false，打开删除记录
+    function setSelected(refs, on) {
+        refs.forEach(({ book, uid }) => {
+            const p = state.prefs[book] || (state.prefs[book] = {});
+            if (on) delete p[uid]; else p[uid] = false;
+            if (!Object.keys(p).length) delete state.prefs[book];
+        });
+        render();
+    }
+    let timer = 0;
+    function load(ms = 800) {
+        clearTimeout(timer);
+        state.loading = true; state.error = ''; els.refresh.disabled = true; render();
+        timer = setTimeout(() => { state.loading = false; els.refresh.disabled = false; render(); }, ms);
+    }
+    const visibleRefs = () => state.entries.filter((e) => !e.disabled && matches(e)).map(({ book, uid }) => ({ book, uid }));
+    els.list.addEventListener('change', (ev) => {
+        const t = ev.target;
+        if (!t.matches('input[type=checkbox]')) return;
+        setSelected([{ book: t.dataset.book, uid: t.dataset.uid }], t.checked);
+    });
+    els.search.addEventListener('input', () => { state.query = els.search.value; render(); });
+    els.all.addEventListener('click', () => setSelected(visibleRefs(), true));
+    els.none.addEventListener('click', () => setSelected(visibleRefs(), false));
+    els.save.addEventListener('click', () => {
+        state.keywords = [...new Set(els.keywords.value.split(/\r?\n/u).map((s) => s.trim()).filter(Boolean))];
+        els.keywords.value = state.keywords.join('\n');
+        state.error = '';
+        render();
+    });
+    els.refresh.addEventListener('click', () => load());
+    document.querySelector('.nav-back').addEventListener('click', () => YZ.toast('原型：返回设置首页'));
+    document.querySelectorAll('[data-demo]').forEach((btn) => btn.addEventListener('click', () => {
+        clearTimeout(timer); els.refresh.disabled = false;
+        const mode = btn.dataset.demo;
+        state.loading = mode === 'loading';
+        state.error = mode === 'error' ? '读取世界书失败' : '';
+        state.entries = mode === 'empty' ? [] : SAMPLE;
+        render();
+    }));
+    load(600);
+})();
+</script>
+</body>
+</html>

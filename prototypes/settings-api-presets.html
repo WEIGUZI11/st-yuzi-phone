@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API 预设 · 设置二级页原型</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页只用 shared 配色变量，白天 / 夜间自动跟随 */
+.row .row-label.fixed { flex: 0 0 72px; }
+.temp-out { min-width: 40px; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.stepper output { font-variant-numeric: tabular-nums; cursor: pointer; border-radius: 6px; }
+.stepper output:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gap-top { margin-top: 22px; }
+</style>
+</head>
+<body>
+<div class="toolbar"><span>原型预览：</span><button type="button" id="toggle-theme">切换白天 / 夜间</button></div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" aria-label="返回设置" data-toast="返回设置首页（原型）">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">API 预设</h1>
+    </header>
+    <main class="scroll">
+        <h2 class="group-header">API 预设</h2>
+        <section class="group">
+            <div class="row tappable" id="row-preset" role="button" tabindex="0">
+                <span class="row-label">选择预设</span>
+                <span class="row-value"><span id="preset-value">请选择 API 预设</span><span class="chev">›</span></span>
+            </div>
+            <div class="row action" id="btn-new" role="button" tabindex="0">新建 API 预设</div>
+        </section>
+        <p class="status-line" id="page-status" role="status" hidden></p>
+
+        <h2 class="group-header" id="editor-title">新建 API 预设</h2>
+        <section class="group">
+            <label class="row"><span class="row-label fixed">名称</span><input class="inline" id="f-name" maxlength="120" autocomplete="off"></label>
+            <label class="row"><span class="row-label fixed">API 地址</span><input class="inline" id="f-endpoint" maxlength="2048" placeholder="https://api.example.com/v1" autocomplete="off"></label>
+            <label class="row"><span class="row-label fixed">API 密钥</span><input class="inline" id="f-key" type="password" autocomplete="off"></label>
+            <label class="row"><span class="row-label fixed">手写模型</span><input class="inline" id="f-model" maxlength="256" autocomplete="off"></label>
+            <div class="row tappable" id="row-model-list" role="button" tabindex="0" hidden>
+                <span class="row-label">模型列表</span>
+                <span class="row-value"><span id="model-list-value">请选择模型</span><span class="chev">›</span></span>
+            </div>
+        </section>
+        <p class="group-footer" id="key-footer"></p>
+        <p class="status-line" id="model-status" role="status" hidden></p>
+
+
+        <h2 class="group-header">生成参数</h2>
+        <section class="group">
+            <div class="row">
+                <span class="row-label fixed">温度</span>
+                <div class="slider-row"><input type="range" id="f-temp" min="0" max="2" step="0.01" aria-label="温度"><output class="temp-out" id="temp-out" for="f-temp">1.00</output></div>
+            </div>
+            <div class="row" id="max-row">
+                <span class="row-label">最大输出</span>
+                <div class="stepper" data-min="1" data-step="256">
+                    <button type="button" aria-label="减少最大输出">−</button>
+                    <output id="max-out" tabindex="0" role="button" aria-label="最大输出，点按输入精确值">4096</output>
+                    <button type="button" aria-label="增加最大输出">+</button>
+                </div>
+            </div>
+        </section>
+        <p class="group-footer">温度 0–2，精度 0.01；最大输出为不小于 1 的整数，± 按 256 步进，点数字可输入精确值。</p>
+        <section class="group gap-top">
+            <div class="row action" id="btn-load-models" role="button" tabindex="0">加载模型</div>
+            <div class="row action" id="btn-save" role="button" tabindex="0">保存预设</div>
+        </section>
+        <section class="group gap-top">
+            <div class="row action danger" id="btn-delete" role="button" tabindex="0" aria-disabled="true">删除预设</div>
+        </section>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<div class="notes">
+    <p><b>原功能 → 新位置</b></p>
+    <ul>
+        <li>选择预设下拉框（只读项禁用，标「（只读）」）→ 首行 + YZ.sheet，只读项置灰；首项「请选择 API 预设」= 新建草稿。</li>
+        <li>「新建 API 预设」按钮 → 同组操作行。</li>
+        <li>名称 / API 地址 / 手写模型 → 行内输入，maxlength 120 / 2048 / 256 照搬。</li>
+        <li>API 密钥（password，不回显）→ 行内密码输入；「（留空保持已有密钥）」移到占位符与分组说明。源码无显示切换，未新增。</li>
+        <li>「加载模型」→ 操作行；加载中 / 已加载 N 个 / 未识别 / 错误 → 编辑组下方状态行；模型列表下拉 → 有模型时出现的行 + YZ.sheet，选中回填手写模型。</li>
+        <li>温度（0–2，step 0.01）→ 滑块，两位小数；最大输出（min 1，step 1）→ 步进器 + 点数字精确输入。</li>
+        <li>「保存预设」「删除预设」→ 操作行；删除沿用源码确认框文案，非新增确认。</li>
+        <li>读取 / 忙碌时禁用选择与新建；只读或忙碌禁用编辑区；删除仅已保存且可编辑时可用。</li>
+    </ul>
+    <p><b>新增 / 改动</b></p>
+    <ul>
+        <li>最大输出精确输入弹层与「请输入不小于 1 的整数」提示、选择弹层说明「只读预设不可选择。」为新增。</li>
+        <li>源码无复制、独立重命名（改名走名称字段）、测试连接，原型未添加。</li>
+        <li>模拟规则：地址为空 → 加载模型失败；地址含 /empty → 空列表；名称为空 → 保存失败。真实错误文案来自后端。</li>
+    </ul>
+</div>
+<script src="./shared/ios-settings.js"></script>
+<script>
+// 示例数据：只记 hasApiKey，原型不保存任何密钥
+const db = [
+    { presetId: 'p1', name: '默认 OpenAI 兼容', endpoint: 'https://api.example.com/v1', model: 'example-chat-large', temperature: 0.7, maxOutput: 4096, hasApiKey: true },
+    { presetId: 'p2', name: '本地模型', endpoint: 'http://127.0.0.1:11434/v1', model: '', temperature: 1, maxOutput: 2048, hasApiKey: false },
+    { presetId: 'p3', name: '系统内置', endpoint: 'https://api.example.com/v1', model: 'example-chat-mini', temperature: 1, maxOutput: 8192, hasApiKey: true, readOnly: true },
+];
+let seq = 4;
+const $ = (id) => document.getElementById(id);
+const asText = (v) => String(v || '').trim();
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const num = (v, f) => (Number.isFinite(Number(v)) ? Number(v) : f);
+const createDraft = (p = {}) => ({
+    presetId: asText(p.presetId), name: asText(p.name), endpoint: asText(p.endpoint), apiKey: '',
+    model: asText(p.model), temperature: num(p.temperature, 1), maxOutput: num(p.maxOutput, 4096),
+    hasApiKey: p.hasApiKey === true, readOnly: p.readOnly === true,
+});
+const createNewDraft = () => createDraft({ name: '新建 API 预设', temperature: 1, maxOutput: 4096 });
+const S = { loading: true, busy: false, error: '', presets: [], selectedPresetId: '', draft: createNewDraft(),
+    models: [], modelLoading: false, modelsLoaded: false, modelError: '' };
+const findPreset = (id) => S.presets.find((p) => p.presetId === asText(id)) || null;
+const presetLabel = (p) => `${p.name || '未命名预设'}${p.readOnly ? '（只读）' : ''}`;
+const modelLabel = (m) => (S.models.includes(m) ? m : '请选择模型');
+const resetModels = () => { S.models = []; S.modelLoading = false; S.modelsLoaded = false; S.modelError = ''; };
+const setStatus = (el, text, isErr) => { el.hidden = !text; el.textContent = text; el.classList.toggle('error', !!isErr); };
+const lockRow = (id, off) => $(id).setAttribute('aria-disabled', String(off));
+
+// 对应源码 buildApiPresetsPageHtml：状态变化后整体重绘
+const render = () => {
+    const d = S.draft;
+    const lock = S.loading || S.busy;
+    const edit = lock || d.readOnly;
+    const cur = findPreset(S.selectedPresetId);
+    const n = S.models.length;
+    $('preset-value').textContent = cur ? presetLabel(cur) : '请选择 API 预设';
+    setStatus($('page-status'), S.error || (S.loading ? '正在读取 API 预设...' : ''), !!S.error);
+    $('editor-title').textContent = d.presetId ? '编辑 API 预设' : '新建 API 预设';
+    $('f-name').value = d.name;
+    $('f-endpoint').value = d.endpoint;
+    $('f-key').value = ''; // 与源码一致：重绘不回填密钥，已输入值留在 draft.apiKey
+    $('f-key').placeholder = d.hasApiKey ? '留空保持已有密钥' : '';
+    $('key-footer').textContent = d.hasApiKey ? 'API 密钥（留空保持已有密钥）。已保存的密钥不会回显。' : 'API 密钥以密码形式输入，不回显。';
+    $('f-model').value = d.model;
+    $('row-model-list').hidden = !n;
+    $('model-list-value').textContent = modelLabel(d.model);
+    setStatus($('model-status'), S.modelError || (S.modelLoading ? '正在加载模型...'
+        : S.modelsLoaded ? (n ? `已加载 ${n} 个模型` : '未识别到可用模型') : ''), !!S.modelError);
+    $('f-temp').value = String(d.temperature);
+    $('temp-out').textContent = Number(d.temperature).toFixed(2);
+    $('max-out').textContent = String(d.maxOutput);
+    ['f-name', 'f-endpoint', 'f-key', 'f-model', 'f-temp'].forEach((id) => { $(id).disabled = edit; });
+    lockRow('row-preset', lock);
+    lockRow('btn-new', lock);
+    ['row-model-list', 'max-row', 'btn-load-models', 'btn-save'].forEach((id) => lockRow(id, edit));
+    lockRow('btn-delete', !(d.presetId && !edit));
+};
+
+
+// ===== 交互：对应源码 createApiPresetSession / bindApiPresetInteractions =====
+const off = (id) => $(id).getAttribute('aria-disabled') === 'true';
+const onTap = (id, fn) => $(id).addEventListener('click', () => { if (!off(id)) fn(); });
+const resetDraft = (p) => { S.selectedPresetId = asText(p?.presetId); S.draft = p ? createDraft(p) : createNewDraft(); resetModels(); };
+
+// 行内输入实时写回 draft，避免重绘丢失未保存内容（源码在保存 / 加载模型时 readDraft 合并，效果一致）
+[['f-name', 'name'], ['f-endpoint', 'endpoint'], ['f-model', 'model']].forEach(([id, key]) => {
+    $(id).addEventListener('input', (e) => { S.draft[key] = e.target.value; });
+});
+$('f-model').addEventListener('input', () => { $('model-list-value').textContent = modelLabel(asText(S.draft.model)); });
+// 密钥只进内存 draft.apiKey，重绘不回填（与源码一致）
+$('f-key').addEventListener('input', (e) => { S.draft.apiKey = String(e.target.value || ''); });
+
+// 模拟 readSharedResources；repaintLoading 对应源码同名参数
+const load = async (id = S.selectedPresetId, repaintLoading = true) => {
+    S.loading = true;
+    S.error = '';
+    resetModels();
+    if (repaintLoading) render();
+    await wait(600);
+    S.loading = false;
+    S.presets = db.map((p) => ({ ...p }));
+    resetDraft(findPreset(id));
+    render();
+};
+
+const select = (id) => {
+    if (S.busy || S.loading) return;
+    const p = findPreset(id);
+    if (p?.readOnly) return; // 只读预设不可选
+    resetDraft(p);
+    render();
+};
+
+onTap('row-preset', () => YZ.sheet({
+    title: '选择 API 预设',
+    groups: [{ options: [
+        { value: '', label: '请选择 API 预设', selected: !S.selectedPresetId },
+        ...S.presets.map((p) => ({ value: p.presetId, label: presetLabel(p), disabled: p.readOnly === true, selected: p.presetId === S.selectedPresetId })),
+    ] }],
+    footer: '只读预设不可选择。',
+    onSelect: (value) => select(value),
+}));
+
+onTap('btn-new', () => {
+    if (S.busy || S.loading) return;
+    resetDraft(null);
+    render();
+});
+
+// 模拟 loadModels：地址为空 → 失败；地址含 /empty → 空列表；其余返回示例模型
+const MOCK_MODELS = ['example-chat-large', 'example-chat-mini', 'example-embed-small'];
+onTap('btn-load-models', async () => {
+    if (S.busy || S.loading || S.draft.readOnly) return;
+    S.busy = true;
+    resetModels();
+    S.modelLoading = true;
+    render();
+    await wait(800);
+    S.busy = false;
+    S.modelLoading = false;
+    const endpoint = asText(S.draft.endpoint);
+    if (!endpoint) {
+        S.modelError = '加载模型失败'; // 真实错误文案来自后端，此处为源码兜底
+        YZ.toast(S.modelError);
+        render();
+        return;
+    }
+    S.models = endpoint.includes('/empty') ? [] : [...MOCK_MODELS];
+    S.modelsLoaded = true;
+    YZ.toast(S.models.length ? `已加载 ${S.models.length} 个模型` : '未识别到可用模型');
+    render();
+});
+
+// 温度：滑块实时显示两位小数
+$('f-temp').addEventListener('input', (e) => {
+    const v = Math.min(2, Math.max(0, num(e.target.value, 1)));
+    S.draft.temperature = v;
+    $('temp-out').textContent = v.toFixed(2);
+});
+
+// 最大输出：± 由 shared 步进器处理（document 监听先注册先执行），这里之后同步回 draft
+document.addEventListener('click', (e) => {
+    const btn = e.target instanceof Element ? e.target.closest('#max-row .stepper button') : null;
+    if (!btn || off('max-row')) return;
+    S.draft.maxOutput = Math.max(1, Math.round(num($('max-out').textContent, S.draft.maxOutput)));
+    $('max-out').textContent = String(S.draft.maxOutput);
+});
+
+// 最大输出：点数字精确输入（新增）；Enter / 空格由 shared 转成 click
+$('max-out').addEventListener('click', () => {
+    if (off('max-row')) return;
+    YZ.formSheet({
+        title: '最大输出',
+        bodyHtml: '<div class="group"><label class="row block"><span class="field-label">最大输出</span>'
+            + '<input class="field" name="maxOutput" type="number" min="1" step="1" inputmode="numeric" autocomplete="off"></label></div>'
+            + '<p class="group-footer">请输入不小于 1 的整数。</p>',
+        onMount: (rootEl) => {
+            const input = rootEl.querySelector('[name=maxOutput]');
+            input.value = String(S.draft.maxOutput);
+            input.focus();
+        },
+        onDone: (rootEl) => {
+            const raw = asText(rootEl.querySelector('[name=maxOutput]').value);
+            const v = Number(raw);
+            if (!/^\d+$/.test(raw) || !Number.isSafeInteger(v) || v < 1) { YZ.toast('请输入不小于 1 的整数'); return false; }
+            S.draft.maxOutput = v;
+            $('max-out').textContent = String(v);
+        },
+    });
+});
+
+// 模型列表：首项「请选择模型」不回填；选中后回填手写模型（对应源码 model-list change）
+onTap('row-model-list', () => {
+    if (!S.models.length) return;
+    const current = asText(S.draft.model);
+    YZ.sheet({
+        title: '选择模型',
+        groups: [{ options: [
+            { value: '', label: '请选择模型', selected: !S.models.includes(current) },
+            ...S.models.map((m) => ({ value: m, label: m, selected: m === current })),
+        ] }],
+        onSelect: (value) => {
+            const model = asText(value);
+            if (!model || off('row-model-list')) return;
+            S.draft.model = model;
+            $('f-model').value = model;
+            $('model-list-value').textContent = modelLabel(model);
+        },
+    });
+});
+
+// 模拟 saveApiPreset：名称为空 → 失败；原型只记 hasApiKey，不保存密钥本身
+onTap('btn-save', async () => {
+    if (S.busy || S.loading || S.draft.readOnly) return;
+    S.busy = true;
+    render();
+    await wait(600);
+    S.busy = false;
+    const d = S.draft;
+    if (!asText(d.name)) {
+        YZ.toast('保存 API 预设失败'); // 真实错误文案来自后端，此处为源码兜底
+        render();
+        return;
+    }
+    const presetId = d.presetId || `p${seq++}`;
+    const record = {
+        presetId, name: asText(d.name), endpoint: asText(d.endpoint), model: asText(d.model),
+        temperature: Number(d.temperature), maxOutput: Number(d.maxOutput),
+        hasApiKey: d.hasApiKey || !!asText(d.apiKey),
+    };
+    const i = db.findIndex((p) => p.presetId === presetId);
+    if (i >= 0) db[i] = { ...db[i], ...record }; else db.push(record);
+    YZ.toast('API 预设已保存');
+    await load(presetId, false);
+});
+
+// 删除：沿用源码确认框文案；模拟 deleteApiPreset
+const remove = async () => {
+    if (S.busy || S.loading || S.draft.readOnly || !S.draft.presetId) return;
+    S.busy = true;
+    render();
+    await wait(500);
+    S.busy = false;
+    const i = db.findIndex((p) => p.presetId === S.draft.presetId && !p.readOnly);
+    if (i < 0) {
+        YZ.toast('删除 API 预设失败');
+        render();
+        return;
+    }
+    db.splice(i, 1);
+    YZ.toast('API 预设已删除');
+    await load('', false);
+};
+onTap('btn-delete', () => {
+    const name = asText(S.draft.name) || '当前 API 预设';
+    YZ.confirm({ title: '删除 API 预设', message: `确定删除「${name}」吗？`, confirmText: '删除', cancelText: '取消', onConfirm: () => { void remove(); } });
+});
+
+// 首次渲染：对应源码 mount → paint() 后 load('', false)
+render();
+void load('', false);
+</script>
+</body>
+</html>
+
+

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 回复与主动消息 · QQ 设置二级页原型</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页只用 shared 配色变量，白天 / 夜间自动跟随 */
+.toolbar { flex-wrap: wrap; }
+.toolbar button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.row-value .val { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-value .val.is-empty { color: var(--text-3); }
+.stepper output { font-variant-numeric: tabular-nums; }
+.ratio-label { font-variant-numeric: tabular-nums; }
+.gap-top { margin-top: 22px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <button type="button" id="sim-empty" aria-pressed="false">模拟提示词预设为空</button>
+    <button type="button" id="sim-read-fail" aria-pressed="false">模拟读取失败</button>
+    <button type="button" id="sim-save-fail" aria-pressed="false">模拟保存失败</button>
+</div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" id="nav-back" aria-label="返回设置">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">AI 回复与主动消息</h1>
+    </header>
+    <main class="scroll">
+        <p class="status-line error" id="load-status" role="status" hidden></p>
+
+        <h2 class="group-header" data-part="form">预设</h2>
+        <section class="group" data-part="form">
+            <div class="row tappable" id="row-api" role="button" tabindex="0">
+                <span class="row-label">API 预设</span>
+                <span class="row-value"><span class="val" id="val-api"></span><span class="chev" aria-hidden="true">›</span></span>
+            </div>
+            <div class="row tappable" id="row-companion" role="button" tabindex="0">
+                <span class="row-label">陪聊提示词预设</span>
+                <span class="row-value"><span class="val" id="val-companion"></span><span class="chev" aria-hidden="true">›</span></span>
+            </div>
+            <div class="row tappable" id="row-private-reply" role="button" tabindex="0">
+                <span class="row-label">私聊回复预设</span>
+                <span class="row-value"><span class="val" id="val-private-reply"></span><span class="chev" aria-hidden="true">›</span></span>
+            </div>
+            <div class="row tappable" id="row-group-reply" role="button" tabindex="0">
+                <span class="row-label">群聊回复预设</span>
+                <span class="row-value"><span class="val" id="val-group-reply"></span><span class="chev" aria-hidden="true">›</span></span>
+            </div>
+        </section>
+
+
+        <h2 class="group-header" data-part="form">主动消息</h2>
+        <section class="group" data-part="form">
+            <label class="row">
+                <span class="row-label">启用主动消息</span>
+                <span class="switch"><input type="checkbox" id="f-proactive"><span></span></span>
+            </label>
+            <div class="row" id="row-interval" data-proactive hidden>
+                <span class="row-label" id="interval-label">每隔多少轮</span>
+                <div class="stepper" data-min="1" data-step="1">
+                    <button type="button" aria-label="减少间隔轮数">−</button>
+                    <output id="out-interval" aria-labelledby="interval-label" aria-live="polite">5</output>
+                    <button type="button" aria-label="增加间隔轮数">+</button>
+                </div>
+            </div>
+            <div class="row tappable" id="row-private-proactive" role="button" tabindex="0" data-proactive hidden>
+                <span class="row-label">私聊主动预设</span>
+                <span class="row-value"><span class="val" id="val-private-proactive"></span><span class="chev" aria-hidden="true">›</span></span>
+            </div>
+            <div class="row tappable" id="row-group-proactive" role="button" tabindex="0" data-proactive hidden>
+                <span class="row-label">群聊主动预设</span>
+                <span class="row-value"><span class="val" id="val-group-proactive"></span><span class="chev" aria-hidden="true">›</span></span>
+            </div>
+            <div class="row block" id="row-ratio" data-proactive hidden>
+                <label class="field-label ratio-label" id="ratio-label" for="f-ratio">主动类型占比：私聊 50% / 群聊 50%</label>
+                <div class="slider-row"><input type="range" id="f-ratio" min="0" max="100" step="1" value="50" aria-labelledby="ratio-label"></div>
+            </div>
+        </section>
+        <p class="status-line" id="save-status" role="status" data-part="form" hidden></p>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<div class="notes">
+    <p><b>原功能 → 新位置</b>（源码 app.js renderSettingsDetail 3647–3792，kind=reply）</p>
+    <ul>
+        <li>API 预设 select（首项「未选择」）→ 选择行 + 底部选择面板。</li>
+        <li>陪聊提示词 / 私聊回复 / 群聊回复预设 select → 选择行 + 底部选择面板，无「未选择」项。</li>
+        <li>启用主动消息 checkbox → switch；关闭时 6a–6d 整组 hidden（非禁用），与源码一致。</li>
+        <li>每隔多少轮 number（min 1）→ 步进器，默认 5。</li>
+        <li>私聊 / 群聊主动预设 select → 选择行 + 底部选择面板。</li>
+        <li>占比 range（0–100，step 1）→ 滑块，标签实时显示「主动类型占比：私聊 X% / 群聊 Y%」，默认 50。</li>
+        <li>修改即保存，无保存按钮，成功无提示；失败 → 表单底部状态行红字。</li>
+    </ul>
+    <p><b>新增 / 改动</b></p>
+    <ul>
+        <li>新增分组标题：「预设」「主动消息」（源码无区块标题 / 说明，控件依次排列）。</li>
+        <li>源码校验：间隔不是正整数 → 状态行「主动消息间隔必须是正整数」。步进器 min 1 且只整数步进，原型中不会产生该错误。</li>
+        <li>提示词预设列表为空时，源码 select 无选项；原型改为行内显示「无可用预设」，点按弹提示「没有可选的提示词预设」（新增提示）。</li>
+    </ul>
+    <p><b>原型模拟</b></p>
+    <ul>
+        <li>「模拟提示词预设为空」：2–4、6b、6c 显示「无可用预设」。</li>
+        <li>「模拟读取失败」：整页只显示状态文字「读取预设资源失败」。</li>
+        <li>「模拟保存失败」：任何修改后状态行显示「保存失败」。</li>
+        <li>「‹ 设置」跳转 qq-settings-root.html。</li>
+    </ul>
+</div>
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+// 示例数据（原型）；真实列表来自后端预设资源
+const API_PRESETS = [
+    { value: '', label: '未选择' },
+    { value: 'deepseek', label: 'DeepSeek' },
+    { value: 'gemini', label: 'Gemini 2.5' },
+];
+const PROMPT_PRESETS = [
+    { value: 'builtin-companion', label: '内置 · 陪聊回复' },
+    { value: 'builtin-private-reply', label: '内置 · 私聊回复' },
+    { value: 'builtin-private-proactive', label: '内置 · 私聊主动' },
+    { value: 'builtin-group-reply', label: '内置 · 群聊回复' },
+    { value: 'builtin-group-proactive', label: '内置 · 群聊主动' },
+    { value: 'my-private', label: '我的私聊风格' },
+];
+const state = {
+    api: 'deepseek',
+    companion: 'builtin-companion',
+    privateReply: 'builtin-private-reply',
+    groupReply: 'builtin-group-reply',
+    proactive: false,
+    interval: 5,
+    privateProactive: 'builtin-private-proactive',
+    groupProactive: 'builtin-group-proactive',
+    ratio: 50,
+};
+const sim = { empty: false, readFail: false, saveFail: false };
+// 选择行：state 键 → 行 / 值节点 / 面板标题 / 选项来源
+const PICKERS = [
+    { key: 'api', row: 'row-api', val: 'val-api', title: 'API 预设', source: 'api' },
+    { key: 'companion', row: 'row-companion', val: 'val-companion', title: '陪聊提示词预设', source: 'prompt' },
+    { key: 'privateReply', row: 'row-private-reply', val: 'val-private-reply', title: '私聊回复预设', source: 'prompt' },
+    { key: 'groupReply', row: 'row-group-reply', val: 'val-group-reply', title: '群聊回复预设', source: 'prompt' },
+    { key: 'privateProactive', row: 'row-private-proactive', val: 'val-private-proactive', title: '私聊主动预设', source: 'prompt' },
+    { key: 'groupProactive', row: 'row-group-proactive', val: 'val-group-proactive', title: '群聊主动预设', source: 'prompt' },
+];
+const $ = (id) => document.getElementById(id);
+const optionsOf = (picker) => (picker.source === 'api' ? API_PRESETS : (sim.empty ? [] : PROMPT_PRESETS));
+
+function renderPickers() {
+    PICKERS.forEach((p) => {
+        const opts = optionsOf(p);
+        const el = $(p.val);
+        const empty = opts.length === 0;
+        const hit = opts.find((o) => o.value === state[p.key]);
+        el.textContent = empty ? '无可用预设' : (hit ? hit.label : opts[0].label);
+        el.classList.toggle('is-empty', empty || (p.source === 'api' && !state[p.key]));
+    });
+}
+
+function renderRatio(value) {
+    $('ratio-label').textContent = `主动类型占比：私聊 ${value}% / 群聊 ${100 - value}%`;
+}
+
+// 关闭时整组 hidden（非禁用），与源码一致
+function renderProactive() {
+    $('f-proactive').checked = state.proactive;
+    document.querySelectorAll('[data-proactive]').forEach((el) => { el.hidden = !state.proactive; });
+    $('out-interval').textContent = String(state.interval);
+    $('f-ratio').value = String(state.ratio);
+    renderRatio(state.ratio);
+}
+
+function setStatus(message) {
+    const el = $('save-status');
+    el.textContent = message;
+    el.classList.toggle('error', Boolean(message));
+    el.hidden = sim.readFail || !message;
+}
+
+// 读取失败：整页只剩一行状态文字
+function renderLoad() {
+    document.querySelectorAll('[data-part="form"]').forEach((el) => { el.hidden = sim.readFail; });
+    const load = $('load-status');
+    load.textContent = sim.readFail ? '读取预设资源失败' : '';
+    load.hidden = !sim.readFail;
+    setStatus($('save-status').textContent);
+}
+
+// 修改即保存：成功无提示（清空状态行），失败显示红字
+function save() {
+    if (!Number.isInteger(state.interval) || state.interval < 1) {
+        setStatus('主动消息间隔必须是正整数');
+        return;
+    }
+    setStatus(sim.saveFail ? '保存失败' : '');
+}
+
+function openPicker(p) {
+    const opts = optionsOf(p);
+    if (opts.length === 0) {
+        YZ.alert({ title: '没有可选的提示词预设' });
+        return;
+    }
+    const current = opts.some((o) => o.value === state[p.key]) ? state[p.key] : opts[0].value;
+    YZ.sheet({
+        title: p.title,
+        groups: [{ options: opts.map((o) => ({ value: o.value, label: o.label, selected: o.value === current })) }],
+        onSelect: (value) => {
+            state[p.key] = value;
+            renderPickers();
+            save();
+        },
+    });
+}
+
+PICKERS.forEach((p) => {
+    $(p.row).addEventListener('click', () => openPicker(p));
+});
+
+$('f-proactive').addEventListener('change', (event) => {
+    state.proactive = event.target.checked;
+    renderProactive();
+    save();
+});
+
+// 步进器由 shared 在 document 上处理；本监听在其后注册，读取的是更新后的值
+document.addEventListener('click', (event) => {
+    const btn = event.target instanceof Element ? event.target.closest('#row-interval .stepper button') : null;
+    if (!btn) return;
+    const next = Number($('out-interval').textContent);
+    if (next === state.interval) return; // 已到下限，值未变不触发保存
+    state.interval = next;
+    save();
+});
+
+$('f-ratio').addEventListener('input', (event) => renderRatio(Number(event.target.value)));
+$('f-ratio').addEventListener('change', (event) => {
+    state.ratio = Number(event.target.value);
+    save();
+});
+
+$('nav-back').addEventListener('click', () => { window.location.href = './qq-settings-root.html'; });
+
+// 原型工具栏：模拟开关
+function bindSim(id, key, onToggle) {
+    $(id).addEventListener('click', (event) => {
+        sim[key] = !sim[key];
+        event.currentTarget.setAttribute('aria-pressed', String(sim[key]));
+        onToggle();
+    });
+}
+bindSim('sim-empty', 'empty', renderPickers);
+bindSim('sim-read-fail', 'readFail', renderLoad);
+bindSim('sim-save-fail', 'saveFail', () => { if (!sim.saveFail) setStatus(''); });
+
+renderPickers();
+renderProactive();
+renderLoad();
+</script>
+</body>
+</html>

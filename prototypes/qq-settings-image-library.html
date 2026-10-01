@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · QQ 设置 · 图片资料（iOS 分组列表原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 独立原型，不参与构建。只用 shared 颜色变量；示例图片颜色写在 JS 示例数据里。 */
+.phone [hidden] { display: none !important; }
+.toolbar button[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); }
+/* 标题栏右侧图标按钮 */
+.nav-tools { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px; }
+.nav-icon { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--accent); cursor: pointer; }
+.nav-icon svg { width: 22px; height: 22px; }
+.nav-icon.is-on { background: var(--accent-soft); }
+.nav-icon:disabled { color: var(--text-3); background: none; cursor: default; }
+.nav-icon:focus-visible, .lib-cell:focus-visible, .select-done:focus-visible, .calib-frame:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 选择模式顶栏（新增） */
+.select-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 6px 12px 6px 16px; background: var(--nav); backdrop-filter: blur(20px); border-bottom: 1px solid var(--sep); font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.select-done { border: 0; background: none; color: var(--accent); font: inherit; font-size: 15px; font-weight: 600; padding: 6px 8px; cursor: pointer; }
+/* 资源网格：每格只显示图片，末格上传 */
+.lib-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 14px 12px; }
+.lib-cell { position: relative; aspect-ratio: 1 / 1; min-width: 0; padding: 4px; overflow: hidden; display: grid; place-items: center; border: 0; border-radius: 10px; background: var(--fill) center / cover no-repeat; color: var(--text-2); font: inherit; font-size: 11px; line-height: 1.3; text-align: center; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.sticker-desc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.lib-cell.upload { border: 1.5px dashed var(--fill-strong); background: none; }
+.lib-cell.upload b { display: block; font-size: 20px; font-weight: 400; line-height: 1.2; color: var(--accent); }
+.lib-main:not(.is-selecting) .tick { display: none; }
+.lib-cell .tick { position: absolute; right: 4px; top: 4px; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid var(--card); background: var(--fill-strong); color: transparent; font-size: 12px; font-weight: 700; line-height: 1; }
+.lib-cell.is-selected { box-shadow: inset 0 0 0 2.5px var(--accent); }
+.lib-cell.is-selected .tick { background: var(--accent); color: var(--card); }
+.lib-cell.is-pressing { transform: scale(0.95); transition: transform 0.48s; }
+.nav-icon[aria-disabled="true"] { color: var(--text-3); background: none; cursor: default; }
+/* 导入确认 / 表单面板内的取消 */
+.import-msg { margin: 10px 0; font-size: 15px; line-height: 1.6; color: var(--text); }
+.sheet-cancel { display: flex; justify-content: center; padding: 8px 16px 4px; }
+.sheet-body .status-line { margin: 8px 16px 0; }
+/* 校准头像框 */
+.calib-desc { margin: 4px 20px 12px; font-size: 13px; line-height: 1.5; color: var(--text-2); text-align: center; }
+.calib-stage { position: relative; width: 240px; height: 240px; margin: 0 auto; overflow: hidden; border-radius: 14px; background: var(--card); touch-action: none; }
+.calib-avatar, .calib-guide, .calib-frame { position: absolute; left: 50%; top: 50%; border-radius: 50%; }
+.calib-avatar { width: 120px; height: 120px; transform: translate(-50%, -50%); background: var(--fill-strong); }
+.calib-guide { width: 120px; height: 120px; transform: translate(-50%, -50%); border: 2px dashed var(--accent); pointer-events: none; z-index: 2; }
+.calib-frame { width: 172px; height: 172px; z-index: 1; background: center / cover no-repeat; cursor: grab; touch-action: none; }
+.calib-frame.is-dragging { cursor: grabbing; }
+.calib-tools { display: flex; justify-content: center; gap: 8px; margin: 12px 16px 0; }
+/* 表情上传 */
+.row.block.sticker-row { display: flex; flex-direction: row; gap: 12px; align-items: flex-start; }
+.sticker-thumb { width: 56px; height: 56px; flex-shrink: 0; border-radius: 10px; background: var(--fill) center / cover no-repeat; }
+.sticker-fields { flex: 1; min-width: 0; }
+.sticker-fields textarea.field { min-height: 44px; }
+@media (prefers-reduced-motion: reduce) { .lib-cell.is-pressing { transition: none; } }
+</style>
+</head>
+
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <button type="button" id="sim-read-fail" aria-pressed="false">模拟读取失败</button>
+    <button type="button" id="sim-export-fail" aria-pressed="false">模拟导出失败</button>
+    <button type="button" id="sim-import-fail" aria-pressed="false">模拟导入失败</button>
+    <button type="button" id="sim-sticker3">模拟上传 3 个表情</button>
+</div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" id="nav-back" aria-label="返回设置">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">图片资料</h1>
+        <div class="nav-tools">
+            <button type="button" class="nav-icon" id="btn-io" aria-label="导入或导出图片资料" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7l4-4 4 4M12 3v12M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></button>
+            <button type="button" class="nav-icon" id="btn-delete" aria-label="进入删除模式"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button>
+        </div>
+    </header>
+    <main class="scroll lib-main" id="lib-main">
+        <div class="select-bar" id="select-bar" hidden>
+            <span id="select-count" aria-live="polite">已选择 0 项</span>
+            <button type="button" class="select-done" id="select-done">完成</button>
+        </div>
+        <div id="lib-groups"></div>
+        <p class="group-footer">单张图片不超过 8 MB。</p>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<aside class="notes">
+    <b>原功能 → 新位置</b><br>
+    · renderImageLibrary 的六类资源（头像 / 资料背景 / 聊天背景 / 头像框 / 气泡 / 表情仓库）→ 六张分组卡片，4 列网格，每格只显示图片，末格为上传格。<br>
+    · 导入 / 导出按钮 → 标题栏右侧「导入或导出图片资料」图标，操作菜单二选一。<br>
+    · 删除按钮 → 标题栏右侧垃圾桶：先进入删除模式，再「删除已选资源」，已选为 0 时禁用；删除成功无提示。<br>
+    · 长按 480ms 进入选择模式；图片与表情可混选；离开页面（‹ 设置）时清空选择。<br>
+    · 头像框上传 → 「校准头像框」弹窗（ui/avatar-frame-calibration.js）；表情上传 → 「添加表情」面板（ui/sticker-upload-dialog.js）。<br>
+    <b>新增 / 改动</b><br>
+    · 选择模式顶部新增「已选择 N 项」+「完成」，用于退出选择模式（源码无）。<br>
+    · 导入确认改用表单面板自绘：YZ.confirm 无法内嵌状态行，失败时「图片资料导入失败」显示在面板内且不关闭。<br>
+    · 非选择模式点击资源无操作，照源码不加预览。<br>
+    <b>原型模拟</b><br>
+    · 选文件均为模拟；8 MB 上限只作说明，不做校验。<br>
+    · 「模拟读取失败」：头像卡片读空，只剩上传格，无错误提示（照源码）。<br>
+    · 「模拟上传 3 个表情」演示多文件表情面板；头像框拖动为简化实现。
+</aside>
+
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    // 面板内「取消」：等同点遮罩关闭（shared 视为 dismiss）
+    const dismiss = () => $('.phone > .scrim')?.click();
+    const g = (a, b) => `linear-gradient(135deg, ${a}, ${b})`;
+    const ring = (c) => `radial-gradient(circle, transparent 54%, ${c} 55% 68%, transparent 69%)`;
+
+    // ===== 示例数据：颜色只写在这里，<style> 不写死 =====
+    const CATS = [['avatar', '头像'], ['profileBg', '资料背景'], ['chatBg', '聊天背景'], ['frame', '头像框'], ['bubble', '气泡'], ['sticker', '表情仓库']];
+    const PALETTE = [['#E7B7C3', '#B98AA0'], ['#9FC2D8', '#5E86A8'], ['#F2D49B', '#C99A55'], ['#BFD8C4', '#5B7A6A'], ['#C9B6E4', '#8E7BB8'], ['#F6C8A8', '#6B5B8C']];
+    let seq = 0;
+    const nid = (key) => `${key}-${++seq}`;
+    const pick = () => g(...PALETTE[seq % PALETTE.length]);
+    const item = (key, bg, desc = '') => ({ id: nid(key), bg, desc });
+    const lib = {
+        avatar: [0, 1, 2].map((i) => item('avatar', g(...PALETTE[i]))),
+        profileBg: [5, 3].map((i) => item('profileBg', g(...PALETTE[i]))),
+        chatBg: [g('#DCE6F2', '#8FA8C8'), g('#F3E6D3', '#C9AE8A'), g('#3A3F4B', '#1E2128')].map((bg) => item('chatBg', bg)),
+        frame: [item('frame', ring('#E7B7C3'))],
+        bubble: [g('#CFE3D6', '#8DAF9C'), g('#F4D7DE', '#D9A0AE')].map((bg) => item('bubble', bg)),
+        // 表情：未加载图片时显示含义，无含义显示「[表情]」
+        sticker: [[g('#FFE7B0', '#F2B36B'), '开心'], ['', '捂脸偷笑'], ['', ''], [g('#C8D8F0', '#7E98C4'), '晚安']]
+            .map(([bg, d]) => item('sticker', bg, d)),
+    };
+    const flags = { readFail: false, exportFail: false, importFail: false };
+    let readStash = null; // 模拟读取失败时暂存头像
+    let selecting = false;
+    const selected = new Set();
+    const main = $('#lib-main');
+    const groupsEl = $('#lib-groups');
+    const delBtn = $('#btn-delete');
+
+
+    // ===== 渲染：六张卡片，每格只显示图片，末格上传 =====
+    const CAT_NAME = Object.fromEntries(CATS);
+    const TICK = '<span class="tick" aria-hidden="true">✓</span>';
+    const cellHtml = (key, it, i) => {
+        const on = selected.has(it.id);
+        const inner = !it.bg && key === 'sticker' ? `<span class="sticker-desc">${esc(it.desc || '[表情]')}</span>` : '';
+        const label = key === 'sticker' ? `表情：${it.desc || '[表情]'}` : `${CAT_NAME[key]} ${i + 1}`;
+        return `<button type="button" class="lib-cell${on ? ' is-selected' : ''}" data-id="${it.id}" aria-label="${esc(label)}"`
+            + `${selecting ? ` aria-pressed="${on}"` : ''}${it.bg ? ` style="background-image:${esc(it.bg)}"` : ''}>${inner}${TICK}</button>`;
+    };
+    const syncChrome = () => {
+        main.classList.toggle('is-selecting', selecting);
+        $('#select-bar').hidden = !selecting;
+        $('#select-count').textContent = `已选择 ${selected.size} 项`;
+        delBtn.classList.toggle('is-on', selecting);
+        delBtn.setAttribute('aria-label', selecting ? '删除已选资源' : '进入删除模式');
+        // 用 aria-disabled 而非 disabled：进入选择模式后焦点不丢失
+        if (selecting && selected.size === 0) delBtn.setAttribute('aria-disabled', 'true');
+        else delBtn.removeAttribute('aria-disabled');
+    };
+    const render = (focusId) => {
+        groupsEl.innerHTML = CATS.map(([key, name]) => {
+            const cells = lib[key].map((it, i) => cellHtml(key, it, i)).join('');
+            const up = key === 'sticker' ? '上传表情' : '上传图片';
+            return `<h2 class="group-header">${name}</h2><section class="group" aria-label="${name}"><div class="lib-grid">${cells}`
+                + `<button type="button" class="lib-cell upload" data-upload="${key}"><span><b aria-hidden="true">＋</b>${up}</span></button></div></section>`;
+        }).join('');
+        syncChrome();
+        if (focusId) groupsEl.querySelector(`[data-id="${focusId}"]`)?.focus({ preventScroll: true });
+    };
+    const enterSelect = (firstId) => {
+        selecting = true;
+        if (firstId) selected.add(firstId);
+        render(firstId);
+    };
+    const exitSelect = () => {
+        selecting = false;
+        selected.clear();
+        render();
+    };
+
+    // ===== 选择：长按 480ms 进入；选择模式点击切换；非选择模式点击无操作（照源码不加预览） =====
+    const toggle = (id) => {
+        if (selected.has(id)) selected.delete(id); else selected.add(id);
+        render(id);
+    };
+    let press = null;
+    let suppressClick = false; // 长按触发后吞掉随后的 click
+    const cancelPress = () => {
+        if (!press) return;
+        clearTimeout(press.timer);
+        press.cell.classList.remove('is-pressing');
+        press = null;
+    };
+    groupsEl.addEventListener('pointerdown', (event) => {
+        suppressClick = false;
+        const cell = event.target.closest('[data-id]');
+        if (!cell || selecting || event.button > 0) return;
+        cell.classList.add('is-pressing');
+        press = {
+            cell, x: event.clientX, y: event.clientY,
+            timer: setTimeout(() => { press = null; suppressClick = true; enterSelect(cell.dataset.id); }, 480),
+        };
+    });
+    groupsEl.addEventListener('pointermove', (event) => {
+        if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 8) cancelPress();
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((type) => groupsEl.addEventListener(type, cancelPress));
+    groupsEl.addEventListener('contextmenu', (event) => { if (event.target.closest('[data-id]')) event.preventDefault(); });
+    groupsEl.addEventListener('click', (event) => {
+        if (suppressClick) { suppressClick = false; return; }
+        const up = event.target.closest('[data-upload]');
+        if (up) { upload(up.dataset.upload); return; }
+        const cell = event.target.closest('[data-id]');
+        if (cell && selecting) toggle(cell.dataset.id);
+    });
+
+    // ===== 删除：先进入删除模式，再删除已选；成功后清空并退出，无提示 =====
+    delBtn.addEventListener('click', () => {
+        if (!selecting) { enterSelect(); return; }
+        if (selected.size === 0) return;
+        YZ.confirm({
+            title: `删除 ${selected.size} 项资源`,
+            confirmText: '删除',
+            onConfirm: () => {
+                CATS.forEach(([key]) => { lib[key] = lib[key].filter((it) => !selected.has(it.id)); });
+                exitSelect();
+                delBtn.focus({ preventScroll: true });
+            },
+        });
+    });
+    // 新增：「完成」退出选择模式（源码无）
+    $('#select-done').addEventListener('click', () => { exitSelect(); delBtn.focus({ preventScroll: true }); });
+    // 返回：离开时清空选择
+    $('#nav-back').addEventListener('click', () => {
+        selecting = false;
+        selected.clear();
+        render();
+        location.href = './qq-settings-root.html';
+    });
+
+    // ===== 校准头像框（ui/avatar-frame-calibration.js）：简化拖动 + 缩放；取消则中止上传 =====
+    const calibrate = (bg, onOk) => {
+        let st = { x: 0, y: 0, s: 1 };
+        YZ.formSheet({
+            title: '校准头像框',
+            doneText: '确认上传',
+            bodyHtml: '<p class="calib-desc">拖动头像框图片，让圆圈与头像区域对齐。</p>'
+                + '<div class="calib-stage"><span class="calib-avatar" aria-hidden="true"></span>'
+                + '<div class="calib-frame" tabindex="0" role="img" aria-label="头像框图片，方向键移动"></div>'
+                + '<span class="calib-guide" aria-hidden="true"></span></div>'
+                + '<div class="calib-tools"><button type="button" class="mini-btn" data-c="reset">重置</button>'
+                + '<button type="button" class="mini-btn" data-c="out" aria-label="缩小">−</button>'
+                + '<button type="button" class="mini-btn" data-c="in" aria-label="放大头像框">＋</button></div>'
+                + '<div class="sheet-cancel"><button type="button" class="mini-btn" data-c="cancel">取消</button></div>',
+            onMount: (root) => {
+                const fr = root.querySelector('.calib-frame');
+                fr.style.backgroundImage = bg;
+                const draw = () => { fr.style.transform = `translate(calc(-50% + ${st.x}px), calc(-50% + ${st.y}px)) scale(${st.s})`; };
+                const move = (x, y) => { st.x = clamp(x, -60, 60); st.y = clamp(y, -60, 60); draw(); };
+                draw();
+                let d = null;
+                fr.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    d = { sx: e.clientX - st.x, sy: e.clientY - st.y };
+                    fr.classList.add('is-dragging');
+                    fr.setPointerCapture?.(e.pointerId);
+                });
+                fr.addEventListener('pointermove', (e) => { if (d) move(e.clientX - d.sx, e.clientY - d.sy); });
+                const end = () => { d = null; fr.classList.remove('is-dragging'); };
+                fr.addEventListener('pointerup', end);
+                fr.addEventListener('pointercancel', end);
+                fr.addEventListener('keydown', (e) => {
+                    const k = { ArrowLeft: [-4, 0], ArrowRight: [4, 0], ArrowUp: [0, -4], ArrowDown: [0, 4] }[e.key];
+                    if (!k) return;
+                    e.preventDefault();
+                    move(st.x + k[0], st.y + k[1]);
+                });
+                root.querySelector('.calib-tools').addEventListener('click', (e) => {
+                    const c = e.target.closest('[data-c]')?.dataset.c;
+                    if (c === 'reset') st = { x: 0, y: 0, s: 1 };
+                    else if (c === 'out') st.s = clamp(st.s - 0.1, 0.5, 2);
+                    else if (c === 'in') st.s = clamp(st.s + 0.1, 0.5, 2);
+                    else return;
+                    draw();
+                });
+                root.querySelector('[data-c="cancel"]').addEventListener('click', dismiss);
+            },
+            onDone: () => { onOk(); },
+        });
+    };
+
+    // ===== 表情上传（ui/sticker-upload-dialog.js）：每个表情填写含义 =====
+    const NAMES = ['可爱猫猫.png', '无语.gif', '比心.webp'];
+    const stickerSheet = (n) => {
+        const files = NAMES.slice(0, n).map((name, i) => ({ name, bg: g(...PALETTE[(seq + i) % PALETTE.length]) }));
+        const rows = files.map((f, i) => `<div class="row block sticker-row"><span class="sticker-thumb" style="background-image:${esc(f.bg)}" aria-hidden="true"></span>`
+            + `<div class="sticker-fields"><label class="field-label" for="stk-${i}">${i + 1}. ${esc(f.name)}</label>`
+            + `<textarea class="field" id="stk-${i}" placeholder="表情含义"></textarea></div></div>`).join('');
+        YZ.formSheet({
+            title: n > 1 ? `添加 ${n} 个表情` : '添加表情',
+            doneText: `保存 ${n} 个表情`,
+            bodyHtml: `<div class="group">${rows}</div><p class="status-line error" role="alert" hidden></p>`
+                + '<div class="sheet-cancel"><button type="button" class="mini-btn" data-c="cancel">取消</button></div>',
+            onMount: (root) => {
+                root.querySelectorAll('textarea').forEach((t, i) => { t.value = files[i].name.replace(/\.[^.]+$/, ''); });
+                root.querySelector('[data-c="cancel"]').addEventListener('click', dismiss);
+            },
+            onDone: (root) => {
+                const vals = [...root.querySelectorAll('textarea')].map((t) => t.value.trim());
+                const miss = vals.findIndex((v) => !v);
+                if (miss >= 0) {
+                    const s = root.querySelector('.status-line');
+                    s.textContent = `请填写第 ${miss + 1} 个表情的含义`;
+                    s.hidden = false;
+                    return false;
+                }
+                files.forEach((f, i) => lib.sticker.push(item('sticker', f.bg, vals[i])));
+                render();
+            },
+        });
+    };
+    // ===== 上传：模拟选文件；头像框先校准，表情先填含义，其余直接加入（无裁剪、无提示） =====
+    function upload(key, count = 1) {
+        if (key === 'sticker') { stickerSheet(count); return; }
+        if (key === 'frame') {
+            const fbg = ring(PALETTE[seq % PALETTE.length][0]);
+            calibrate(fbg, () => { lib.frame.push(item('frame', fbg)); render(); });
+            return;
+        }
+        lib[key].push(item(key, pick()));
+        render();
+    }
+
+    // ===== 导入：模拟已选文件 → 自绘确认面板（YZ.confirm 无法内嵌状态行），失败时状态行显示且不关闭 =====
+    const doImport = () => {
+        YZ.formSheet({
+            title: '导入图片资料',
+            doneText: '导入',
+            bodyHtml: '<div class="group"><div class="row block"><p class="import-msg">导入会追加头像、资料背景、聊天背景和表情，也会追加头像框、气泡和套装；已配套的头像框与气泡会一起保留。相同资源 ID 会自动添加 (1)、(2)。</p></div></div>'
+                + '<p class="status-line error" role="alert" hidden></p>'
+                + '<div class="sheet-cancel"><button type="button" class="mini-btn" data-c="cancel">取消</button></div>',
+            onMount: (root) => { root.querySelector('[data-c="cancel"]').addEventListener('click', dismiss); },
+            onDone: (root) => {
+                if (flags.importFail) {
+                    const s = root.querySelector('.status-line');
+                    s.textContent = '图片资料导入失败';
+                    s.hidden = false;
+                    return false;
+                }
+                lib.avatar.push(item('avatar', pick()), item('avatar', pick()));
+                lib.frame.push(item('frame', ring('#9FC2D8')));
+                lib.bubble.push(item('bubble', pick()));
+                lib.profileBg.push(item('profileBg', pick()));
+                lib.chatBg.push(item('chatBg', pick()));
+                ['导入1', '导入2', '导入3'].forEach((d) => lib.sticker.push(item('sticker', pick(), d)));
+                selecting = false;
+                selected.clear();
+                render();
+                YZ.toast('已导入：头像 2，头像框 1，气泡 1，套装 0，资料背景 1，聊天背景 1，表情 3');
+            },
+        });
+    };
+    $('#btn-io').addEventListener('click', () => YZ.actionSheet({
+        title: '图片资料',
+        actions: [
+            { label: '导入图片资料', onSelect: doImport },
+            { label: '导出图片资料', onSelect: () => YZ.toast(flags.exportFail ? '图片资料导出失败' : '已导出 QQ 图片资料') },
+        ],
+    }));
+
+    // ===== 原型工具栏 =====
+    const flagBtn = (sel, key, after) => $(sel).addEventListener('click', (e) => {
+        flags[key] = !flags[key];
+        e.currentTarget.setAttribute('aria-pressed', String(flags[key]));
+        after?.();
+    });
+    // 读取失败：头像卡片读空，只剩上传格，无错误提示（照源码）
+    flagBtn('#sim-read-fail', 'readFail', () => {
+        if (flags.readFail) {
+            readStash = lib.avatar;
+            lib.avatar = [];
+            readStash.forEach((it) => selected.delete(it.id));
+        } else {
+            lib.avatar = (readStash || []).concat(lib.avatar);
+            readStash = null;
+        }
+        render();
+    });
+    flagBtn('#sim-export-fail', 'exportFail');
+    flagBtn('#sim-import-fail', 'importFail');
+    $('#sim-sticker3').addEventListener('click', () => upload('sticker', 3));
+
+    render();
+})();
+</script>
+</body>
+</html>
+
+

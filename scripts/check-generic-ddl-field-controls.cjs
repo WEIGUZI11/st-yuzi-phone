@@ -11,6 +11,7 @@ const FILES = {
     detailPageRenderer: 'modules/table-viewer/detail-page-renderer.js',
     detailRowPayload: 'modules/table-viewer/detail-row-payload.js',
     detailPageTemplate: 'modules/table-viewer/detail-page-template.js',
+    detailEditField: 'modules/table-viewer/detail-edit-field.js',
     detailEditController: 'modules/table-viewer/detail-edit-controller.js',
     mergedTemplateSample: 'docs/reference/merged-template-sample.json',
 };
@@ -317,21 +318,26 @@ async function main() {
 
     assertIncludes(
         sources.detailPageTemplate,
+        "import { buildDetailEditControlHtml } from './detail-edit-field.js';",
+        '详情页模板必须复用共享字段编辑控件',
+    );
+    assertIncludes(
+        sources.detailEditField,
         'function buildDetailEditControlHtml(pair) {',
         '详情页模板必须通过控件分发函数渲染编辑控件',
     );
     assertIncludes(
-        sources.detailPageTemplate,
+        sources.detailEditField,
         '<select class="phone-row-detail-input"',
         '详情页枚举字段必须渲染 select',
     );
     assertIncludes(
-        sources.detailPageTemplate,
+        sources.detailEditField,
         '不在可选项中',
         '详情页必须保留当前脏值选项，避免编辑态静默丢失非法旧值',
     );
     assertIncludes(
-        sources.detailPageTemplate,
+        sources.detailEditField,
         "${pair.isLocked ? 'disabled' : ''}",
         '详情页 select 必须保持字段锁 disabled 语义',
     );

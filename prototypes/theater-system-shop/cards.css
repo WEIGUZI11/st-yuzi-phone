@@ -1,0 +1,32 @@
+/* 任务卡与商店物品卡：纯色块区分层级，品级用底色深浅表达，不用描边。 */
+.ss-task { position: relative; overflow: hidden; padding: 16px; border-radius: 20px; background: var(--ss-card); }
+.ss-task-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ss-diff { font-size: 11px; color: var(--t-orange); }
+.ss-pill { margin-left: auto; padding: 1px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.ss-pill.is-active { color: var(--ss-accent-ink); background: var(--ss-accent-soft); animation: ss-blink 1.6s infinite; }
+.ss-pill.is-done { color: var(--ss-on-tier); background: var(--t-green); }
+.ss-pill.is-fail { color: var(--ss-on-tier); background: var(--t-red); }
+.ss-pill.is-abandon { color: var(--ss-sub); background: var(--ss-card2); }
+.ss-task-name { margin: 10px 0 4px; font-size: 17px; }
+.ss-task-desc { margin: 0; font-size: 13px; color: var(--ss-sub); }
+.ss-task:not(.is-active) .ss-task-name, .ss-task:not(.is-active) .ss-task-desc { opacity: .55; }
+.ss-task-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; }
+.ss-reward { font-weight: 700; color: var(--ss-accent-ink); }
+.ss-stamp { position: absolute; top: 40px; right: 14px; padding: 2px 12px; border-radius: 8px; font-size: 16px; font-weight: 800; color: var(--ss-on-tier); transform: rotate(-12deg); }
+.ss-task.is-done .ss-stamp { background: var(--t-green); }
+.ss-task.is-fail .ss-stamp { background: var(--t-red); }
+.ss-task.is-abandon .ss-stamp { background: var(--ss-sub); color: var(--ss-card); }
+
+.ss-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ss-item { position: relative; display: flex; flex-direction: column; gap: 4px; overflow: hidden; padding: 12px; border-radius: 16px; background: color-mix(in srgb, var(--c) 10%, var(--ss-card)); }
+.ss-item.tier-black { --ss-sub: var(--ss-black-sub); background: var(--ss-black-bg); color: var(--ss-black-fg); }
+.ss-item-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.ss-item-grade { flex: none; padding: 0 7px; border-radius: 6px; background: var(--c); color: var(--ss-on-tier); font-size: 10px; font-weight: 800; }
+.ss-item.tier-black .ss-item-grade { background: var(--ss-black-fg); color: var(--ss-black-bg); }
+.ss-item-world { overflow: hidden; font-size: 10px; color: var(--ss-sub); white-space: nowrap; text-overflow: ellipsis; }
+.ss-item-name { margin: 2px 0 0; font-size: 14px; color: color-mix(in srgb, var(--c) 78%, var(--ss-fg)); }
+.ss-item.tier-black .ss-item-name { color: var(--ss-black-fg); }
+.ss-item-desc { flex: 1; margin: 0; font-size: 11px; line-height: 1.45; color: var(--ss-sub); }
+.ss-item-foot { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 6px; }
+.ss-price { font-weight: 800; font-variant-numeric: tabular-nums; }
+.ss-item .ss-btn { padding: 4px 10px; font-size: 12px; }

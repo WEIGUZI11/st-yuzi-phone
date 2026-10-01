@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小剧场原型：玉子市场</title>
+<link rel="stylesheet" href="./theater-system-shop/base.css">
+<link rel="stylesheet" href="./theater-system-shop/nav.css">
+<link rel="stylesheet" href="./theater-system-shop/ui.css">
+<link rel="stylesheet" href="./theater-system-shop/cards.css">
+<link rel="stylesheet" href="./theater-system-shop/overlay.css">
+<link rel="stylesheet" href="./theater-system-shop/dev.css">
+</head>
+<body>
+<div class="stage">
+    <div class="ss-phone" id="phone" data-theme="light">
+        <div class="ss-island" aria-hidden="true"></div>
+        <div class="ss-status" aria-hidden="true"><span>21:07</span><span>▂▄▆ ◔ ▭</span></div>
+        <nav class="phone-nav-bar" aria-label="小剧场导航">
+            <div class="phone-nav-leading">
+                <button type="button" class="phone-nav-icon-button" data-toast="返回上一层" aria-label="返回上一层"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19L8 12L16 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+            <div class="phone-nav-center">
+                <div class="phone-nav-title-switcher">
+                    <button type="button" class="phone-nav-icon-button is-switch" data-toast="上一张表" aria-label="上一张表"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 17L9 12L14 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <h1 class="phone-nav-title">玉子市场</h1>
+                    <button type="button" class="phone-nav-icon-button is-switch" data-toast="下一张表" aria-label="下一张表"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7L15 12L10 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+            </div>
+            <div class="phone-nav-trailing">
+                <button type="button" class="phone-nav-icon-button" data-toast="编辑当前表" aria-label="编辑当前表"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20H5a1 1 0 0 1-1-1v-7 M16.5 3.5a2.1 2.1 0 0 1 3 3L10 16l-6 1 1-4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+        </nav>
+
+        <main class="ss-scroll">
+            <section class="ss-hero" aria-label="宿主信息">
+                <div class="ss-hero-top">
+                    <span class="ss-brand"><span aria-hidden="true">🍡</span> TAMAKO MARKET</span>
+                    <span class="ss-sync" id="sync" hidden>AI 填表中…</span>
+                </div>
+                <div class="ss-head-main">
+                    <div class="ss-title" id="title"></div>
+                    <div class="ss-points" id="points" aria-live="polite"></div>
+                </div>
+                <div class="ss-rank" id="rank"></div>
+            </section>
+            <section class="ss-sec" aria-labelledby="h-task">
+                <h2 class="ss-h" id="h-task">今日委托</h2>
+                <div id="task"></div>
+            </section>
+            <section class="ss-sec" aria-labelledby="h-shop">
+                <div class="ss-h-row"><h2 class="ss-h" id="h-shop">市场货架</h2><button type="button" class="ss-btn ghost sm" id="refresh-btn" data-act="refresh"></button></div>
+                <p class="ss-odds" id="odds"></p>
+                <p class="ss-hint ss-shop-hint" id="shop-hint"></p>
+                <div class="ss-grid" id="shop"></div>
+            </section>
+            <section class="ss-sec" aria-labelledby="h-bag">
+                <div class="ss-h-row"><h2 class="ss-h" id="h-bag">我的背包</h2><span class="ss-hint" id="bag-count"></span></div>
+                <div class="ss-bag" id="bag"></div>
+            </section>
+        </main>
+        <div class="ss-home" aria-hidden="true"></div>
+        <div class="ss-layer" id="layer" hidden></div>
+        <div class="ss-toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <aside class="dev" aria-label="测试面板">
+        <h2>测试面板（模拟 AI 填表）</h2>
+        <div class="dev-btns">
+            <button type="button" data-dev="win">正文：任务达成</button>
+            <button type="button" data-dev="lose">正文：任务失败</button>
+            <button type="button" data-dev="turn">AI 下一回合</button>
+            <button type="button" data-dev="rich">+500 点（作弊）</button>
+            <button type="button" data-dev="theme">切换白天 / 夜间</button>
+            <button type="button" data-dev="reset">重置</button>
+        </div>
+        <label class="dev-field">预览称号阶（同时按该阶刷新货架）<select id="dev-tier"></select></label>
+        <h3>模拟酒馆输入框（#send_textarea）</h3>
+        <p class="dev-note">背包物品点「使用」后，文字写到这里，不会发送。</p>
+        <textarea id="send_textarea" class="dev-composer" rows="3" placeholder="酒馆输入框"></textarea>
+        <h3>这一行的单元格</h3>
+        <p class="dev-note">可以直接改，比如把 AI 实际填出来的内容粘进来，看前端能不能解析。</p>
+        <div class="dev-cells" id="cells"></div>
+        <h3>写回日志</h3>
+        <ol class="dev-log" id="log"></ol>
+    </aside>
+</div>
+<script src="./theater-system-shop/data.js"></script>
+<script src="./theater-system-shop/items.js"></script>
+<script src="./theater-system-shop/parse.js"></script>
+<script src="./theater-system-shop/parse-items.js"></script>
+<script src="./theater-system-shop/render.js"></script>
+<script src="./theater-system-shop/render-shop.js"></script>
+<script src="./theater-system-shop/ui.js"></script>
+<script src="./theater-system-shop/sim.js"></script>
+<script src="./theater-system-shop/app.js"></script>
+</body>
+</html>

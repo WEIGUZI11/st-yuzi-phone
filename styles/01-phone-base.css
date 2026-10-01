@@ -23,6 +23,8 @@
 /* layout / settings / table modern layers */
 @import url('./phone-base/06-layout-nav-core.css');
 @import url('./phone-base/07-settings-modern.css');
+@import url('./phone-base/07-settings-grouped.css');
+@import url('./phone-base/07-settings-layers.css');
 @import url('./phone-base/08-image-crop.css');
 @import url('./phone-base/09-table-manage-detail.css');
 @import url('./phone-base/12-table-update-review.css');

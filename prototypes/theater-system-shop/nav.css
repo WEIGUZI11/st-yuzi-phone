@@ -1,0 +1,20 @@
+/* 标题栏：照搬小手机公共标题栏（buildBuiltinTheaterNav）的三槽结构与尺寸：高 54px、左右内边距 10/12px、32px 热区、24px 图标、17px 标题。 */
+.phone-nav-bar {
+    position: relative; z-index: 2; flex: none; display: grid; grid-template-columns: 52px minmax(0, 1fr) 52px; align-items: center;
+    height: 54px; padding: 0 12px 0 10px; background: var(--ss-bg);
+}
+.phone-nav-leading { justify-self: start; }
+.phone-nav-trailing { justify-self: end; }
+.phone-nav-center { min-width: 0; display: flex; justify-content: center; }
+.phone-nav-title-switcher { display: flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; }
+.phone-nav-title {
+    min-width: 0; margin: 0; padding: 0 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    font-size: 17px; line-height: 24px; font-weight: 500; color: var(--ss-fg);
+}
+.phone-nav-icon-button {
+    flex: none; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 8px;
+    background: transparent; color: var(--ss-accent-ink);
+}
+.phone-nav-icon-button:hover { background: var(--ss-card2); }
+.phone-nav-icon-button svg { width: 24px; height: 24px; pointer-events: none; }
+.phone-nav-icon-button.is-switch { width: 28px; color: var(--ss-sub); }

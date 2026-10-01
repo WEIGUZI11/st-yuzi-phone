@@ -1,4 +1,4 @@
-// 只保存此视图的布局；主题、字体和字号的唯一来源仍是主设置。
+// 只保存此视图的布局和排序；主题、字体和字号的唯一来源仍是主设置。
 export function normalizeBottomVisualization(value) {
     const source = value && typeof value === 'object' ? value : {};
     const choice = (key, values, fallback) => values.includes(source[key]) ? source[key] : fallback;
@@ -18,5 +18,9 @@ export function normalizeBottomVisualization(value) {
         edgeSide: choice('edgeSide', ['left', 'right'], 'right'),
         opacity: number('opacity', 100, 20, 100, 5),
         height: number('height', 60, 25, 85),
+        sortDescendingBySheet: Object.fromEntries(Object.entries(
+            source.sortDescendingBySheet && typeof source.sortDescendingBySheet === 'object' && !Array.isArray(source.sortDescendingBySheet)
+                ? source.sortDescendingBySheet : {},
+        ).filter(([key, value]) => key.startsWith('sheet_') && typeof value === 'boolean')),
     };
 }

@@ -1,139 +1,80 @@
 import { t } from '../../../i18n/index.js';
-import {
-    clearPhoneTemporaryLayers,
-    getPhoneTemporaryLayerHost,
-    mountPhoneTemporaryLayer,
-} from '../../../phone-core/shell-temporary-layer-host.js';
 import { escapeHtml, escapeHtmlAttr } from '../../../utils/dom-escape.js';
+import {
+    showSettingsActionSheet,
+    showSettingsSheet,
+} from '../../ui/settings-layer.js';
 
-let dialogSequence = 0;
+// 图标操作菜单与「从美化包选择」面板：外观复用设置公共弹层（settings-layer.js）。
 
-function mountIconDialog(overlay, runtime = null) {
-    if (!getPhoneTemporaryLayerHost()) return null;
-    clearPhoneTemporaryLayers();
-
-    const cleanups = [];
-    let closed = false;
-    let disposeLayer = () => {};
-
-    const bind = (target, type, listener, options) => {
-        if (!target || typeof target.addEventListener !== 'function') return;
-        target.addEventListener(type, listener, options);
-        cleanups.push(() => target.removeEventListener(type, listener, options));
-    };
-    const cleanup = () => {
-        const tasks = cleanups.splice(0).reverse();
-        tasks.forEach(task => task());
-    };
-    const close = () => {
-        if (closed) return;
-        closed = true;
-        cleanup();
-        disposeLayer();
-    };
-
-    disposeLayer = mountPhoneTemporaryLayer(overlay, () => {
-        if (closed) return;
-        closed = true;
-        cleanup();
+/**
+ * 图标操作菜单：从美化包选择 / 从本地上传 / 恢复默认 / 取消。
+ * 没有可用美化包时不显示「从美化包选择」；未自定义时不显示「恢复默认」。
+ */
+export function showAppearanceIconSourceMenu({
+    packName = '',
+    iconName = '',
+    previewHtml = '',
+    onLocalUpload,
+    onPackSelect,
+    onReset,
+    runtime = null,
+} = {}) {
+    const actions = [];
+    if (typeof onPackSelect === 'function') {
+        actions.push({ label: t`从「${packName || t("当前美化包")}」中选择`, onSelect: onPackSelect });
+    }
+    actions.push({ label: t`从本地上传图片`, onSelect: onLocalUpload });
+    if (typeof onReset === 'function') {
+        actions.push({ label: t`恢复默认图标`, danger: true, onSelect: onReset });
+    }
+    return showSettingsActionSheet({
+        title: iconName ? t`更换「${iconName}」图标` : t`更换图标`,
+        captionHtml: previewHtml
+            ? `<span class="phone-ios-icon-cell-art" aria-hidden="true">${previewHtml}</span>`
+            : '',
+        actions,
+        runtime,
     });
-    bind(overlay, 'click', (event) => {
-        if (event.target === overlay) close();
-    });
-    bind(document, 'keydown', (event) => {
-        if (event.key !== 'Escape') return;
-        event.preventDefault();
-        close();
-    });
-    runtime?.registerCleanup?.(close);
-
-    requestAnimationFrame(() => {
-        if (closed) return;
-        overlay.classList.add('is-visible');
-        overlay.querySelector('button')?.focus?.();
-    });
-
-    return { bind, close };
 }
 
-export function showAppearanceIconSourceMenu({ packName, onLocalUpload, onPackSelect, runtime = null } = {}) {
-    const titleId = `phone-appearance-icon-source-title-${++dialogSequence}`;
-    const overlay = document.createElement('div');
-    overlay.className = 'phone-appearance-icon-dialog-layer';
-    overlay.innerHTML = `
-        <section class="phone-appearance-icon-dialog phone-appearance-icon-source-dialog" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
-            <header class="phone-appearance-icon-dialog-header">
-                <div>
-                    <h2 id="${titleId}">${t`选择图标来源`}</h2>
-                    <p>${escapeHtml(packName || t("当前美化包"))}</p>
-                </div>
-                <button type="button" class="phone-appearance-icon-dialog-close" aria-label="${t`关闭`}">×</button>
-            </header>
-            <div class="phone-appearance-icon-source-actions">
-                <button type="button" class="phone-appearance-icon-source-action" data-icon-source="local">
-                    <span>${t`从本地上传`}</span>
-                    <small>${t`继续使用现有选图与裁剪`}</small>
-                </button>
-                <button type="button" class="phone-appearance-icon-source-action" data-icon-source="pack">
-                    <span>${t`从当前美化包选择`}</span>
-                    <small>${escapeHtml(packName || t("当前美化包"))}</small>
-                </button>
-            </div>
-        </section>
-    `;
-
-    const dialog = mountIconDialog(overlay, runtime);
-    if (!dialog) return null;
-    dialog.bind(overlay.querySelector('.phone-appearance-icon-dialog-close'), 'click', dialog.close);
-    dialog.bind(overlay.querySelector('[data-icon-source="local"]'), 'click', () => {
-        dialog.close();
-        onLocalUpload?.();
-    });
-    dialog.bind(overlay.querySelector('[data-icon-source="pack"]'), 'click', () => {
-        dialog.close();
-        onPackSelect?.();
-    });
-    return dialog.close;
+function normalizeMatchName(value) {
+    return String(value || '').trim().toLowerCase();
 }
 
-export function showAppearancePackIconPicker({ packName, icons, onSelect, runtime = null } = {}) {
+/**
+ * 从美化包选择图标：底部面板 + 4 列图标网格；与当前图标位同名的图标标记为推荐。
+ */
+export function showAppearancePackIconPicker({ packName, icons, slotName = '', onSelect, runtime = null } = {}) {
     const items = Array.isArray(icons) ? icons.filter(icon => icon?.dataUrl) : [];
     if (items.length === 0) return null;
 
-    const titleId = `phone-appearance-pack-icon-title-${++dialogSequence}`;
-    const overlay = document.createElement('div');
-    overlay.className = 'phone-appearance-icon-dialog-layer';
-    overlay.innerHTML = `
-        <section class="phone-appearance-icon-dialog phone-appearance-pack-icon-dialog" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
-            <header class="phone-appearance-icon-dialog-header">
-                <div>
-                    <h2 id="${titleId}">${t`选择图标`}</h2>
-                    <p>${escapeHtml(packName || t("当前美化包"))}</p>
-                </div>
-                <button type="button" class="phone-appearance-icon-dialog-close" aria-label="${t`关闭`}">×</button>
-            </header>
-            <div class="phone-appearance-pack-icon-grid" role="listbox" aria-label="${t`美化包图标`}">
-                ${items.map((icon, index) => `
-                    <button type="button" class="phone-appearance-pack-icon-option" role="option" data-pack-icon-index="${index}" aria-label="${t`使用 ${escapeHtmlAttr(icon.name)}`}">
-                        <img src="${escapeHtmlAttr(icon.dataUrl)}" alt="">
-                        <span>${escapeHtml(icon.name)}</span>
-                    </button>
-                `).join('')}
-            </div>
-        </section>
-    `;
+    const matchName = normalizeMatchName(slotName);
+    const gridHtml = items.map((icon, index) => {
+        const isMatch = !!matchName && normalizeMatchName(icon.name) === matchName;
+        return `
+            <button type="button" class="phone-ios-icon-cell${isMatch ? ' is-match' : ''}" role="option" data-pack-icon-index="${index}" aria-label="${escapeHtmlAttr(t`使用 ${icon.name}`)}">
+                <span class="phone-ios-icon-cell-art"><img src="${escapeHtmlAttr(icon.dataUrl)}" alt=""></span>
+                <span class="phone-ios-icon-cell-label">${escapeHtml(icon.name)}</span>
+            </button>
+        `;
+    }).join('');
 
-    const dialog = mountIconDialog(overlay, runtime);
-    if (!dialog) return null;
-    dialog.bind(overlay.querySelector('.phone-appearance-icon-dialog-close'), 'click', dialog.close);
-    overlay.querySelectorAll('[data-pack-icon-index]').forEach((button) => {
-        dialog.bind(button, 'click', () => {
-            const index = Number(button.getAttribute('data-pack-icon-index'));
-            const icon = items[index];
+    const sheet = showSettingsSheet({
+        title: t`选择图标`,
+        subtitle: t`${packName || t("当前美化包")} · ${items.length} 个图标`,
+        bodyHtml: `<div class="phone-ios-group"><div class="phone-ios-icon-grid" role="listbox" aria-label="${escapeHtmlAttr(t`美化包图标`)}">${gridHtml}</div></div>`,
+        footer: matchName ? t`带描边的是与当前图标位同名的图标，点按即替换。` : '',
+        runtime,
+    });
+    if (!sheet) return null;
+    sheet.overlay.querySelectorAll('[data-pack-icon-index]').forEach((button) => {
+        sheet.bind(button, 'click', () => {
+            const icon = items[Number(button.getAttribute('data-pack-icon-index'))];
             if (!icon) return;
-            dialog.close();
+            sheet.close();
             onSelect?.(icon);
         });
     });
-    return dialog.close;
+    return sheet.close;
 }

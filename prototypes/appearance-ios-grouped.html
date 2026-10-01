@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · 界面外观（iOS 分组列表原型）</title>
+<style>
+/* 独立原型，不参与构建。配色取自 styles/phone-base/00-theme-modes.css */
+:root, [data-theme="light"] {
+    --page: #EDEAE4;
+    --card: #F8F6F2;
+    --seg-on: #FFFFFF;
+    --text: #3A3731;
+    --text-2: #7A7772;
+    --text-3: #9A9790;
+    --sep: rgba(58, 55, 49, 0.1);
+    --fill: rgba(58, 55, 49, 0.06);
+    --fill-strong: rgba(58, 55, 49, 0.16);
+    --accent: #5B7A6A;
+    --accent-soft: rgba(91, 122, 106, 0.12);
+    --danger: #A05A5A;
+    --nav: rgba(237, 234, 228, 0.88);
+}
+[data-theme="dark"] {
+    --page: #151715;
+    --card: #1F2220;
+    --seg-on: #3A3D3B;
+    --text: #E6E3DB;
+    --text-2: #B8B4AA;
+    --text-3: #8D897F;
+    --sep: rgba(230, 227, 219, 0.1);
+    --fill: rgba(230, 227, 219, 0.08);
+    --fill-strong: rgba(230, 227, 219, 0.2);
+    --accent: #8DAF9C;
+    --accent-soft: rgba(141, 175, 156, 0.16);
+    --danger: #D08A8A;
+    --nav: rgba(21, 23, 21, 0.88);
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 12px;
+    background: #D6D3CD;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.toolbar { display: flex; gap: 8px; align-items: center; font-size: 13px; color: #555; }
+.toolbar button {
+    border: 1px solid #bbb; background: #fff; border-radius: 8px;
+    padding: 6px 12px; font: inherit; cursor: pointer;
+}
+.phone {
+    width: 390px; height: 844px; flex-shrink: 0;
+    border: 12px solid #111; border-radius: 56px;
+    background: var(--page); color: var(--text);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    transition: background 0.25s, color 0.25s;
+}
+.island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 122px; height: 35px; border-radius: 20px; background: #000; z-index: 3;
+}
+.status {
+    height: 54px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 30px 0 38px; font-size: 16px; font-weight: 600;
+}
+.status-icons { display: flex; gap: 6px; align-items: center; }
+.nav {
+    height: 44px; flex-shrink: 0; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--nav); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--sep);
+}
+.nav-title { font-size: 17px; font-weight: 600; }
+.nav-back {
+    position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; gap: 2px;
+    border: 0; background: none; color: var(--accent); font: inherit; font-size: 17px;
+    padding: 6px 8px; cursor: pointer;
+}
+.scroll { flex: 1; overflow-y: auto; padding-bottom: 40px; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.home-bar {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; border-radius: 3px; background: var(--text); opacity: 0.85;
+}
+
+
+/* ===== 分组圆角列表 ===== */
+.group-header {
+    margin: 22px 20px 6px; font-size: 13px; color: var(--text-2);
+    letter-spacing: 0.02em;
+}
+.group {
+    margin: 0 16px; background: var(--card); border-radius: 12px; overflow: hidden;
+    transition: background 0.25s;
+}
+.group-footer {
+    margin: 6px 20px 0; font-size: 12px; line-height: 1.5; color: var(--text-3);
+}
+.row {
+    position: relative; min-height: 46px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; font-size: 16px;
+}
+.row + .row::before {
+    content: ""; position: absolute; top: 0; left: 16px; right: 0;
+    height: 1px; background: var(--sep);
+}
+.row.has-icon + .row::before, .row + .row.has-icon::before { left: 58px; }
+.row-icon {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    display: grid; place-items: center; color: #fff; font-size: 14px; font-weight: 600;
+}
+.row-label { flex: 1; min-width: 0; }
+.row-sub { display: block; margin-top: 2px; font-size: 12px; color: var(--text-2); }
+.row-value {
+    display: flex; align-items: center; gap: 4px;
+    color: var(--text-2); font-size: 15px; white-space: nowrap;
+}
+.chev { color: var(--text-3); font-size: 18px; line-height: 1; }
+.row.tappable { cursor: pointer; }
+.row.tappable:active { background: var(--fill); }
+.row.action { justify-content: center; color: var(--accent); cursor: pointer; }
+.row.action.danger { color: var(--danger); }
+.row.action:active { background: var(--fill); }
+.row.action[aria-disabled="true"] { color: var(--text-3); cursor: default; }
+.badge {
+    display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; vertical-align: 2px;
+    color: var(--accent); background: var(--accent-soft);
+}
+
+/* 分段控件（替代两项下拉框） */
+.seg {
+    display: inline-flex; padding: 2px; border-radius: 9px; background: var(--fill);
+}
+.seg button {
+    border: 0; background: none; color: var(--text); font: inherit; font-size: 13px;
+    padding: 4px 12px; border-radius: 7px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] {
+    background: var(--seg-on); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); font-weight: 600;
+}
+
+/* 开关 */
+.switch { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch span {
+    position: absolute; inset: 0; border-radius: 999px; background: var(--fill-strong);
+    transition: background 0.2s;
+}
+.switch span::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+    border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s;
+}
+.switch input:checked + span { background: var(--accent); }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 步进器 */
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper output { min-width: 44px; text-align: right; color: var(--text-2); font-size: 15px; }
+.stepper button {
+    width: 30px; height: 28px; border: 0; border-radius: 8px; background: var(--fill);
+    color: var(--text); font-size: 17px; cursor: pointer;
+}
+
+
+/* 滑块行 */
+.slider-row { display: flex; align-items: center; gap: 12px; width: 100%; }
+.slider-row .aa-s { font-size: 13px; color: var(--text-2); }
+.slider-row .aa-l { font-size: 20px; color: var(--text-2); }
+.slider-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+
+/* 行内输入框 */
+.row input.inline {
+    flex: 1; min-width: 0; border: 0; background: none; text-align: right;
+    color: var(--text-2); font: inherit; font-size: 15px; outline: none;
+}
+.row input.inline::placeholder { color: var(--text-3); }
+
+/* 字体预览 */
+.font-preview { padding: 16px; text-align: center; }
+.font-preview b { display: block; font-size: 17px; }
+.font-preview span { display: block; margin-top: 4px; color: var(--text-2); font-size: 14px; }
+
+/* 美化包卡片头 */
+.pack-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.pack-thumb {
+    width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, #E7B7C3, #2B2B2B);
+}
+.pack-title { font-size: 16px; font-weight: 600; }
+
+/* 折叠区 */
+details.row-details > summary { list-style: none; }
+details.row-details > summary::-webkit-details-marker { display: none; }
+details.row-details[open] .chev { transform: rotate(90deg); }
+.chev { transition: transform 0.2s; display: inline-block; }
+
+/* 自定义图标网格 */
+.icon-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; padding: 16px 12px;
+}
+.icon-cell {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    border: 0; background: none; color: var(--text); font: inherit; font-size: 11px; cursor: pointer;
+}
+.icon-cell i {
+    width: 52px; height: 52px; border-radius: 13px; display: grid; place-items: center;
+    font-style: normal; font-size: 18px; color: #fff; position: relative;
+}
+.icon-cell i.custom::after {
+    content: ""; position: absolute; right: -2px; top: -2px; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--accent); border: 2px solid var(--card);
+}
+
+/* 轻提示 */
+.toast {
+    position: absolute; left: 50%; bottom: 40px; transform: translate(-50%, 20px);
+    padding: 8px 16px; border-radius: 999px; background: rgba(0, 0, 0, 0.78); color: #fff;
+    font-size: 13px; opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 5;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* 对比说明 */
+.notes {
+    max-width: 390px; font-size: 13px; line-height: 1.7; color: #444;
+    background: #fff; border-radius: 12px; padding: 12px 16px;
+}
+.notes b { color: #222; }
+[hidden] { display: none !important; }
+
+/* ===== 弹窗层 ===== */
+.scrim {
+    position: absolute; inset: 0; z-index: 10;
+    background: rgba(0, 0, 0, 0.32); opacity: 0;
+    transition: opacity 0.25s; pointer-events: none;
+}
+.scrim.open { opacity: 1; pointer-events: auto; }
+
+/* 底部选择面板（语言 / 字体 / 美化包） */
+.sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 11;
+    max-height: 72%; display: flex; flex-direction: column;
+    background: var(--page); border-radius: 14px 14px 0 0;
+    padding-bottom: 28px; transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+}
+.sheet.open { transform: translateY(0); }
+.sheet-grabber {
+    width: 36px; height: 5px; border-radius: 3px; margin: 6px auto 0;
+    background: var(--fill-strong);
+}
+.sheet-head {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    height: 48px; flex-shrink: 0;
+}
+.sheet-title { margin: 0; font-size: 17px; font-weight: 600; }
+.sheet-done {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    border: 0; background: none; color: var(--accent); font: inherit;
+    font-size: 17px; font-weight: 600; padding: 6px 10px; cursor: pointer;
+}
+.sheet-body { overflow-y: auto; padding-bottom: 8px; scrollbar-width: none; }
+.sheet-body .group-header { margin-top: 8px; }
+.option { cursor: pointer; }
+.option:active { background: var(--fill); }
+.option .check { color: var(--accent); font-size: 17px; font-weight: 700; visibility: hidden; }
+.option[aria-selected="true"] .check { visibility: visible; }
+.option-thumb { width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0; }
+.row.has-thumb + .row::before, .row + .row.has-thumb::before { left: 64px; }
+
+/* 图标清理列表（对应真实代码的「图标清理」与容量统计） */
+.usage-bar { display: block; height: 6px; margin-top: 8px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.usage-bar > span { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.25s; }
+.usage-bar.is-high > span { background: var(--danger); }
+.cleanup-thumb {
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    display: grid; place-items: center; font-style: normal; font-size: 14px; color: #fff;
+}
+.cleanup-key { font-family: ui-monospace, Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-tag {
+    flex-shrink: 0; padding: 1px 7px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; color: var(--text-2); background: var(--fill);
+}
+.status-tag.orphan { color: var(--danger); }
+.row-del {
+    flex-shrink: 0; border: 0; background: none; padding: 6px 2px;
+    color: var(--danger); font: inherit; font-size: 15px; cursor: pointer;
+}
+.row-del:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; border-radius: 6px; }
+.row-empty { justify-content: center; color: var(--text-3); font-size: 14px; }
+
+/* 图标操作菜单（点自定义图标后从底部弹出） */
+.action-sheet {
+    position: absolute; left: 8px; right: 8px; bottom: 30px; z-index: 11;
+    display: flex; flex-direction: column; gap: 8px;
+    transform: translateY(calc(100% + 40px));
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.action-sheet.open { transform: translateY(0); }
+.action-group { background: var(--card); border-radius: 14px; overflow: hidden; }
+.action-caption {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 14px 16px 12px; font-size: 13px; color: var(--text-2); text-align: center;
+}
+.action-caption i {
+    width: 52px; height: 52px; border-radius: 13px; display: grid; place-items: center;
+    font-style: normal; font-size: 18px; color: #fff;
+}
+.action-btn {
+    position: relative; display: block; width: 100%; min-height: 56px;
+    border: 0; background: none; color: var(--accent); font: inherit; font-size: 18px; cursor: pointer;
+}
+.action-btn::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--sep);
+}
+.action-btn:active { background: var(--fill); }
+.action-btn.danger { color: var(--danger); }
+.action-btn.cancel { font-weight: 600; }
+.action-btn.cancel::before { display: none; }
+
+/* 居中确认框（清除 / 删除） */
+.alert {
+    position: absolute; left: 50%; top: 50%; z-index: 11; width: 270px;
+    background: var(--card); border-radius: 14px; overflow: hidden; text-align: center;
+    transform: translate(-50%, -50%) scale(1.12); opacity: 0; pointer-events: none;
+    transition: transform 0.2s, opacity 0.2s;
+}
+.alert.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
+.alert-text { padding: 18px 16px 16px; }
+.alert-title { margin: 0; font-size: 17px; font-weight: 600; }
+.alert-msg { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-2); }
+.alert-actions { display: flex; border-top: 1px solid var(--sep); }
+.alert-actions button {
+    flex: 1; min-height: 44px; border: 0; background: none; font: inherit; font-size: 17px;
+    color: var(--accent); cursor: pointer;
+}
+.alert-actions button + button { border-left: 1px solid var(--sep); }
+.alert-actions button:active { background: var(--fill); }
+.alert-actions .danger { color: var(--danger); font-weight: 600; }
+
+/* 从美化包选择图标（底部面板 + 图标网格） */
+.picker-head { height: auto; min-height: 48px; padding: 6px 72px; }
+.picker-titles { text-align: center; min-width: 0; }
+.picker-sub {
+    margin: 2px 0 0; font-size: 12px; color: var(--text-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.picker-group { margin-top: 8px; }
+.picker-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 6px; padding: 16px 10px;
+}
+.pick-icon {
+    position: relative; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 6px 2px; border: 0; border-radius: 12px; background: none;
+    color: var(--text); font: inherit; font-size: 11px; cursor: pointer;
+}
+.pick-icon:active, .pick-icon:focus-visible { background: var(--fill); outline: none; }
+.pick-icon i {
+    width: 52px; height: 52px; border-radius: 13px; display: grid; place-items: center;
+    font-style: normal; font-size: 18px; color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transition: transform 0.15s;
+}
+.pick-icon:active i { transform: scale(0.92); }
+.pick-icon span {
+    max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pick-icon.is-match i { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--accent); }
+.pick-icon.is-match::after {
+    content: "推荐"; position: absolute; top: 0; right: 4px;
+    padding: 0 5px; border-radius: 999px; font-size: 10px; line-height: 16px; font-weight: 600;
+    color: #fff; background: var(--accent);
+}
+
+
+/* 裁剪弹窗（对应真实代码 media-upload/crop.js）：居中卡片弹窗，浮在遮罩上 */
+.crop {
+    position: absolute; left: 50%; top: 50%; z-index: 12;
+    width: calc(100% - 32px); max-height: calc(100% - 120px);
+    display: flex; flex-direction: column;
+    background: var(--card); color: var(--text);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+    transform: translate(-50%, -50%) scale(1.06); opacity: 0; pointer-events: none;
+    transition: transform 0.22s, opacity 0.22s;
+}
+.crop.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
+.crop-head { padding: 16px 18px 10px; text-align: center; flex-shrink: 0; }
+.crop-title { margin: 0; font-size: 17px; font-weight: 600; }
+.crop-desc { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-2); }
+/* 图片区：固定高度的深色画布，图片按比例居中，白天夜间都便于看清选区 */
+.crop-stage-wrap {
+    height: 300px; flex-shrink: 1; min-height: 180px;
+    margin: 0 14px; border-radius: 12px; background: #1A1B1A;
+    display: grid; place-items: center; padding: 12px; overflow: hidden;
+}
+.crop-stage { position: relative; height: 100%; max-width: 100%; touch-action: none; }
+.crop-box {
+    position: absolute; cursor: move; touch-action: none;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+    outline: 1px solid rgba(255, 255, 255, 0.9);
+}
+.crop-box:focus-visible { outline: 2px solid var(--accent); }
+/* 三分线：拖动或键盘聚焦时显示 */
+.crop-grid {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.45)),
+        linear-gradient(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.45)),
+        linear-gradient(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.45)),
+        linear-gradient(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.45));
+    background-size: 1px 100%, 1px 100%, 100% 1px, 100% 1px;
+    background-position: 33.333% 0, 66.666% 0, 0 33.333%, 0 66.666%;
+    background-repeat: no-repeat;
+}
+.crop-box.is-dragging .crop-grid, .crop-box:focus-visible .crop-grid { opacity: 1; }
+/* 手柄：四角 L 形、四边短横条，::before 扩大触控范围 */
+.crop-handle { position: absolute; width: 22px; height: 22px; border: 0 solid #FFF; }
+.crop-handle::before { content: ""; position: absolute; inset: -10px; }
+.crop-handle[data-handle="nw"] { left: -3px; top: -3px; border-width: 3px 0 0 3px; cursor: nwse-resize; }
+.crop-handle[data-handle="ne"] { right: -3px; top: -3px; border-width: 3px 3px 0 0; cursor: nesw-resize; }
+.crop-handle[data-handle="se"] { right: -3px; bottom: -3px; border-width: 0 3px 3px 0; cursor: nwse-resize; }
+.crop-handle[data-handle="sw"] { left: -3px; bottom: -3px; border-width: 0 0 3px 3px; cursor: nesw-resize; }
+.crop-handle[data-handle="n"], .crop-handle[data-handle="s"] {
+    left: 50%; width: 24px; height: 3px; margin-left: -12px; border-top-width: 3px; cursor: ns-resize;
+}
+.crop-handle[data-handle="n"] { top: -3px; }
+.crop-handle[data-handle="s"] { bottom: -3px; }
+.crop-handle[data-handle="e"], .crop-handle[data-handle="w"] {
+    top: 50%; width: 3px; height: 24px; margin-top: -12px; border-left-width: 3px; cursor: ew-resize;
+}
+.crop-handle[data-handle="e"] { right: -3px; }
+.crop-handle[data-handle="w"] { left: -3px; }
+.crop-meta { margin: 8px 0 0; text-align: center; font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+/* 底部按钮：左侧次要（重置 / 全图），右侧主要（取消 / 确认裁剪），与真实代码布局一致 */
+.crop-actions {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 12px 14px 14px; flex-shrink: 0;
+}
+.crop-actions > div { display: flex; gap: 6px; }
+.crop-btn {
+    border: 0; border-radius: 10px; padding: 8px 12px; min-height: 36px;
+    background: var(--fill); color: var(--text); font: inherit; font-size: 14px; cursor: pointer;
+    white-space: nowrap;
+}
+.crop-btn:active { background: var(--fill-strong); }
+.crop-btn.is-ghost { background: none; color: var(--text-2); padding: 8px 8px; }
+.crop-btn.is-primary { background: var(--accent); color: #fff; font-weight: 600; }
+[data-theme="dark"] .crop-btn.is-primary { color: #151715; }
+.crop-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+
+</style>
+</head>
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+</div>
+<div class="phone" id="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true">
+        <span>12:55</span>
+        <span class="status-icons">▂▄▆ ◔ ▭</span>
+    </div>
+    <header class="nav">
+        <button type="button" class="nav-back" aria-label="返回设置">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">界面外观</h1>
+    </header>
+    <main class="scroll">
+
+
+        <!-- 1. 主题与背景 -->
+        <h2 class="group-header">主题与背景</h2>
+        <section class="group">
+            <div class="row">
+                <span class="row-label">主题模式</span>
+                <div class="seg" role="group" aria-label="主题模式" data-seg="theme">
+                    <button type="button" aria-pressed="true" data-value="light">白天</button>
+                    <button type="button" aria-pressed="false" data-value="dark">夜间</button>
+                </div>
+            </div>
+            <div class="row">
+                <span class="row-label">首页名称颜色</span>
+                <div class="seg" role="group" aria-label="首页名称颜色">
+                    <button type="button" aria-pressed="true">白色</button>
+                    <button type="button" aria-pressed="false">黑色</button>
+                </div>
+            </div>
+            <div class="row tappable" role="button" tabindex="0" data-sheet="language" aria-haspopup="dialog">
+                <span class="row-label">语言 / Language</span>
+                <span class="row-value"><span id="language-value">简体中文</span> <span class="chev" aria-hidden="true">›</span></span>
+            </div>
+        </section>
+        <section class="group" style="margin-top:12px">
+            <div class="row action" role="button" tabindex="0" data-crop="background" aria-haspopup="dialog">上传背景图</div>
+            <div class="row action danger" role="button" tabindex="0" data-confirm="clear-bg" aria-haspopup="dialog">清除背景</div>
+        </section>
+        <p class="group-footer">上传的图片会作为首页壁纸显示。</p>
+
+        <!-- 2. 外观资源包 -->
+        <h2 class="group-header">外观资源包</h2>
+        <section class="group">
+            <div class="pack-head">
+                <div class="pack-thumb" id="pack-thumb" aria-hidden="true"></div>
+                <div class="row-label">
+                    <span class="pack-title" id="pack-title">玉子手机外观资源包</span><span class="badge" id="pack-badge">使用中</span>
+                    <span class="row-sub" id="pack-meta">1 张背景 · 35 个图标 · 2.3MB</span>
+                    <span class="row-sub" id="pack-file">YO-黑粉图标包.json</span>
+                </div>
+            </div>
+            <div class="row tappable" role="button" tabindex="0" data-sheet="pack" aria-haspopup="dialog">
+                <span class="row-label">切换美化包</span>
+                <span class="row-value">共 3 个 <span class="chev" aria-hidden="true">›</span></span>
+            </div>
+            <div class="row action" role="button" id="pack-apply" data-apply="1" tabindex="-1" aria-disabled="true">已应用</div>
+            <div class="row action danger" role="button" tabindex="0" data-confirm="delete-pack" aria-haspopup="dialog">删除此美化包</div>
+        </section>
+        <section class="group" style="margin-top:12px">
+            <div class="row action" role="button" tabindex="0" data-toast="选择 .json 美化包…">导入美化包</div>
+            <div class="row action" role="button" tabindex="0" data-toast="已导出当前外观">导出当前外观</div>
+        </section>
+        <p class="group-footer">更新于 2026/6/8 10:27。导出只打包当前背景与自定义图标。</p>
+
+        <!-- 3. 字体库 -->
+        <h2 class="group-header">字体</h2>
+        <section class="group">
+            <div class="font-preview">
+                <b id="font-preview-name">系统默认</b>
+                <span>玉子手机 · 字体预览 Aa 123</span>
+            </div>
+            <div class="row tappable" role="button" tabindex="0" data-sheet="font" aria-haspopup="dialog">
+                <span class="row-label">当前字体</span>
+                <span class="row-value"><span id="font-value">内置 · 系统默认</span> <span class="chev" aria-hidden="true">›</span></span>
+            </div>
+            <div class="row action" role="button" tabindex="0" data-toast="选择 woff2 / ttf / otf…">导入本地字体</div>
+            <div class="row action danger" role="button" id="font-delete" data-confirm="delete-font" aria-haspopup="dialog" tabindex="-1" aria-disabled="true">删除当前字体</div>
+        </section>
+        <p class="group-footer">0/8 个 · 0B/20MB · 单文件 ≤5MB。内置字体不可删除。</p>
+
+        <section class="group" style="margin-top:12px">
+            <details class="row-details">
+                <summary class="row tappable">
+                    <span class="row-label">添加网络字体</span>
+                    <span class="row-value"><span class="chev" aria-hidden="true">›</span></span>
+                </summary>
+                <label class="row">
+                    <span class="row-label" style="flex:none">显示名称</span>
+                    <input class="inline" type="text" placeholder="例如：寒蝉全圆体">
+                </label>
+                <label class="row">
+                    <span class="row-label" style="flex:none">CSS URL</span>
+                    <input class="inline" type="url" placeholder="https://…/result.css" spellcheck="false">
+                </label>
+                <label class="row">
+                    <span class="row-label" style="flex:none">字体族名</span>
+                    <input class="inline" type="text" placeholder="例如：寒蝉全圆体">
+                </label>
+                <div class="row action" role="button" tabindex="0" data-toast="已保存网络字体">保存网络字体</div>
+            </details>
+        </section>
+        <p class="group-footer">仅支持 HTTPS 字体 CSS 地址，需联网加载。</p>
+
+        <!-- 4. 主要内容字体大小 -->
+        <h2 class="group-header">主要内容字体大小</h2>
+        <section class="group">
+            <div class="row">
+                <div class="slider-row">
+                    <span class="aa-s" aria-hidden="true">A</span>
+                    <input type="range" min="80" max="160" step="1" value="100" id="text-scale" aria-label="主要内容字体大小">
+                    <span class="aa-l" aria-hidden="true">A</span>
+                    <output for="text-scale" id="text-scale-out" style="min-width:44px;text-align:right;color:var(--text-2);font-size:15px">100%</output>
+                </div>
+            </div>
+        </section>
+        <p class="group-footer">调整首页名称与通用表格文字，不影响按钮和标题栏。</p>
+
+
+        <!-- 5. 图标布局 -->
+        <h2 class="group-header">图标布局</h2>
+        <section class="group">
+            <div class="row"><span class="row-label">每行图标</span>
+                <div class="stepper" data-min="3" data-max="6" data-step="1" data-unit=""><button type="button" aria-label="减少">−</button><output>4</output><button type="button" aria-label="增加">+</button></div></div>
+            <div class="row"><span class="row-label">图标大小</span>
+                <div class="stepper" data-min="40" data-max="88" data-step="2" data-unit="px"><button type="button" aria-label="减少">−</button><output>60px</output><button type="button" aria-label="增加">+</button></div></div>
+            <div class="row"><span class="row-label">圆角</span>
+                <div class="stepper" data-min="6" data-max="26" data-step="1" data-unit="px"><button type="button" aria-label="减少">−</button><output>14px</output><button type="button" aria-label="增加">+</button></div></div>
+            <div class="row"><span class="row-label">图标间距</span>
+                <div class="stepper" data-min="8" data-max="24" data-step="1" data-unit="px"><button type="button" aria-label="减少">−</button><output>16px</output><button type="button" aria-label="增加">+</button></div></div>
+            <div class="row"><span class="row-label">Dock 图标大小</span>
+                <div class="stepper" data-min="32" data-max="72" data-step="2" data-unit="px"><button type="button" aria-label="减少">−</button><output>52px</output><button type="button" aria-label="增加">+</button></div></div>
+        </section>
+
+        <!-- 6. 显示控制 -->
+        <h2 class="group-header">显示控制</h2>
+        <section class="group">
+            <label class="row"><span class="row-label">隐藏数量徽标</span>
+                <span class="switch"><input type="checkbox"><span></span></span></label>
+        </section>
+
+        <!-- 7. 隐藏表格类 App -->
+        <h2 class="group-header">在首页显示的表格 App</h2>
+        <section class="group">
+            <label class="row"><span class="row-label">小剧场</span><span class="switch"><input type="checkbox" checked><span></span></span></label>
+            <label class="row"><span class="row-label">纪要</span><span class="switch"><input type="checkbox" checked><span></span></span></label>
+            <label class="row"><span class="row-label">小日历</span><span class="switch"><input type="checkbox"><span></span></span></label>
+        </section>
+        <p class="group-footer">关闭后该 App 不在首页显示，数据不受影响。</p>
+
+        <!-- 8. 自定义图标 -->
+        <h2 class="group-header">自定义图标</h2>
+        <section class="group">
+            <div class="icon-grid">
+                <button type="button" class="icon-cell" data-icon-menu="QQ" aria-haspopup="dialog"><i class="custom" style="background:#E7B7C3">Q</i>QQ</button>
+                <button type="button" class="icon-cell" data-icon-menu="设置" aria-haspopup="dialog"><i class="custom" style="background:#2B2B2B">设</i>设置</button>
+                <button type="button" class="icon-cell" data-icon-menu="小剧场" aria-haspopup="dialog"><i style="background:#A68B5B">剧</i>小剧场</button>
+                <button type="button" class="icon-cell" data-icon-menu="纪要" aria-haspopup="dialog"><i style="background:#5B7A6A">纪</i>纪要</button>
+                <button type="button" class="icon-cell" data-icon-menu="世界书" aria-haspopup="dialog"><i style="background:#7A7772">书</i>世界书</button>
+                <button type="button" class="icon-cell" data-icon-menu="小日历" aria-haspopup="dialog"><i style="background:#8B5E5E">历</i>小日历</button>
+            </div>
+        </section>
+        <p class="group-footer">点按图标即可上传或恢复默认，右上角圆点表示已自定义。</p>
+
+        <!-- 9. 图标清理：对应真实代码 icon-upload-service.js 的容量统计与「图标清理」列表 -->
+        <h2 class="group-header">图标清理</h2>
+        <section class="group">
+            <div class="row">
+                <span class="row-label">已用空间<span class="usage-bar" aria-hidden="true"><span id="usage-fill"></span></span></span>
+                <span class="row-value" id="usage-text"></span>
+            </div>
+        </section>
+        <section class="group" style="margin-top:12px" id="cleanup-rows" aria-label="已自定义的图标"></section>
+        <p class="group-footer" id="cleanup-footer"></p>
+    </main>
+
+    <div class="home-bar" aria-hidden="true"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <!-- ===== 底部选择面板 ===== -->
+    <div class="scrim" id="scrim" aria-hidden="true"></div>
+
+    <!-- 图标操作菜单：选项对应真实代码 icon-upload-service.js 的「本地上传 / 从美化包选择 / 清除」 -->
+    <section class="action-sheet" id="icon-menu" role="dialog" aria-modal="true" aria-labelledby="icon-menu-title" inert>
+        <div class="action-group">
+            <div class="action-caption">
+                <i id="icon-menu-preview" aria-hidden="true"></i>
+                <span id="icon-menu-title">更换图标</span>
+            </div>
+            <button type="button" class="action-btn" data-icon-act="pack">从「<span id="icon-menu-pack">玉子手机外观资源包</span>」中选择</button>
+            <button type="button" class="action-btn" data-icon-act="local">从本地上传图片</button>
+            <button type="button" class="action-btn danger" data-icon-act="reset" id="icon-menu-reset">恢复默认图标</button>
+        </div>
+        <div class="action-group">
+            <button type="button" class="action-btn cancel" data-icon-act="cancel">取消</button>
+        </div>
+    </section>
+
+    <!-- 居中确认框：清除背景 / 删除美化包 / 删除字体共用 -->
+    <section class="alert" id="alert" role="alertdialog" aria-modal="true" aria-labelledby="alert-title" aria-describedby="alert-msg" inert>
+        <div class="alert-text">
+            <h2 class="alert-title" id="alert-title">确认操作？</h2>
+            <p class="alert-msg" id="alert-msg"></p>
+        </div>
+        <div class="alert-actions">
+            <button type="button" data-alert="cancel">取消</button>
+            <button type="button" class="danger" data-alert="confirm" id="alert-confirm">删除</button>
+        </div>
+    </section>
+
+    <!-- 裁剪弹窗：对应真实代码 media-upload/crop.js（重置 / 全图 / 取消 / 确认裁剪） -->
+    <section class="crop" id="crop" role="dialog" aria-modal="true" aria-labelledby="crop-title" aria-describedby="crop-desc" inert>
+        <header class="crop-head">
+            <h2 class="crop-title" id="crop-title">裁剪图片</h2>
+            <p class="crop-desc" id="crop-desc"></p>
+        </header>
+        <div class="crop-stage-wrap">
+            <div class="crop-stage" id="crop-stage">
+                <div class="crop-box" id="crop-box" tabindex="0" aria-label="裁剪框，方向键移动，按住 Shift 移动更快">
+                    <span class="crop-grid" aria-hidden="true"></span>
+                    <span class="crop-handle" data-handle="nw" aria-hidden="true"></span>
+                    <span class="crop-handle" data-handle="n" aria-hidden="true"></span>
+                    <span class="crop-handle" data-handle="ne" aria-hidden="true"></span>
+                    <span class="crop-handle" data-handle="e" aria-hidden="true"></span>
+                    <span class="crop-handle" data-handle="se" aria-hidden="true"></span>
+                    <span class="crop-handle" data-handle="s" aria-hidden="true"></span>
+                    <span class="crop-handle" data-handle="sw" aria-hidden="true"></span>
+                    <span class="crop-handle" data-handle="w" aria-hidden="true"></span>
+                </div>
+            </div>
+        </div>
+        <p class="crop-meta" id="crop-meta" aria-live="polite"></p>
+        <div class="crop-actions">
+            <div>
+                <button type="button" class="crop-btn is-ghost" data-crop-act="reset">重置</button>
+                <button type="button" class="crop-btn is-ghost" data-crop-act="full">全图</button>
+            </div>
+            <div>
+                <button type="button" class="crop-btn" data-crop-act="cancel">取消</button>
+                <button type="button" class="crop-btn is-primary" data-crop-act="confirm">确认裁剪</button>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- 从美化包选择图标：对应真实代码 icon-picker-dialog.js 的 showAppearancePackIconPicker -->
+    <section class="sheet" id="sheet-pack-picker" role="dialog" aria-modal="true" aria-labelledby="pack-picker-title" inert>
+        <div class="sheet-grabber" aria-hidden="true"></div>
+        <header class="sheet-head picker-head">
+            <div class="picker-titles">
+                <h2 class="sheet-title" id="pack-picker-title">选择图标</h2>
+                <p class="picker-sub" id="pack-picker-sub">玉子手机外观资源包</p>
+            </div>
+            <button type="button" class="sheet-done">完成</button>
+        </header>
+        <div class="sheet-body">
+            <div class="group picker-group">
+                <div class="picker-grid" id="pack-picker-grid" role="listbox" aria-label="美化包图标"></div>
+            </div>
+            <p class="group-footer">带「推荐」的是与当前图标位同名的图标，点按即替换。</p>
+        </div>
+    </section>
+
+
+    <!-- 语言 -->
+    <section class="sheet" id="sheet-language" data-kind="language" role="dialog" aria-modal="true" aria-labelledby="sheet-language-title" inert>
+        <div class="sheet-grabber" aria-hidden="true"></div>
+        <header class="sheet-head">
+            <h2 class="sheet-title" id="sheet-language-title">语言 / Language</h2>
+            <button type="button" class="sheet-done">完成</button>
+        </header>
+        <div class="sheet-body">
+            <div class="group" role="listbox" aria-label="语言">
+                <div class="row option" role="option" tabindex="0" aria-selected="true" data-label="简体中文">
+                    <span class="row-label">简体中文<span class="row-sub">Simplified Chinese</span></span>
+                    <span class="check" aria-hidden="true">✓</span>
+                </div>
+                <div class="row option" role="option" tabindex="0" aria-selected="false" data-label="English">
+                    <span class="row-label">English<span class="row-sub">英语</span></span>
+                    <span class="check" aria-hidden="true">✓</span>
+                </div>
+            </div>
+            <p class="group-footer">切换后小手机界面文字立即更新。</p>
+        </div>
+    </section>
+
+    <!-- 美化包 -->
+    <section class="sheet" id="sheet-pack" data-kind="pack" role="dialog" aria-modal="true" aria-labelledby="sheet-pack-title" inert>
+        <div class="sheet-grabber" aria-hidden="true"></div>
+        <header class="sheet-head">
+            <h2 class="sheet-title" id="sheet-pack-title">选择美化包</h2>
+            <button type="button" class="sheet-done">完成</button>
+        </header>
+        <div class="sheet-body">
+            <h3 class="group-header">已导入（3）</h3>
+            <div class="group" role="listbox" aria-label="美化包">
+                <div class="row option has-thumb" role="option" tabindex="0" aria-selected="true" data-value="yo">
+                    <span class="option-thumb" style="background:linear-gradient(135deg, #E7B7C3, #2B2B2B)" aria-hidden="true"></span>
+                    <span class="row-label">玉子手机外观资源包<span class="badge" data-active-badge>使用中</span><span class="row-sub">1 张背景 · 35 个图标 · 2.3MB</span></span>
+                    <span class="check" aria-hidden="true">✓</span>
+                </div>
+                <div class="row option has-thumb" role="option" tabindex="0" aria-selected="false" data-value="sakura">
+                    <span class="option-thumb" style="background:linear-gradient(135deg, #F6D5DC, #FFF4E6)" aria-hidden="true"></span>
+                    <span class="row-label">樱花奶油<span class="badge" data-active-badge hidden>使用中</span><span class="row-sub">1 张背景 · 28 个图标 · 1.6MB</span></span>
+                    <span class="check" aria-hidden="true">✓</span>
+                </div>
+                <div class="row option has-thumb" role="option" tabindex="0" aria-selected="false" data-value="night">
+                    <span class="option-thumb" style="background:linear-gradient(135deg, #2F3A4A, #C9A66B)" aria-hidden="true"></span>
+                    <span class="row-label">深夜书房<span class="badge" data-active-badge hidden>使用中</span><span class="row-sub">1 张背景 · 40 个图标 · 3.1MB</span></span>
+                    <span class="check" aria-hidden="true">✓</span>
+                </div>
+            </div>
+            <p class="group-footer">选中后先在卡片里预览，点「应用此美化包」才会替换当前背景和图标。</p>
+        </div>
+    </section>
+
+    <!-- 字体 -->
+    <section class="sheet" id="sheet-font" data-kind="font" role="dialog" aria-modal="true" aria-labelledby="sheet-font-title" inert>
+        <div class="sheet-grabber" aria-hidden="true"></div>
+        <header class="sheet-head">
+            <h2 class="sheet-title" id="sheet-font-title">选择字体</h2>
+            <button type="button" class="sheet-done">完成</button>
+        </header>
+        <div class="sheet-body">
+            <h3 class="group-header">内置</h3>
+            <div class="group" role="listbox" aria-label="内置字体">
+                <div class="row option" role="option" tabindex="0" aria-selected="true" data-label="内置 · 系统默认" data-name="系统默认" data-family="system-ui">
+                    <span class="row-label" style="font-family:system-ui">系统默认<span class="row-sub">玉子手机 Aa 123</span></span>
+                    <span class="check" aria-hidden="true">✓</span>
+                </div>
+                <div class="row option" role="option" tabindex="0" aria-selected="false" data-label="内置 · 衬线" data-name="衬线" data-family="serif">
+                    <span class="row-label" style="font-family:serif">衬线<span class="row-sub">玉子手机 Aa 123</span></span>
+                    <span class="check" aria-hidden="true">✓</span>
+                </div>
+            </div>
+            <h3 class="group-header">我导入的</h3>
+            <div class="group" role="listbox" aria-label="导入的字体">
+                <div class="row option" role="option" tabindex="0" aria-selected="false" data-label="用户 · 寒蝉全圆体" data-name="寒蝉全圆体" data-family="cursive">
+                    <span class="row-label" style="font-family:cursive">寒蝉全圆体<span class="row-sub">玉子手机 Aa 123 · 1.2MB</span></span>
+                    <span class="check" aria-hidden="true">✓</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div class="notes">
+    <b>和现在的二级页相比：</b><br>
+    1. 区块标题移到卡片外，内容一行一项，左名称右取值，分割线不再左右断开。<br>
+    2. 按钮从标题右侧挪进卡片，变成整行操作；清除、删除这类危险操作用红字单独成行。<br>
+    3. 两个选项的下拉框（主题模式、首页名称颜色）改成分段控件，点一下就切换。<br>
+    4. 美化包合并成一张卡片：包名加「使用中」标签，信息汇总成一行副标题，更新时间挪到卡片下方的灰字说明。<br>
+    5. 数字输入改成 − / + 步进器，网络字体默认折叠。<br>
+    6. 主要内容字体大小只保留滑块，不再放数字输入框；顶部概览卡片去掉。<br>
+    这只是视觉原型，所有数据都是示例，不连接真实小手机。
+</div>
+<div class="notes">
+    <b>美化样式类型清单（原型类名，供后续新功能复用）：</b><br>
+    <b>页面骨架</b>：group-header 卡片外小标题 · group 圆角卡片 · group-footer 卡片下灰色说明<br>
+    <b>行</b>：row 普通行 · row.tappable 可点行（右侧 row-value + chev ›）· row-sub 行内副标题<br>
+    <b>操作</b>：row.action 整行主题色操作 · row.action.danger 红字危险操作 · aria-disabled 禁用态<br>
+    <b>控件</b>：seg 分段控件（2~3 个选项）· switch 开关 · stepper −/+ 步进器 · slider-row 滑块 · input.inline 行内输入<br>
+    <b>组合块</b>：pack-head 资源卡头（缩略图 + 标题 + badge）· details.row-details 折叠区 · icon-grid 图标网格 · font-preview 预览块<br>
+    <b>反馈</b>：badge 状态小标签 · toast 底部轻提示<br>
+    <b>弹层</b>：scrim 遮罩 · sheet 底部选择面板（grabber 拖拽条 + sheet-head 标题与「完成」）· option 选项行（选中项右侧 ✓）· option-thumb 选项缩略图<br>
+    <b>裁剪</b>：crop 居中裁剪弹窗 · crop-head 标题与说明 · crop-stage-wrap 深色画布 · crop-box 选区（外部压暗）· crop-grid 三分线 · crop-handle 四角与四边手柄 · crop-actions 底部按钮（左：重置 / 全图，右：取消 / 确认裁剪）· crop-btn.is-primary 主按钮<br>
+    <b>颜色变量</b>：--page 页面底 · --card 卡片 · --text / --text-2 / --text-3 三级文字 · --sep 分割线 · --fill 按压/控件底 · --accent 主题色 · --accent-soft 主题浅底 · --danger 危险色<br>
+    这些是原型里的临时名字，正式落地时会映射到小手机现有的 --yuzi-theme-* 变量，并整理进作者交接文档。
+</div>
+
+
+<script>
+(() => {
+    const root = document.documentElement;
+    const toastEl = document.getElementById('toast');
+    let toastTimer = 0;
+    const showToast = (text) => {
+        toastEl.textContent = text;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1400);
+    };
+
+    const setTheme = (mode) => {
+        root.dataset.theme = mode;
+        document.querySelectorAll('[data-seg="theme"] button').forEach((btn) => {
+            btn.setAttribute('aria-pressed', String(btn.dataset.value === mode));
+        });
+    };
+    document.getElementById('toggle-theme').addEventListener('click', () => {
+        setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+
+    // 分段控件：组内单选
+    document.querySelectorAll('.seg').forEach((seg) => {
+        seg.addEventListener('click', (event) => {
+            const btn = event.target.closest('button');
+            if (!btn) return;
+            seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+            if (seg.dataset.seg === 'theme') setTheme(btn.dataset.value);
+        });
+    });
+
+    // 步进器：按 data-min / data-max / data-step 夹取
+    document.querySelectorAll('.stepper').forEach((stepper) => {
+        const out = stepper.querySelector('output');
+        const [minus, plus] = stepper.querySelectorAll('button');
+        const { min, max, step, unit } = stepper.dataset;
+        const update = (dir) => {
+            const current = parseInt(out.textContent, 10) || 0;
+            const next = Math.min(Number(max), Math.max(Number(min), current + dir * Number(step)));
+            out.textContent = `${next}${unit}`;
+        };
+        minus.addEventListener('click', () => update(-1));
+        plus.addEventListener('click', () => update(1));
+    });
+
+    // 字体大小滑块
+    const range = document.getElementById('text-scale');
+    const rangeOut = document.getElementById('text-scale-out');
+    range.addEventListener('input', () => { rangeOut.textContent = `${range.value}%`; });
+
+    // ===== 底部选择面板：打开 / 关闭与焦点归还 =====
+    const scrim = document.getElementById('scrim');
+    let openSheet = null;
+    let opener = null;
+    const closeSheet = () => {
+        if (!openSheet) return;
+        openSheet.classList.remove('open');
+        openSheet.inert = true;
+        openSheet = null;
+        scrim.classList.remove('open');
+        if (opener) opener.focus();
+        opener = null;
+    };
+    const openSheetByName = (name, triggerEl) => {
+        const sheet = document.getElementById(`sheet-${name}`);
+        if (!sheet) return;
+        openLayer(sheet, triggerEl);
+    };
+    // 通用打开：底部面板 / 图标菜单 / 确认框都走这里，关闭统一用 closeSheet
+    function openLayer(sheet, triggerEl) {
+        if (openSheet) closeSheet();
+        opener = triggerEl;
+        openSheet = sheet;
+        sheet.inert = false;
+        sheet.classList.add('open');
+        scrim.classList.add('open');
+        // 确认框默认聚焦「取消」，避免回车误删
+        const current = sheet.querySelector('[aria-selected="true"]') || sheet.querySelector('.option, button');
+        if (current) setTimeout(() => current.focus(), 60);
+    }
+    scrim.addEventListener('click', closeSheet);
+    document.querySelectorAll('.sheet-done').forEach((btn) => btn.addEventListener('click', closeSheet));
+
+    // ===== 美化包：选中只切换卡片显示，点「应用」才生效 =====
+    const PACKS = {
+        yo: { name: '玉子手机外观资源包', meta: '1 张背景 · 35 个图标 · 2.3MB', file: 'YO-黑粉图标包.json', thumb: 'linear-gradient(135deg, #E7B7C3, #2B2B2B)' },
+        sakura: { name: '樱花奶油', meta: '1 张背景 · 28 个图标 · 1.6MB', file: 'sakura-cream.json', thumb: 'linear-gradient(135deg, #F6D5DC, #FFF4E6)' },
+        night: { name: '深夜书房', meta: '1 张背景 · 40 个图标 · 3.1MB', file: 'night-study.json', thumb: 'linear-gradient(135deg, #2F3A4A, #C9A66B)' },
+    };
+    let activePack = 'yo';
+    let shownPack = 'yo';
+    const $ = (id) => document.getElementById(id);
+    const renderPackCard = () => {
+        const pack = PACKS[shownPack];
+        const isActive = shownPack === activePack;
+        $('pack-title').textContent = pack.name;
+        $('pack-meta').textContent = pack.meta;
+        $('pack-file').textContent = pack.file;
+        $('pack-thumb').style.background = pack.thumb;
+        $('pack-badge').hidden = !isActive;
+        const applyBtn = $('pack-apply');
+        applyBtn.textContent = isActive ? '已应用' : '应用此美化包';
+        applyBtn.setAttribute('aria-disabled', String(isActive));
+        applyBtn.tabIndex = isActive ? -1 : 0;
+        document.querySelectorAll('#sheet-pack [data-active-badge]').forEach((badge) => {
+            badge.hidden = badge.closest('.option').dataset.value !== activePack;
+        });
+    };
+    const applyPack = () => {
+        if (shownPack === activePack) return;
+        activePack = shownPack;
+        renderPackCard();
+        showToast('已应用美化包');
+    };
+
+    // ===== 选中某一项：打勾 + 回写页面，稍停后自动收起 =====
+    const onSelect = {
+        language: (opt) => { $('language-value').textContent = opt.dataset.label; },
+        font: (opt) => {
+            $('font-value').textContent = opt.dataset.label;
+            $('font-preview-name').textContent = opt.dataset.name;
+            $('font-preview-name').parentElement.style.fontFamily = opt.dataset.family;
+            // 与真实代码 canDeleteActiveFont 一致：只有用户导入的字体可删除
+            const deletable = opt.dataset.label.startsWith('用户');
+            const delBtn = $('font-delete');
+            delBtn.setAttribute('aria-disabled', String(!deletable));
+            delBtn.tabIndex = deletable ? 0 : -1;
+        },
+        pack: (opt) => { shownPack = opt.dataset.value; renderPackCard(); },
+    };
+    const selectOption = (opt) => {
+        const sheet = opt.closest('.sheet');
+        sheet.querySelectorAll('.option').forEach((o) => o.setAttribute('aria-selected', String(o === opt)));
+        onSelect[sheet.dataset.kind](opt);
+        setTimeout(closeSheet, 180);
+    };
+
+    // ===== 从美化包选择图标：对应真实代码 showAppearancePackIconPicker =====
+    const PACK_ICONS = [
+        ['QQ', 'Q', '#E7B7C3, #C98A9B'], ['设置', '设', '#2B2B2B, #555'], ['小剧场', '剧', '#F2C6D0, #2B2B2B'],
+        ['纪要', '纪', '#D9A7B5, #6B4B55'], ['世界书', '书', '#3A3A3A, #E7B7C3'], ['小日历', '历', '#F6D5DC, #B47A8A'],
+        ['相册', '相', '#E7B7C3, #FFF'], ['音乐', '音', '#2B2B2B, #E7B7C3'], ['天气', '天', '#C9A0AE, #F6E3E8'],
+        ['备忘录', '备', '#FFF0F3, #D9A7B5'], ['商城', '商', '#1F1F1F, #C98A9B'], ['钱包', '钱', '#E7B7C3, #3A3A3A'],
+    ];
+    const pickerGrid = $('pack-picker-grid');
+    pickerGrid.innerHTML = PACK_ICONS.map(([name, glyph, colors], index) => `
+        <button type="button" class="pick-icon" role="option" data-pick-icon="${index}" aria-label="使用 ${name}">
+            <i style="background:linear-gradient(135deg, ${colors})">${glyph}</i>
+            <span>${name}</span>
+        </button>`).join('');
+    let pickerTarget = null;
+    const openPackPicker = (cell) => {
+        pickerTarget = cell;
+        $('pack-picker-sub').textContent = `${PACKS[activePack].name} · ${PACK_ICONS.length} 个图标`;
+        // 当前图标位同名的那个图标标为「推荐」，与真实导入按名称匹配的逻辑呼应
+        pickerGrid.querySelectorAll('.pick-icon').forEach((btn) => {
+            btn.classList.toggle('is-match', PACK_ICONS[btn.dataset.pickIcon][0] === cell.dataset.iconMenu);
+        });
+        openLayer($('sheet-pack-picker'), cell);
+    };
+    pickerGrid.addEventListener('click', (event) => {
+        const btn = event.target.closest('[data-pick-icon]');
+        if (!btn || !pickerTarget) return;
+        const [name, glyph, colors] = PACK_ICONS[btn.dataset.pickIcon];
+        const icon = pickerTarget.querySelector('i');
+        icon.textContent = glyph;
+        icon.style.background = `linear-gradient(135deg, ${colors})`;
+        icon.classList.add('custom');
+        pickerTarget = null;
+        closeSheet();
+        renderCleanup();
+        showToast(`已使用「${name}」图标`);
+    });
+
+
+    // ===== 图标操作菜单：选项对应真实代码的本地上传 / 从美化包选择 / 清除 =====
+    let iconTarget = null;
+    const openIconMenu = (cell) => {
+        iconTarget = cell;
+        const glyph = cell.querySelector('i');
+        const preview = $('icon-menu-preview');
+        preview.textContent = glyph.textContent;
+        preview.style.background = glyph.style.background;
+        $('icon-menu-title').textContent = `更换「${cell.dataset.iconMenu}」图标`;
+        // 只有已自定义的图标才显示「恢复默认」，与真实代码 hasCustom 判断一致
+        $('icon-menu-reset').hidden = !glyph.classList.contains('custom');
+        openLayer($('icon-menu'), cell);
+    };
+    const runIconAct = (act) => {
+        const target = iconTarget;
+        closeSheet();
+        if (!target || act === 'cancel') return;
+        if (act === 'pack') openPackPicker(target);
+        if (act === 'local') openCrop('icon', target, target);
+        if (act === 'reset') {
+            target.querySelector('i').classList.remove('custom');
+            renderCleanup();
+            showToast('图标已恢复默认');
+        }
+    };
+
+    // ===== 居中确认框：三处危险操作共用 =====
+    const CONFIRMS = {
+        'clear-bg': { title: '清除背景图？', msg: '首页将恢复默认背景，已上传的图片会从本地移除。', ok: '清除', done: '背景已清除' },
+        'delete-pack': { title: '确认删除美化包？', msg: '删除仓库条目不会清空当前已应用的背景和图标。此操作只会移除仓库中的这个美化包。', ok: '删除', done: '美化包已删除' },
+        'delete-font': { title: '删除当前字体？', msg: '删除后将切换回系统默认字体，此操作无法撤销。', ok: '删除', done: '字体已删除' },
+        'delete-icon': { title: '删除这个图标？', msg: '只移除图标图片，不影响表格数据或背景。', ok: '删除', done: '图标已删除' },
+    };
+    let pendingConfirm = null;
+    const openConfirm = (trigger) => {
+        if (trigger.getAttribute('aria-disabled') === 'true') return;
+        const cfg = CONFIRMS[trigger.dataset.confirm];
+        if (!cfg) return;
+        pendingConfirm = { cfg, trigger };
+        // 行内可用 data-confirm-title / data-confirm-msg 覆盖默认文案
+        $('alert-title').textContent = trigger.dataset.confirmTitle || cfg.title;
+        $('alert-msg').textContent = trigger.dataset.confirmMsg || cfg.msg;
+        $('alert-confirm').textContent = cfg.ok;
+        openLayer($('alert'), trigger);
+    };
+    const answerConfirm = (ok) => {
+        const pending = pendingConfirm;
+        pendingConfirm = null;
+        closeSheet();
+        if (!ok || !pending) return;
+        if (pending.trigger.dataset.cleanupKey) deleteIcon(pending.trigger.dataset.cleanupKey);
+        showToast(pending.cfg.done);
+    };
+
+    // ===== 图标清理：列出所有自定义图标（含已无图标位的旧图标），可单独删除 =====
+    const SLOT_KEYS = { QQ: 'dock_qq', 设置: 'dock_settings', 小剧场: 'sheet_xiao_ju_chang', 纪要: 'sheet_ji_yao', 世界书: 'app_worldbook', 小日历: 'sheet_xiao_ri_li' };
+    const orphanIcons = [
+        { key: 'sheet_jiu_ri_ji', glyph: '旧', bg: '#9A9790', kb: 180 },
+        { key: 'sheet_lian_ai_can_kao', glyph: '恋', bg: '#C98A9B', kb: 240 },
+    ];
+    const ICON_KB = 260;
+    const LIMIT_KB = 4096;
+    const formatKB = (kb) => (kb >= 1024 ? `${(kb / 1024).toFixed(2)}MB` : `${kb}KB`);
+    const getCustomCells = () => [...document.querySelectorAll('.icon-cell')].filter((cell) => cell.querySelector('i').classList.contains('custom'));
+    const renderCleanup = () => {
+        const items = [
+            ...getCustomCells().map((cell) => {
+                const icon = cell.querySelector('i');
+                return { name: cell.dataset.iconMenu, key: SLOT_KEYS[cell.dataset.iconMenu], glyph: icon.textContent, bg: icon.style.background, kb: ICON_KB, orphan: false };
+            }),
+            ...orphanIcons.map((item) => ({ ...item, name: '隐藏旧图标', orphan: true })),
+        ];
+        const usedKB = items.reduce((sum, item) => sum + item.kb, 0);
+        const ratio = Math.min(1, usedKB / LIMIT_KB);
+        $('usage-text').textContent = `${formatKB(usedKB)} / ${formatKB(LIMIT_KB)}`;
+        $('usage-fill').style.width = `${Math.round(ratio * 100)}%`;
+        $('usage-fill').parentElement.classList.toggle('is-high', ratio >= 0.8);
+        $('cleanup-footer').textContent = `共 ${items.length} 个自定义图标。只移除图标，不影响表格数据或背景。「隐藏旧图标」是已经没有对应图标位的残留，删掉可以腾出空间。`;
+        $('cleanup-rows').innerHTML = items.length ? items.map((item) => `
+            <div class="row has-thumb">
+                <i class="cleanup-thumb" style="background:${item.bg}" aria-hidden="true">${item.glyph}</i>
+                <span class="row-label">${item.name}<span class="row-sub cleanup-key">${item.key}</span></span>
+                <span class="status-tag${item.orphan ? ' orphan' : ''}">${item.orphan ? '无图标位' : '当前图标位'}</span>
+                <button type="button" class="row-del" data-confirm="delete-icon" data-cleanup-key="${item.key}"
+                    data-confirm-title="删除「${item.name}」图标？"
+                    data-confirm-msg="${item.orphan ? '这个旧图标已经没有对应的图标位，删除后可以腾出存储空间。' : '只移除图标图片，不影响表格数据或背景。删除后该位置恢复默认图标。'}"
+                    aria-label="删除 ${item.name} 图标">删除</button>
+            </div>`).join('') : '<div class="row row-empty">当前没有自定义图标</div>';
+    };
+    const deleteIcon = (key) => {
+        const orphanIndex = orphanIcons.findIndex((item) => item.key === key);
+        if (orphanIndex >= 0) orphanIcons.splice(orphanIndex, 1);
+        getCustomCells().forEach((cell) => {
+            if (SLOT_KEYS[cell.dataset.iconMenu] === key) cell.querySelector('i').classList.remove('custom');
+        });
+        renderCleanup();
+    };
+    renderCleanup();
+
+    // ===== 裁剪弹窗：对应真实代码 media-upload/crop.js（重置 / 全图 / 取消 / 确认裁剪） =====
+    // 初始选区照 buildInitialCropRect：图标居中 78% 正方形，竖图背景 88% × 84%
+    const CROP_PRESETS = {
+        icon: {
+            title: (name) => `裁剪 ${name}`,
+            desc: '建议仅保留图标主体，范围越小越容易通过容量限制。',
+            rect: { x: 0.11, y: 0.11, w: 0.78, h: 0.78 },
+            aspect: '1 / 1', natW: 1024, natH: 1024,
+            photo: 'radial-gradient(circle at 50% 45%, #FFF 0 12%, transparent 13%), linear-gradient(135deg, #F6D5DC, #E7B7C3 45%, #2B2B2B)',
+            thumb: 'linear-gradient(135deg, #F6D5DC, #E7B7C3 45%, #2B2B2B)',
+        },
+        background: {
+            title: () => '裁剪背景图',
+            desc: '可自由调整背景可见区域，确认后再保存。',
+            rect: { x: 0.06, y: 0.08, w: 0.88, h: 0.84 },
+            aspect: '3 / 4', natW: 1440, natH: 1920,
+            photo: 'radial-gradient(circle at 70% 36%, #FFE7B0 0 9%, transparent 10%), linear-gradient(180deg, #F6C8A8 0%, #E79AA8 38%, #6B5B8C 70%, #2B2F4A 100%)',
+        },
+    };
+    const cropLayer = $('crop');
+    const cropStage = $('crop-stage');
+    const cropBox = $('crop-box');
+    const CROP_MIN = 0.15;
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    let crop = null;
+    const drawCrop = () => {
+        const { x, y, w, h } = crop.rect;
+        cropBox.style.left = `${x * 100}%`;
+        cropBox.style.top = `${y * 100}%`;
+        cropBox.style.width = `${w * 100}%`;
+        cropBox.style.height = `${h * 100}%`;
+        const p = CROP_PRESETS[crop.preset];
+        $('crop-meta').textContent = `选区 ${Math.round(w * p.natW)} × ${Math.round(h * p.natH)} px`;
+    };
+    const openCrop = (preset, target, trigger) => {
+        const p = CROP_PRESETS[preset];
+        crop = { preset, target, rect: { ...p.rect } };
+        $('crop-title').textContent = p.title(target ? target.dataset.iconMenu : '');
+        $('crop-desc').textContent = p.desc;
+        cropStage.style.aspectRatio = p.aspect;
+        cropStage.style.background = p.photo;
+        drawCrop();
+        openLayer(cropLayer, trigger);
+    };
+    document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('[data-crop]');
+        if (trigger) openCrop(trigger.dataset.crop, null, trigger);
+    });
+
+    // 拖动：选区内部移动，8 个手柄缩放
+    let drag = null;
+    cropBox.addEventListener('pointerdown', (event) => {
+        if (!crop) return;
+        event.preventDefault();
+        const bounds = cropStage.getBoundingClientRect();
+        drag = { type: event.target.dataset.handle || 'move', sx: event.clientX, sy: event.clientY, bw: bounds.width, bh: bounds.height, start: { ...crop.rect } };
+        cropBox.classList.add('is-dragging');
+        cropBox.setPointerCapture(event.pointerId);
+    });
+    cropBox.addEventListener('pointermove', (event) => {
+        if (!drag) return;
+        const dx = (event.clientX - drag.sx) / drag.bw;
+        const dy = (event.clientY - drag.sy) / drag.bh;
+        const s = drag.start;
+        if (drag.type === 'move') {
+            crop.rect = { x: clamp(s.x + dx, 0, 1 - s.w), y: clamp(s.y + dy, 0, 1 - s.h), w: s.w, h: s.h };
+        } else {
+            let l = s.x; let t = s.y; let r = s.x + s.w; let b = s.y + s.h;
+            if (drag.type.includes('w')) l = clamp(s.x + dx, 0, r - CROP_MIN);
+            if (drag.type.includes('e')) r = clamp(r + dx, l + CROP_MIN, 1);
+            if (drag.type.includes('n')) t = clamp(s.y + dy, 0, b - CROP_MIN);
+            if (drag.type.includes('s')) b = clamp(b + dy, t + CROP_MIN, 1);
+            crop.rect = { x: l, y: t, w: r - l, h: b - t };
+        }
+        drawCrop();
+    });
+    const endDrag = () => { drag = null; cropBox.classList.remove('is-dragging'); };
+    cropBox.addEventListener('pointerup', endDrag);
+    cropBox.addEventListener('pointercancel', endDrag);
+
+    // 键盘：方向键移动选区，按住 Shift 移动更快
+    cropBox.addEventListener('keydown', (event) => {
+        const step = event.shiftKey ? 0.05 : 0.01;
+        const map = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+        const d = map[event.key];
+        if (!d || !crop) return;
+        event.preventDefault();
+        const r = crop.rect;
+        crop.rect = { ...r, x: clamp(r.x + d[0], 0, 1 - r.w), y: clamp(r.y + d[1], 0, 1 - r.h) };
+        drawCrop();
+    });
+
+    // 按钮：重置 / 全图 / 取消 / 完成
+    cropLayer.addEventListener('click', (event) => {
+        const btn = event.target.closest('[data-crop-act]');
+        if (!btn || !crop) return;
+        const act = btn.dataset.cropAct;
+        if (act === 'reset') { crop.rect = { ...CROP_PRESETS[crop.preset].rect }; drawCrop(); return; }
+        if (act === 'full') { crop.rect = { x: 0, y: 0, w: 1, h: 1 }; drawCrop(); return; }
+        const done = crop;
+        crop = null;
+        closeSheet();
+        if (act !== 'confirm') return;
+        if (done.target) {
+            const icon = done.target.querySelector('i');
+            icon.classList.add('custom');
+            icon.style.background = CROP_PRESETS.icon.thumb;
+            renderCleanup();
+            showToast(`「${done.target.dataset.iconMenu}」图标已更新`);
+        } else {
+            showToast('背景已更新');
+        }
+    });
+
+
+
+    // ===== 统一事件分发：鼠标点击 =====
+    document.addEventListener('click', (event) => {
+        const opt = event.target.closest('.option');
+        if (opt) { selectOption(opt); return; }
+        const iconAct = event.target.closest('[data-icon-act]');
+        if (iconAct) { runIconAct(iconAct.dataset.iconAct); return; }
+        const alertBtn = event.target.closest('[data-alert]');
+        if (alertBtn) { answerConfirm(alertBtn.dataset.alert === 'confirm'); return; }
+        const iconCell = event.target.closest('[data-icon-menu]');
+        if (iconCell) { openIconMenu(iconCell); return; }
+        const confirmTrigger = event.target.closest('[data-confirm]');
+        if (confirmTrigger) { openConfirm(confirmTrigger); return; }
+        const sheetTrigger = event.target.closest('[data-sheet]');
+        if (sheetTrigger) { openSheetByName(sheetTrigger.dataset.sheet, sheetTrigger); return; }
+        if (event.target.closest('[data-apply]')) { applyPack(); return; }
+        const toastEl2 = event.target.closest('[data-toast]');
+        if (toastEl2 && toastEl2.getAttribute('aria-disabled') !== 'true') showToast(toastEl2.dataset.toast);
+    });
+
+    // ===== 键盘：Esc 关闭面板，Enter / 空格触发行与选项 =====
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') { closeSheet(); return; }
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        const el = event.target.closest('[role="button"], .option');
+        if (!el || el.tagName === 'BUTTON') return;
+        event.preventDefault();
+        el.click();
+    });
+})();
+</script>
+</body>
+</html>

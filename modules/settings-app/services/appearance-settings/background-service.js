@@ -5,6 +5,7 @@ import { Logger } from '../../../error-handler.js';
 import { STORAGE_BUDGETS } from '../../constants.js';
 import { estimateBase64Bytes, pickImageFile } from '../media-upload.js';
 import { showToast } from '../../ui/toast.js';
+import { showConfirmDialog } from '../../ui/confirm-dialog.js';
 
 const logger = Logger.withScope({ scope: 'settings-app/services/appearance-settings/background-service', feature: 'settings-app' });
 
@@ -62,9 +63,20 @@ export function setupBgUpload(container, options = {}) {
 
     const clearBtn = container.querySelector('#phone-clear-bg');
     addListener(clearBtn, 'click', () => {
-        savePhoneSetting('backgroundImage', null);
-        cacheRemove(CACHE_STORES.images, cachedKey).catch(() => {});
-        showToast(container, t("背景已清除"));
+        showConfirmDialog(
+            container,
+            t("清除背景图？"),
+            t("首页将恢复默认背景，已上传的图片会从本地移除。"),
+            () => {
+                if (disposed) return;
+                savePhoneSetting('backgroundImage', null);
+                cacheRemove(CACHE_STORES.images, cachedKey).catch(() => {});
+                showToast(container, t("背景已清除"));
+            },
+            t("清除"),
+            t("取消"),
+            runtime,
+        );
     });
 
     return () => {

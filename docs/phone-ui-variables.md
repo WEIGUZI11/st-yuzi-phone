@@ -148,6 +148,33 @@ App 页面存在固定底栏时，在底栏根节点声明 `data-phone-bottom-ba
 
 Dock 仍消费现有四个运行时入口；隐藏可视标签不等于删除名称或无障碍名称。
 
+## 设置分组列表与公共弹层（新功能美化先查这里）
+
+设置二级页统一使用 iOS 分组列表。新功能、新设置页或公共美化类型不要另起样式体系：先复用本节类名与 token；确实缺少时，按「使用规则」第 2 条在 `00-phone-tokens.css`（尺寸）或 `00-theme-modes.css`（颜色）新增语义 token，并把新类型补进下表。
+
+实现位置：骨架与控件 [`07-settings-grouped.css`](../styles/phone-base/07-settings-grouped.css)；弹层与确认框 [`07-settings-layers.css`](../styles/phone-base/07-settings-layers.css)；弹层 JS [`settings-layer.js`](../modules/settings-app/ui/settings-layer.js)；控件桥 [`settings-controls.js`](../modules/settings-app/ui/settings-controls.js)。界面外观页是完整示例。
+
+| 类型 | 类名 | 用途 |
+| --- | --- | --- |
+| 页面骨架 | `.phone-ios-grouped-page`（加在 body）/ `.phone-ios-group-header` / `.phone-ios-group` / `.phone-ios-group-footer` | 卡片外小标题、圆角卡片、卡片下灰色说明 |
+| 行 | `.phone-ios-row` + `.is-tappable` / `.is-action` / `.is-action.is-danger` / `.has-thumb` | 普通行、可点行（右侧 `.phone-ios-row-value` + `.phone-ios-row-chevron`）、整行操作、红字危险操作、带缩略图行 |
+| 行内元素 | `.phone-ios-row-label` / `.phone-ios-row-sub` / `.phone-ios-badge`（`.is-muted` / `.is-danger`）/ `.phone-ios-thumb` / `.phone-ios-row-del` / `.phone-ios-row-empty` | 标题、副标题、状态小标签、缩略图、行尾红字删除、空状态 |
+| 控件 | `.phone-ios-seg` / `.phone-ios-switch` / `.phone-ios-stepper` / `.phone-ios-slider-row` / `.phone-ios-inline-input` / `.phone-ios-details` | 分段控件（2~3 项）、开关、−/+ 步进器、滑块、行内输入、折叠区 |
+| 组合块 | `.phone-ios-icon-grid` + `.phone-ios-icon-cell`（`.is-custom` / `.is-match`）/ `.phone-ios-pack-head` / `.phone-ios-font-preview` / `.phone-ios-usage-bar` | 图标网格、资源卡头、预览块、容量条 |
+| 弹层 | `showSettingsOptionSheet()` / `showSettingsSheet()` / `showSettingsActionSheet()` | 底部单选面板、底部内容面板、底部操作菜单；均挂在手机壳临时层，支持遮罩点击、Esc 关闭与焦点归还 |
+| 确认框 | `showConfirmDialog()` / `showAlertDialog()` | 全局居中确认框；危险操作必须二次确认，默认焦点在「取消」 |
+| 裁剪框 | `openImageCropDialog()`（`pickImageFile` 调用） | 居中卡片弹窗，画布底色 `--yuzi-phone-crop-stage-background` |
+
+控件桥规则：分组控件只换外观，数据仍走隐藏的原生 `select` / `input`。选择行用 `[data-settings-select="<select id>"]`，分段控件用 `.phone-ios-seg[data-settings-seg="<select id>"]`，步进器用 `.phone-ios-stepper[data-settings-stepper="<input id>"]`；页面调用 `bindSettingsGroupedControls(container, runtime)` 后，既有服务继续按原 id 监听 `change` / `input`。
+
+| token 组 | 覆盖内容 |
+| --- | --- |
+| `--yuzi-theme-group-*` → `--yuzi-settings-group-*` | 分组页底、卡片、分割线、按压底、分段选中底、危险色（白天 / 夜间成对） |
+| `--yuzi-settings-row-*` / `--yuzi-settings-seg-*` / `--yuzi-settings-stepper-*` / `--yuzi-settings-switch-*` | 行与控件尺寸、排版 |
+| `--yuzi-settings-icon-*` / `--yuzi-settings-thumb-*` / `--yuzi-settings-preview-*` / `--yuzi-settings-usage-*` | 图标网格、缩略图、预览块、容量条 |
+| `--yuzi-settings-layer-*` / `--yuzi-settings-sheet-*` / `--yuzi-settings-action-*` / `--yuzi-settings-alert-*` | 遮罩、底部面板、操作菜单、确认框 |
+
+
 ## 已确认边界
 
 - 不实现 Figma 搜索胶囊，也不保留无效占位按钮。

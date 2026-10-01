@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · 输入快捷键（设置二级页原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页补充样式：颜色只用 shared 配色变量 */
+.mt { margin-top: 22px; }
+button.row { width: 100%; border: 0; background: none; font: inherit; font-size: 16px; }
+.key-btn {
+    max-width: 200px; min-height: 30px; padding: 5px 10px; border: 0; border-radius: 8px;
+    background: var(--fill); color: var(--text); font: inherit; font-size: 13px; cursor: pointer;
+    font-family: ui-monospace, Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.key-btn.is-empty { color: var(--text-3); font-family: inherit; }
+.key-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.key-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rule-group textarea.field { min-height: 72px; }
+.rule-group textarea.field.short { min-height: 48px; }
+.rule-dirty { flex: 1; font-size: 12px; color: var(--danger); }
+.count-label { color: var(--text-2); font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="toolbar"><span>原型预览：</span><button type="button" id="toggle-theme">切换白天 / 夜间</button></div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" aria-label="返回设置" data-toast="原型：返回设置首页">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">输入快捷键</h1>
+    </header>
+    <main class="scroll">
+        <section class="group mt">
+            <label class="row"><span class="row-label">启用</span>
+                <span class="switch"><input type="checkbox" role="switch" id="master-enabled" aria-label="启用输入快捷键" checked><span></span></span></label>
+        </section>
+        <p class="group-footer">在酒馆输入框中，用按键插入文字或包裹选区。</p>
+        <section class="group mt">
+            <div class="row"><span class="row-label count-label" id="rule-count"></span></div>
+            <button type="button" class="row action" id="add-rule">新增规则</button>
+        </section>
+        <div id="rule-list"></div>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+<div class="notes">
+    <b>原功能 → 新位置</b>（源码 settings-app/pages/input-shortcuts.js）<br>
+    1. 区块标题「输入快捷键」→ 导航栏标题；区块说明 → 首组下方灰字。<br>
+    2. 区块右侧「启用」总开关 → 首组整行开关。<br>
+    3. 「N 条规则 · 修改后点击保存」→ 第二组首行，随增删更新。<br>
+    4. 「新增规则」→ 第二组整行操作；新规则默认启用、未录键、插入文本，标「未保存」。<br>
+    5. 规则卡标题「规则 N」→ 卡片外小标题。<br>
+    6. 规则「启用」开关 → 卡片首行；已保存规则立即生效，未保存规则只标「未保存」。<br>
+
+    7. 快捷键录制按钮 → 卡片「快捷键」行右侧键帽按钮：点击进入「请按键…」，keydown 记录组合、keyup 提交；再点一次或失焦取消；未录制显示「录制按键」。<br>
+    8. 动作下拉「插入文本 / 成对包裹」→「动作」行分段控件；切换只隐藏输入框，三个文本值都保留。<br>
+    9. 「插入内容」textarea → 插入文本时显示的块行。<br>
+    10. 「左侧内容」「右侧内容」textarea → 成对包裹时显示的两个块行。<br>
+    11. 「未保存」状态 → 卡片底部操作行左侧小字（录键、改动作、改文本、新增规则、未保存规则切换启用时出现）。<br>
+    12. 「删除」→ 底部操作行红色小按钮。<br>
+    13. 「保存」→ 底部操作行主按钮；失败提示沿用服务原文「请录制按键并填写插入内容或左右符号。」「这个快捷键已经有规则，请修改原规则或重新录制。」，成功提示「规则已保存」。<br>
+    14. 空状态「还没有规则，点击「新增规则」开始。」→ 规则列表位置的空状态卡片。<br>
+    15. 返回「‹ 设置」→ 公共导航栏（原型里仅弹提示）。<br>
+    <b>新增 / 改动的交互</b><br>
+    · 新增确认：删除规则改为 YZ.confirm 二次确认（原为直接删除）；确认框标题与说明是原型新拟文案。<br>
+    · 改动：动作下拉框改为分段控件；区块式布局改为 iOS 分组列表。<br>
+    · 原型模拟：总开关、已保存规则的启用开关、删除成功用 YZ.toast 提示（原实现只在失败时提示），带「原型：」前缀的是模拟文案。<br>
+    这只是视觉原型，数据为示例，不连接真实配置。
+</div>
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+    'use strict';
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
+    // 以下三个函数与 modules/input-shortcuts/config.js 逻辑一致
+    function normalizeShortcut(v) {
+        if (!v || typeof v.key !== 'string' || !v.key) return null;
+        const key = v.key.toLowerCase();
+        return { key, ctrl: key !== 'control' && v.ctrl === true, alt: key !== 'alt' && v.alt === true,
+            shift: key !== 'shift' && v.shift === true, meta: key !== 'meta' && v.meta === true };
+    }
+    function formatShortcut(s) {
+        const v = normalizeShortcut(s);
+        if (!v) return '录制按键';
+        const key = { ' ': 'Space', control: 'Ctrl', meta: 'Meta', arrowleft: '←', arrowright: '→', arrowup: '↑', arrowdown: '↓' }[v.key]
+            || (v.key.length === 1 ? v.key.toUpperCase() : v.key[0].toUpperCase() + v.key.slice(1));
+        return [v.ctrl && 'Ctrl', v.alt && 'Alt', v.shift && 'Shift', v.meta && 'Meta', key].filter(Boolean).join(' + ');
+    }
+    const shortcutId = (s) => { const n = normalizeShortcut(s); return n ? JSON.stringify(n) : ''; };
+    // 对应 normalizeInputShortcutRule 的有效性判断
+    const isValidRule = (r) => !!normalizeShortcut(r.shortcut)
+        && (r.action === 'insert' ? r.text.length > 0 : r.left.length + r.right.length > 0);
+
+    // 示例数据：saved 模拟已持久化配置，rules 是页面草稿
+    let seq = 3;
+    const rules = [
+        { id: 'shortcut-1', enabled: true, shortcut: { key: 'b', ctrl: true }, action: 'wrap', text: '', left: '**', right: '**' },
+        { id: 'shortcut-2', enabled: false, shortcut: { key: 'enter', alt: true }, action: 'insert', text: '（停顿片刻）', left: '', right: '' },
+    ];
+    const saved = new Map(rules.map((r) => [r.id, structuredClone(r)]));
+    const dirty = new Set();
+    let recording = null;
+    const list = $('#rule-list');
+
+
+    // ===== 渲染 =====
+    const ACTIONS = [['insert', '插入文本'], ['wrap', '成对包裹']];
+    // 三个 textarea 始终渲染，按动作切 hidden，切换动作不丢值
+    const field = (name, label, value, show, action, short) => `
+            <label class="row block" data-show="${show}"${show === action ? '' : ' hidden'}><span class="field-label">${label}</span>
+                <textarea class="field${short ? ' short' : ''}" data-field="${name}" rows="${short ? 2 : 3}" spellcheck="false">${esc(value)}</textarea></label>`;
+    function cardHtml(r, i) {
+        const n = i + 1;
+        const id = esc(r.id);
+        const empty = !normalizeShortcut(r.shortcut);
+        return `
+        <h2 class="group-header" id="rule-title-${id}">规则 ${n}</h2>
+        <section class="group rule-group" role="group" data-rule-id="${id}" aria-labelledby="rule-title-${id}">
+            <label class="row"><span class="row-label">启用</span>
+                <span class="switch"><input type="checkbox" role="switch" data-field="rule-enabled" aria-label="启用规则 ${n}"${r.enabled ? ' checked' : ''}><span></span></span></label>
+            <div class="row"><span class="row-label" id="key-label-${id}">快捷键</span>
+                <button type="button" class="key-btn${empty ? ' is-empty' : ''}" id="key-btn-${id}" data-action="record" aria-pressed="false" aria-labelledby="key-label-${id} key-btn-${id}">${esc(formatShortcut(r.shortcut))}</button></div>
+            <div class="row"><span class="row-label">动作</span>
+                <div class="seg" data-seg="action" role="group" aria-label="规则 ${n} 动作">${ACTIONS.map(([v, l]) => `<button type="button" data-value="${v}" aria-pressed="${r.action === v}">${l}</button>`).join('')}</div></div>${field('text', '插入内容', r.text, 'insert', r.action, false)}${field('left', '左侧内容', r.left, 'wrap', r.action, true)}${field('right', '右侧内容', r.right, 'wrap', r.action, true)}
+            <div class="row"><span class="rule-dirty" data-rule-status role="status">${dirty.has(r.id) ? '未保存' : ''}</span>
+                <span class="row-actions"><button type="button" class="mini-btn danger" data-action="delete">删除</button><button type="button" class="mini-btn primary" data-action="save">保存</button></span></div>
+        </section>`;
+    }
+    function render() {
+        stopRecording();
+        $('#rule-count').textContent = `${rules.length} 条规则 · 修改后点击保存`;
+        list.innerHTML = rules.length ? rules.map(cardHtml).join('')
+            : '<section class="group mt"><p class="empty">还没有规则，点击「新增规则」开始。</p></section>';
+    }
+    const focusIn = (ruleId, sel) => list.querySelector(`[data-rule-id="${CSS.escape(ruleId)}"] ${sel}`)?.focus();
+
+    // ===== 状态辅助 =====
+    const findRule = (id) => rules.find((r) => r.id === id);
+    function locate(el) {
+        const card = el.closest('[data-rule-id]');
+        return { card, rule: card ? findRule(card.dataset.ruleId) : undefined };
+    }
+    // 只更新状态小字，不重绘（保留输入焦点与光标）
+    function markDirty(rule, card) {
+        dirty.add(rule.id);
+        const status = card?.querySelector('[data-rule-status]');
+        if (status) status.textContent = '未保存';
+    }
+
+    // ===== 录制：同一时间只有一个按钮在录制 =====
+    function stopRecording(commit = false) {
+        if (!recording) return;
+        const { button, rule, candidate } = recording;
+        recording = null;
+        if (commit && candidate) {
+            rule.shortcut = candidate;
+            markDirty(rule, button.closest('[data-rule-id]'));
+        }
+        button.textContent = formatShortcut(rule.shortcut);
+        button.classList.toggle('is-empty', !normalizeShortcut(rule.shortcut));
+        button.setAttribute('aria-pressed', 'false');
+    }
+    function toggleRecording(button, rule) {
+        const was = recording?.button === button;
+        stopRecording();
+        if (was) return; // 再点一次 = 取消
+        recording = { button, rule, candidate: null };
+        button.textContent = '请按键…';
+        button.classList.remove('is-empty');
+        button.setAttribute('aria-pressed', 'true');
+        button.focus({ preventScroll: true });
+    }
+    // capture 阶段拦截：keydown 记候选，keyup 提交；跳过输入法组合
+    function onRecordingKey(event) {
+        if (!recording || event.target !== recording.button || event.isComposing || event.keyCode === 229) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (event.repeat) return;
+        if (event.type === 'keydown') {
+            recording.candidate = normalizeShortcut({ key: event.key, ctrl: event.ctrlKey, alt: event.altKey, shift: event.shiftKey, meta: event.metaKey });
+        } else stopRecording(true);
+    }
+    document.addEventListener('keydown', onRecordingKey, true);
+    document.addEventListener('keyup', onRecordingKey, true);
+    // 失焦取消（不提交候选）
+    list.addEventListener('focusout', (event) => {
+        if (recording && event.target === recording.button) stopRecording();
+    });
+    // 录制中按下同一按钮时阻止默认聚焦变化，避免部分浏览器先失焦取消再被点击重新开始
+    list.addEventListener('mousedown', (event) => {
+        if (recording && event.target.closest('.key-btn') === recording.button) event.preventDefault();
+    });
+
+    // ===== 规则操作 =====
+    function addRule() {
+        const rule = { id: `shortcut-${seq++}`, enabled: true, shortcut: null, action: 'insert', text: '', left: '', right: '' };
+        rules.push(rule);
+        dirty.add(rule.id);
+        render();
+        focusIn(rule.id, '.key-btn');
+    }
+    function saveRule(rule) {
+        // 校验与重复判断对应 settings-service.saveRule：只和其他已保存规则比较
+        if (!isValidRule(rule)) { YZ.toast('请录制按键并填写插入内容或左右符号。'); return; }
+        const id = shortcutId(rule.shortcut);
+        const clash = [...saved.values()].some((s) => s.id !== rule.id && shortcutId(s.shortcut) === id);
+        if (clash) { YZ.toast('这个快捷键已经有规则，请修改原规则或重新录制。'); return; }
+        rule.shortcut = normalizeShortcut(rule.shortcut);
+        saved.set(rule.id, structuredClone(rule));
+        dirty.delete(rule.id);
+        render();
+        focusIn(rule.id, '[data-action="save"]');
+        YZ.toast('规则已保存');
+    }
+    function deleteRule(rule) {
+        YZ.confirm({
+            title: '删除这条规则？',
+            message: '删除后无法恢复。',
+            confirmText: '删除',
+            onConfirm: () => {
+                const idx = rules.indexOf(rule);
+                if (idx < 0) return;
+                rules.splice(idx, 1);
+                saved.delete(rule.id);
+                dirty.delete(rule.id);
+                render();
+                // 触发按钮已被移除，弹层关闭后把焦点放到「新增规则」
+                requestAnimationFrame(() => $('#add-rule').focus({ preventScroll: true }));
+                YZ.toast('原型：规则已删除');
+            },
+        });
+    }
+
+    // ===== 事件绑定 =====
+    $('#add-rule').addEventListener('click', addRule);
+    $('#master-enabled').addEventListener('change', (event) => {
+        YZ.toast(`原型：输入快捷键已${event.target.checked ? '启用' : '停用'}`);
+    });
+    list.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const { rule } = locate(button);
+        if (!rule) return;
+        const action = button.dataset.action;
+        if (action === 'record') toggleRecording(button, rule);
+        else if (action === 'save') saveRule(rule);
+        else if (action === 'delete') deleteRule(rule);
+    });
+    // 分段控件由 shared 脚本切 aria-pressed 并派发 yz:seg；这里只切 textarea 显隐，不重绘
+    list.addEventListener('yz:seg', (event) => {
+        if (event.detail.name !== 'action') return;
+        const { rule, card } = locate(event.target);
+        const value = event.detail.value;
+        if (!rule || rule.action === value) return;
+        rule.action = value;
+        card.querySelectorAll('[data-show]').forEach((el) => { el.hidden = el.dataset.show !== value; });
+        markDirty(rule, card);
+    });
+    list.addEventListener('input', (event) => {
+        const name = event.target.dataset.field;
+        if (!['text', 'left', 'right'].includes(name)) return;
+        const { rule, card } = locate(event.target);
+        if (!rule) return;
+        rule[name] = event.target.value;
+        markDirty(rule, card);
+    });
+    list.addEventListener('change', (event) => {
+        if (event.target.dataset.field !== 'rule-enabled') return;
+        const { rule, card } = locate(event.target);
+        if (!rule) return;
+        const on = event.target.checked;
+        rule.enabled = on;
+        if (saved.has(rule.id)) {
+            // 已保存规则：立即写入（模拟 service.setRuleEnabled）
+            saved.get(rule.id).enabled = on;
+            YZ.toast(`原型：规则已${on ? '启用' : '停用'}`);
+        } else markDirty(rule, card);
+    });
+
+    render();
+})();
+</script>
+</body>
+</html>
+

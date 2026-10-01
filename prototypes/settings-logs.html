@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · 设置 · 日志（iOS 分组列表原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 独立原型，不参与构建。只用 shared 颜色变量，白天 / 夜间自动跟随。 */
+.phone [hidden] { display: none !important; }
+.log-count { font-variant-numeric: tabular-nums; }
+.trimmed-row .row-label { font-size: 13px; line-height: 1.5; color: var(--danger); padding: 8px 0; }
+.log-row-btn { width: 100%; border: 0; background: none; font: inherit; }
+.log-row-btn:disabled { color: var(--text-3); cursor: default; }
+.log-row-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.log-empty-group { margin-top: 12px; }
+.log-empty-group .empty { margin: 0; }
+.log-list { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+
+/* 单条失败记录卡片 */
+.log-head { display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; }
+.log-title { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.log-kind { color: var(--danger); }
+.log-meta { display: block; margin-top: 3px; font-size: 12px; font-weight: 400; line-height: 1.5; color: var(--text-2); }
+.log-details { position: relative; }
+.log-head + .log-details::before, .log-details + .log-details::before {
+    content: ""; position: absolute; top: 0; left: 16px; right: 0;
+    height: 1px; transform: scaleY(0.5); background: var(--sep);
+}
+.log-details > summary {
+    list-style: none; display: flex; align-items: center; min-height: 44px; padding: 0 16px;
+    cursor: pointer; font-size: 15px; color: var(--text);
+}
+.log-details > summary::-webkit-details-marker { display: none; }
+.log-details > summary::after {
+    content: "›"; margin-left: auto; font-size: 18px; line-height: 1; color: var(--text-3);
+    transition: transform 0.2s;
+}
+.log-details[open] > summary::after { transform: rotate(90deg); }
+.log-details > summary:active { background: var(--fill); }
+.log-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.log-body {
+    margin: 0 16px 12px; padding: 10px 12px; border-radius: 8px;
+    background: var(--fill); font-size: 13px; line-height: 1.6; color: var(--text);
+}
+pre.log-body {
+    white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px;
+}
+
+/* 实时新增：新卡片短暂浅主题色高亮 */
+@keyframes log-in { from { background: var(--accent-soft); } to { background: var(--card); } }
+.log-card.is-new { animation: log-in 1.6s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+    .log-card.is-new { animation: none; }
+    .log-details > summary::after { transition: none; }
+}
+</style>
+</head>
+
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <button type="button" id="sim-add">模拟新增一条失败</button>
+    <button type="button" id="sim-scope">模拟切换酒馆聊天</button>
+    <button type="button" id="sim-trim" aria-pressed="false">模拟达到内存上限</button>
+    <button type="button" id="sim-clip" aria-pressed="false">模拟剪贴板不可用</button>
+</div>
+<div class="phone" id="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" aria-label="返回设置" data-toast="返回设置首页（原型不跳转）">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">日志</h1>
+    </header>
+    <main class="scroll" id="log-scroll">
+        <h2 class="group-header" id="log-group-title">当前聊天的 QQ 日志</h2>
+        <section class="group" aria-labelledby="log-group-title">
+            <div class="row"><span class="row-label log-count" id="log-count" role="status">0 / 50 条</span></div>
+            <div class="row trimmed-row" id="log-trimmed" hidden><span class="row-label">日志文本已达到内存上限，部分最旧记录已移除。</span></div>
+            <button type="button" class="row action danger log-row-btn" id="clear-logs">清空日志</button>
+        </section>
+        <p class="group-footer">仅记录失败，最新的在前。最近 50 条；刷新或切换酒馆聊天后清空。</p>
+        <section class="group log-empty-group" id="log-empty"><p class="empty">暂无失败日志。已读不回和正常取消不会记为错误。</p></section>
+        <div class="log-list" id="log-list"></div>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<div class="notes">
+    <b>原功能 → 新位置（以 modules/settings-app/pages/logs.js 为准）：</b><br>
+    1. 页面标题「日志」、返回按钮 → 公共骨架标题栏与「‹ 设置」。<br>
+    2. 区块标题「当前聊天的 QQ 日志」→ 卡片外 group-header。<br>
+    3. 区块说明「仅记录失败，最新的在前……」→ 卡片下 group-footer。<br>
+    4. 日志计数「N / 50 条」（role=status）→ 卡片第一行，保留 role=status。<br>
+    5. 内存上限提示「日志文本已达到内存上限……」→ 卡片内红字行，仅 trimmed 时显示。<br>
+    6. 「清空日志」按钮（原在标题右侧）→ 卡片内整行红字操作；无日志时禁用（与源码一致）。<br>
+    7. 空状态「暂无失败日志。已读不回和正常取消不会记为错误。」→ 独立卡片 empty，有日志时隐藏。<br>
+    8. 每条记录标题「来源 · 类型」→ 记录卡片头标题，类型用红字。<br>
+    9. 记录副标题「时间 · 会话 · 模型」（空值省略）→ 标题下灰色小字。<br>
+    10. 「复制」按钮（aria-label「复制本条日志」）→ 记录卡片头右侧小按钮；成功 / 失败提示沿用源码原文。<br>
+    11. 四个折叠区「本次 AI 原始返回」「这次是什么问题」「你可以怎么做」「技术详情」→ 卡片内折叠行，展开后显示正文；原始返回与技术详情用等宽块，空值显示源码兜底文案。<br>
+    12. 实时更新（subscribe 增量插入、已展开的折叠不被重建；切换聊天后列表清空并回到顶部）→ 原型用顶部「模拟新增一条失败」「模拟切换酒馆聊天」演示。<br>
+    <b>新增 / 改动的交互：</b><br>
+    · 清空日志：源码点一下直接清空；原型改为 YZ.confirm 二次确认（<b>新增确认</b>），确认弹窗标题与说明为新增文案。<br>
+    · 新增记录插入顶部时短暂浅色高亮（新增视觉反馈，减少动态效果时关闭）。<br>
+    · 源码没有「刷新」按钮，日志在刷新页面或切换酒馆聊天时自动清空，原型不新增刷新按钮。<br>
+    · 超过 50 条时移除最旧一条，原型同样保留上限。<br>
+    这只是视觉原型，所有数据都是示例，不连接真实小手机；复制只模拟提示，不写入剪贴板。
+</div>
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+/* 示例数据：文案取自 modules/qq-v2/request/failure-log.js 的 explain() 与 pages/logs.js，均为源码原文 */
+const LOG_LIMIT = 50;
+const NO_RESPONSE = '本次未取得 AI 回复正文';
+const NO_DETAIL = '当前调用通道未提供详细错误信息';
+const KINDS = {
+    empty: ['空回', '这次空回了，没拿到可用的 AI 回复正文。', '先重 roll 一次；还是空回的话，检查一下预设，也可以试试“预设缝破限”。空回原因不一定是限制拦截，具体还要看接口有没有给出说明。'],
+    format: ['格式错误', 'AI 给出内容了，但格式错了，小手机没识别出来——“AI 区了”这类情况。', '先重 roll 一次。恢复过 QQ 默认提示词了吗？没恢复的话可以先试试；还是不行，再考虑换模型。'],
+    action: ['动作不合法', 'AI 给出内容了，但其中的人物、会话引用或动作不符合当前 QQ 状态，整批回复没有应用。具体原因见技术详情。', '先重 roll 一次；仍失败时，检查或恢复 QQ 默认提示词，并检查对应的人物和会话状态。'],
+    config: ['配置问题', 'QQ 请求没能正常发出去，API 或提示词配置不完整或不可用。', '检查 QQ 当前选择的 API 和提示词预设，确认地址、密钥与模型已正确填写，再回 QQ 重试。'],
+    save: ['回复保存失败', 'AI 已经返回，但回复没能成功保存。这不是模型格式问题。', '检查浏览器本地存储是否可用、空间是否充足，再回 QQ 重试。可以先复制本次返回，避免刷新后丢失。'],
+    network: ['API / 网络失败', '这次请求没有正常完成，或接口返回的数据无法读取。具体错误见技术详情。', '检查网络和 API 服务是否可用；若接口报告密钥、额度、频率或模型问题，按实际提示处理后再重试。'],
+    unknown: ['原因不明', '这次 QQ 请求失败了，但当前调用通道没有提供足够信息，暂时无法确定具体原因。', '先查看技术详情；使用“数据库当前 API”时，也检查数据库插件的提示。不要仅凭没有回复就判断为空回或格式错误。'],
+};
+/* source 取自 request/service.js 与 proactive/service.js；会话、模型为空时副标题省略 */
+const SAMPLES = [
+    { source: 'QQ · 私聊回复', kind: 'network', conversation: '小林', model: 'gpt-4o-mini', response: '', detail: 'http_error\nRequest failed\nHTTP 429\n{"error":{"message":"Rate limit reached","api_key":"[已隐藏]"}}' },
+    { source: 'QQ · 群聊回复', kind: 'format', conversation: '周末摄影小队', model: 'deepseek-chat', response: '好的，我来扮演群里的大家～\n小林：今天去哪拍？', detail: 'protocol_invalid\nreply is not valid protocol JSON' },
+    { source: 'QQ · 私聊主动消息', kind: 'empty', conversation: '阿梓', model: 'claude-3-5-sonnet', response: '', detail: 'empty_response\nfinish_reason: content_filter' },
+    { source: 'QQ · 群聊主动消息', kind: 'action', conversation: '周末摄影小队', model: 'gpt-4o', response: '{"actions":[{"type":"send","person":"未知成员","text":"在吗"}]}', detail: 'manual_action_unknown_person\nperson not found' },
+    { source: 'QQ · 私聊回复', kind: 'save', conversation: '小林', model: 'gpt-4o-mini', response: '{"messages":[{"text":"刚到家，累死了"}]}', detail: 'QuotaExceededError\nThe quota has been exceeded.' },
+    { source: 'QQ · 回复', kind: 'config', conversation: '', model: '', response: '', detail: 'endpoint_missing\nAPI endpoint is empty' },
+    { source: 'QQ · 主动消息', kind: 'unknown', conversation: '', model: '', response: '', detail: '' },
+];
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (id) => document.getElementById(id);
+const list = $('log-list');
+let serial = 0, next = 0, entries = [], trimmed = false, clipFail = false, animate = false;
+function makeEntry() {
+    const s = SAMPLES[next++ % SAMPLES.length];
+    const [title, explanation, suggestion] = KINDS[s.kind];
+    return { ...s, id: ++serial, time: new Date().toLocaleString('zh-CN', { hour12: false }), title, explanation, suggestion };
+}
+/* 与源码 formatFailureLog 拼接顺序一致；原型只打印到控制台，不写剪贴板 */
+function formatFailureLog(e) {
+    return [`${e.source} · ${e.title}`, e.time, e.conversation, e.model, '本次 AI 原始返回', e.response || NO_RESPONSE,
+        '这次是什么问题', e.explanation, '你可以怎么做', e.suggestion, '技术详情', e.detail || NO_DETAIL].filter(Boolean).join('\n');
+}
+const fold = (label, html) => `<details class="log-details"><summary>${label}</summary>${html}</details>`;
+function cardHtml(e) {
+    const meta = [e.time, e.conversation, e.model].filter(Boolean).join(' · ');
+    return `<article class="group log-card${animate ? ' is-new' : ''}" data-log-id="${e.id}">
+        <div class="log-head"><div class="log-title">${esc(e.source)} · <span class="log-kind">${esc(e.title)}</span><span class="log-meta">${esc(meta)}</span></div>
+        <div class="row-actions"><button type="button" class="mini-btn primary" data-copy-log="${e.id}" aria-label="复制本条日志">复制</button></div></div>
+        ${fold('本次 AI 原始返回', `<pre class="log-body">${esc(e.response || NO_RESPONSE)}</pre>`)}
+        ${fold('这次是什么问题', `<p class="log-body">${esc(e.explanation)}</p>`)}
+        ${fold('你可以怎么做', `<p class="log-body">${esc(e.suggestion)}</p>`)}
+        ${fold('技术详情', `<pre class="log-body">${esc(e.detail || NO_DETAIL)}</pre>`)}
+    </article>`;
+}
+/* 同源码 sync：只移除消失的卡片、在顶部插入新卡片，已展开的折叠保持不变 */
+function sync(resetScroll) {
+    const ids = new Set(entries.map((e) => String(e.id)));
+    for (const card of [...list.children]) if (!ids.has(card.dataset.logId)) card.remove();
+    for (const e of [...entries].reverse()) {
+        if (!list.querySelector(`[data-log-id="${e.id}"]`)) list.insertAdjacentHTML('afterbegin', cardHtml(e));
+    }
+    $('log-empty').hidden = entries.length > 0;
+    $('log-count').textContent = `${entries.length} / ${LOG_LIMIT} 条`;
+    $('log-trimmed').hidden = !trimmed;
+    $('clear-logs').disabled = entries.length === 0;
+    if (resetScroll) $('log-scroll').scrollTop = 0; // 源码：revision 变化（清空 / 切换聊天）时回到顶部
+}
+function record() {
+    entries.unshift(makeEntry());
+    if (entries.length > LOG_LIMIT) entries.pop();
+    sync(false);
+}
+function reset() { entries = []; trimmed = false; sync(true); }
+
+document.addEventListener('click', (event) => {
+    const btn = event.target.closest('button');
+    if (!btn) return;
+    if (btn.id === 'clear-logs') {
+        // 新增确认：源码直接 log.clear()，原型改为二次确认
+        YZ.confirm({ title: '清空日志？', message: '将清空当前聊天的全部失败日志，清空后无法恢复。', confirmText: '清空', onConfirm: () => reset() });
+    } else if (btn.matches('[data-copy-log]')) {
+        const entry = entries.find((e) => String(e.id) === btn.dataset.copyLog);
+        if (!entry) return;
+        if (clipFail) { YZ.toast('复制失败，请展开原文后手动复制。'); return; }
+        console.log(formatFailureLog(entry));
+        YZ.toast('日志已复制，请留意其中的对话隐私。');
+    } else if (btn.id === 'sim-add') {
+        animate = true; record(); animate = false;
+    } else if (btn.id === 'sim-scope') {
+        reset(); YZ.toast('已模拟切换酒馆聊天，日志已清空');
+    } else if (btn.id === 'sim-trim') {
+        trimmed = !trimmed; btn.setAttribute('aria-pressed', String(trimmed)); sync(false);
+    } else if (btn.id === 'sim-clip') {
+        clipFail = !clipFail; btn.setAttribute('aria-pressed', String(clipFail));
+        YZ.toast(clipFail ? '已模拟剪贴板不可用' : '已恢复剪贴板');
+    }
+});
+/* 初始示例：3 条记录，最新的在前 */
+for (let i = 0; i < 3; i += 1) record();
+</script>
+</body>
+</html>
+
+

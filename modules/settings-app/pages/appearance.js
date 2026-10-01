@@ -2,6 +2,7 @@ import { t, formatPhoneDateTime } from '../../i18n/index.js';
 import { buildAppearancePageHtml } from '../layout/frame.js';
 import { downloadTextFile } from '../services/media-upload.js';
 import { showConfirmDialog } from '../ui/confirm-dialog.js';
+import { bindSettingsGroupedControls } from '../ui/settings-controls.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { defaultSettings } from '../../settings.js';
 
@@ -53,14 +54,14 @@ function getRepositoryPackMetaText(pack) {
 function renderAppearancePackRepositoryList(listEl, result, settings = {}, selectedPackId = '') {
     if (!listEl) return;
     if (!result?.success) {
-        listEl.innerHTML = `<div class="phone-settings-note">${escapeHtml(result?.message || t("美化包仓库读取失败"))}</div>`;
+        listEl.innerHTML = `<section class="phone-ios-group"><div class="phone-ios-row phone-ios-row-empty">${escapeHtml(result?.message || t("美化包仓库读取失败"))}</div></section>`;
         return;
     }
 
     const packs = Array.isArray(result.packs) ? result.packs : [];
     const activePackId = String(settings?.appearanceActivePackId || '').trim();
     if (!packs.length) {
-        listEl.innerHTML = `<div class="phone-settings-note">${t("暂无美化包，请先导入。")}</div>`;
+        listEl.innerHTML = `<section class="phone-ios-group"><div class="phone-ios-row phone-ios-row-empty">${t("暂无美化包，请先导入。")}</div></section>`;
         return;
     }
 
@@ -78,29 +79,32 @@ function renderAppearancePackRepositoryList(listEl, result, settings = {}, selec
         const id = normalizeRepositoryPackId(pack);
         const isActive = id && id === activePackId;
         const title = pack?.name || pack?.sourceFileName || t("未命名美化包");
-        const activeSuffix = isActive ? t(" · 当前应用") : '';
+        const activeSuffix = '';
         const label = `${title}${activeSuffix}`;
-        return `<option value="${escapeHtmlAttr(id)}" ${id === selectedPackIdValue ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+        return `<option value="${escapeHtmlAttr(id)}" data-sub="${escapeHtmlAttr(getRepositoryPackMetaText(pack))}" data-badge="${isActive ? escapeHtmlAttr(t("使用中")) : ''}" ${id === selectedPackIdValue ? 'selected' : ''}>${escapeHtml(label)}</option>`;
     }).join('');
 
+    // 分组卡片：包名 + 使用中标签 + 汇总副标题；切换走底部选择面板，原生 select 隐藏保留。
     listEl.innerHTML = `
-        <label class="phone-settings-field-inline phone-settings-field-full" for="phone-appearance-pack-select">
-            <span>${t`选择美化包`}</span>
-            <select id="phone-appearance-pack-select" class="phone-settings-select">
+        <section class="phone-ios-group">
+            <div class="phone-ios-row phone-ios-pack-head phone-appearance-pack-repository-summary" data-selected-pack-id="${escapeHtmlAttr(selectedPackIdValue)}">
+                <span class="phone-ios-row-label">
+                    <span class="phone-ios-pack-title">${escapeHtml(selectedTitle)}</span>${selectedIsActive ? `<span class="phone-ios-badge">${t("使用中")}</span>` : ''}
+                    <span class="phone-ios-row-sub">${escapeHtml(selectedMetaText)}</span>
+                    ${selectedSourceFileName ? `<span class="phone-ios-row-sub">${escapeHtml(selectedSourceFileName)}</span>` : ''}
+                </span>
+            </div>
+            <button type="button" class="phone-ios-row is-tappable" data-settings-select="phone-appearance-pack-select" aria-haspopup="dialog">
+                <span class="phone-ios-row-label">${t`切换美化包`}</span>
+                <span class="phone-ios-row-value"><span class="phone-ios-row-value-text">${escapeHtml(t`共 ${packs.length} 个`)}</span><span class="phone-ios-row-chevron" aria-hidden="true">›</span></span>
+            </button>
+            <select id="phone-appearance-pack-select" class="phone-settings-select" aria-label="${escapeHtmlAttr(t`选择美化包`)}" hidden>
                 ${optionsHtml}
             </select>
-        </label>
-        <div class="phone-appearance-pack-repository-summary" data-selected-pack-id="${escapeHtmlAttr(selectedPackIdValue)}">
-            <div class="phone-settings-subtitle">
-                ${escapeHtml(selectedTitle)}${selectedIsActive ? `<span class="phone-settings-note"> ${t("· 当前应用")}</span>` : ''}
-            </div>
-            <div class="phone-settings-note">${escapeHtml(selectedMetaText)}${selectedSourceFileName ? ` · ${escapeHtml(selectedSourceFileName)}` : ''}</div>
-            <div class="phone-settings-note">${t`更新时间：${escapeHtml(formatRepositoryTime(selectedPack?.updatedAt))}`}</div>
-        </div>
-        <div class="phone-settings-action phone-settings-action-wrap">
-            <button type="button" class="phone-settings-btn" data-action="apply-appearance-pack" data-pack-id="${escapeHtmlAttr(selectedPackIdValue)}" ${selectedIsActive ? 'disabled' : ''}>${t`应用`}</button>
-            <button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="delete-appearance-pack" data-pack-id="${escapeHtmlAttr(selectedPackIdValue)}">${t`删除`}</button>
-        </div>
+            <button type="button" class="phone-ios-row is-action" data-action="apply-appearance-pack" data-pack-id="${escapeHtmlAttr(selectedPackIdValue)}" ${selectedIsActive ? 'disabled' : ''}>${selectedIsActive ? t`已应用` : t`应用此美化包`}</button>
+            <button type="button" class="phone-ios-row is-action is-danger" data-action="delete-appearance-pack" data-pack-id="${escapeHtmlAttr(selectedPackIdValue)}" aria-haspopup="dialog">${t`删除此美化包`}</button>
+        </section>
+        <p class="phone-ios-group-footer">${t`更新时间：${escapeHtml(formatRepositoryTime(selectedPack?.updatedAt))}`}</p>
     `;
 }
 
@@ -182,12 +186,23 @@ function bindAppearanceFontLibraryActions(ctx, runtime) {
     if (deleteBtn) {
         cleanupFns.push(bindEvent(deleteBtn, 'click', () => {
             const fontId = selectEl?.value || '';
-            const result = appearancePageService.deleteAppearanceFont(fontId);
-            appearancePageService.applyAppearanceFontLibrary();
-            showToast(container, result.message || (result.success ? t("字体已删除") : t("字体删除失败")), !result.success);
-            if (result.success) {
-                rerenderKeepScroll();
-            }
+            showConfirmDialog(
+                container,
+                t("删除当前字体？"),
+                t("删除后将切换回系统默认字体，此操作无法撤销。"),
+                () => {
+                    if (isDisposed()) return;
+                    const result = appearancePageService.deleteAppearanceFont(fontId);
+                    appearancePageService.applyAppearanceFontLibrary();
+                    showToast(container, result.message || (result.success ? t("字体已删除") : t("字体删除失败")), !result.success);
+                    if (result.success) {
+                        rerenderKeepScroll();
+                    }
+                },
+                t("删除"),
+                t("取消"),
+                runtime,
+            );
         }));
     }
 
@@ -463,7 +478,7 @@ export function renderAppearancePage(ctx) {
             el.value = draft.value;
             if (typeof draft.checked === 'boolean') el.checked = draft.checked;
         }
-        container.querySelector('#phone-language-select')?.focus({ preventScroll: true });
+        container.querySelector('[data-settings-select="phone-language-select"]')?.focus({ preventScroll: true });
     });
 
     bindEvent(container.querySelector('.phone-nav-back'), 'click', () => {
@@ -472,6 +487,7 @@ export function renderAppearancePage(ctx) {
     });
 
     if (runtime?.registerCleanup) {
+        runtime.registerCleanup(bindSettingsGroupedControls(container, runtime));
         runtime.registerCleanup(setupBgUpload(container, { runtime }));
         runtime.registerCleanup(setupIconLayoutSettings(container));
         runtime.registerCleanup(setupAppearanceToggles(container));
@@ -489,6 +505,7 @@ export function renderAppearancePage(ctx) {
         runtime.registerCleanup(setupHomeAppLabelColorSettings(container));
         runtime.registerCleanup(setupPhoneThemeModeSettings(container));
     } else if (typeof registerCleanup === 'function') {
+        registerCleanup(bindSettingsGroupedControls(container, null));
         registerCleanup(setupBgUpload(container));
         registerCleanup(setupIconLayoutSettings(container));
         registerCleanup(setupAppearanceToggles(container));

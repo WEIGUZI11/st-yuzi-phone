@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>弹幕设置 · iOS 分组列表原型</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页补充：只用 shared 配色变量，白天 / 夜间自动跟随 */
+.mini-btn:disabled { opacity: 0.4; cursor: default; }
+.src-side { display: flex; align-items: center; gap: 6px; }
+.model-pick {
+    display: inline-flex; gap: 2px; margin-top: 2px; padding: 0; border: 0; background: none;
+    font: inherit; font-size: 12px; color: var(--accent); cursor: pointer;
+}
+.model-pick:disabled { color: var(--text-2); cursor: default; }
+.src-status { display: block; margin-top: 2px; font-size: 12px; color: var(--text-3); }
+.src-status.is-format_mismatch { color: var(--danger); }
+.is-off .src-name, .is-off > .row-label { color: var(--text-3); }
+.num-step { display: flex; align-items: center; gap: 8px; }
+.num-step output { min-width: 48px; text-align: right; color: var(--text-2); font-size: 15px; }
+.num-step button {
+    width: 30px; height: 28px; border: 0; border-radius: 8px;
+    background: var(--fill); color: var(--text); font-size: 17px; cursor: pointer;
+}
+.num-step button:disabled { opacity: 0.4; cursor: default; }
+.row.slider { flex-direction: column; align-items: stretch; gap: 6px; }
+.slider-head { display: flex; justify-content: space-between; align-items: baseline; }
+.slider-head output { color: var(--text-2); font-size: 15px; }
+.color-idx { width: 16px; font-size: 13px; color: var(--text-3); text-align: center; }
+.swatch {
+    position: relative; width: 30px; height: 30px; flex-shrink: 0;
+    border-radius: 8px; border: 1px solid var(--sep); overflow: hidden;
+}
+.swatch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.swatch span { position: absolute; inset: 0; background: var(--sw); pointer-events: none; }
+.hex {
+    flex: 1; min-width: 0; padding: 6px 10px; border: 0; border-radius: 8px;
+    background: var(--fill); color: var(--text); font: 15px ui-monospace, Menlo, monospace;
+}
+.hex:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.state-note { padding: 14px 16px; font-size: 14px; color: var(--text-2); }
+/* 滚动预览画布：与裁剪画布同为固定深底，白色弹幕在白天模式下也看得清 */
+.ov-preview { position: relative; overflow: hidden; border-radius: 10px; background: #1A1B1A; }
+.ov-preview span { position: absolute; left: 100%; white-space: nowrap; animation: pv-run linear infinite; }
+@keyframes pv-run { to { transform: translateX(calc(-100% - 360px)); } }
+@media (prefers-reduced-motion: reduce) { .ov-preview span { position: static; display: block; padding-left: 8px; animation: none; } }
+</style>
+</head>
+<body>
+
+<div class="toolbar"><span>原型预览：</span><button type="button" id="toggle-theme">切换白天 / 夜间</button><button type="button" id="cycle-state">页面状态：正常</button></div>
+<div class="phone">
+<div class="island" aria-hidden="true"></div>
+<div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+<header class="nav">
+<button type="button" class="nav-back" aria-label="返回设置">‹ 设置</button>
+<h1 class="nav-title" style="margin:0">弹幕设置</h1>
+</header>
+<main class="scroll">
+<div id="st-loading" hidden>
+<h2 class="group-header">正在读取表格</h2>
+<section class="group"><p class="state-note">请稍候……</p></section>
+<p class="group-footer">正在通过共享表格目录识别可用内容源。</p>
+</div>
+<div id="st-error" hidden>
+<h2 class="group-header">暂时无法读取表格</h2>
+<section class="group"><p class="state-note status-line error">弹幕设置没有修改任何现有配置。</p></section>
+<p class="group-footer">当前表格目录不可用，请稍后重试。</p>
+</div>
+<div id="st-ready">
+<h2 class="group-header">播放开关</h2>
+<section class="group">
+<label class="row"><span class="row-label">启用弹幕与卡片<span class="row-sub">自动播放已勾选来源的更新内容。</span></span><span class="switch"><input type="checkbox" id="ov-enabled" checked><span></span></span></label>
+</section>
+<p class="group-footer">关闭后停止播放与测试；关闭手机不会停止播放。</p>
+<h2 class="group-header">播放来源</h2>
+<section class="group" id="src-list"></section>
+<p class="group-footer">选择播放方式，按列表顺序播放。</p>
+<h2 class="group-header">播放参数</h2>
+<section class="group">
+<div class="row"><span class="row-label">编辑类型</span><div class="seg" data-seg="model" role="group" aria-label="编辑类型"><button type="button" data-value="bar" aria-pressed="true" title="横向滚动弹幕">弹幕</button><button type="button" data-value="popup" aria-pressed="false" title="普通表格浮窗">浮窗</button><button type="button" data-value="inline" aria-pressed="false" title="插入正文">正文</button></div></div>
+</section>
+<section class="group" id="param-list" style="margin-top:10px"></section>
+<p class="group-footer">仅切换参数编辑，来源的播放方式在上方选择。</p>
+<h2 class="group-header" id="color-title">弹幕调色板</h2>
+<section class="group" id="color-list"></section>
+<p class="group-footer" id="color-desc"></p>
+<h2 class="group-header">测试与清空</h2>
+<section class="group">
+<div class="row action" id="ov-test" role="button" tabindex="0">测试已勾选来源</div>
+<div class="row action danger" id="ov-clear" role="button" tabindex="0">清空当前内容</div>
+</section>
+<p class="group-footer">测试已勾选来源：弹幕播放完整内容，弹窗每表取首条。需先开启播放。</p>
+</div>
+</main>
+<div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<div class="notes">
+<b>原功能 → 新位置</b><br>
+总开关 checkbox「启用弹幕与卡片」→「播放开关」分组 switch，副标题保留原说明<br>
+来源勾选 checkbox → 来源行右侧 switch；不可用来源禁用并显示「格式不匹配 / 暂未适配」<br>
+来源播放模型 select → 来源名下方「模型 ›」按钮，点开 YZ.sheet；只有一个模型时禁用<br>
+↑ / ↓ 排序按钮 → 来源行右侧上移 / 下移，首行上移、末行下移禁用<br>
+无表格提示 → 来源分组内空状态「当前数据库没有可显示的物理表格。」<br>
+编辑类型 select → 「播放参数」分段控件（弹幕 / 浮窗 / 正文，悬停显示全称）<br>
+弹幕区域、弹窗位置、弹窗区域、网格列数、弹窗大小 select → 分段控件<br>
+全部 number 输入 → 步进器，范围、步长、小数位与原输入一致<br>
+调色板 / 弹窗背景色 → 同一分组按编辑类型切换：色块 + HEX + 吸管，调色板另有删除 / 添加颜色 / 恢复默认<br>
+测试 / 清空按钮 → 「测试与清空」分组操作行<br>
+<b>新增 / 改动交互</b><br>
+新增确认：「清空当前内容」先弹 YZ.confirm，确认后才清空。<br>
+新增：弹幕滚动预览，随速度 / 字号 / 透明度 / 调色板实时变化；系统开启减少动态效果时静止显示。<br>
+改动：居中模式下「同时显示」固定为 1 并禁用，说明改为居中提示。<br>
+不变：修改即保存，成功无提示，失败 toast「弹幕设置保存失败，请稍后重试。」（原型只模拟成功）。<br>
+不变：未开启播放时测试不可用；无勾选来源时提示「请先勾选至少一个可用表格来源。」
+</div>
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = (s) => document.querySelector(s);
+const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
+// 模型 ID 仅为原型内部标识；标签照搬 builder 的 MODEL_LABELS
+const BAR = 'bar', POP = 'popup', INL = 'inline';
+const LABEL = { [BAR]: '横向滚动弹幕', [POP]: '普通表格浮窗', [INL]: '插入正文' };
+const AREA = [['25', '上方 25%'], ['50', '上方 50%'], ['75', '上方 75%'], ['100', '全屏']];
+const SIZE = [['compact', '紧凑'], ['normal', '正常'], ['large', '放大']];
+const COLS = [['1', '1 列'], ['2', '2 列'], ['3', '3 列']];
+const MAX_PALETTE = 16;
+const EYE = typeof window.EyeDropper === 'function';
+const labelOf = (list, v) => (list.find(([k]) => k === String(v)) || ['', ''])[1];
+const state = {
+    enabled: true, editing: BAR,
+    tables: [
+        { key: 'qq', name: 'QQ 消息', availability: 'available', enabled: true, modelIds: [BAR, POP, INL], modelId: BAR },
+        { key: 'live', name: '直播间弹幕', availability: 'available', enabled: false, modelIds: [BAR, POP], modelId: POP },
+        { key: 'memo', name: '角色备忘', availability: 'available', enabled: true, modelIds: [POP], modelId: POP },
+        { key: 'bag', name: '背包', availability: 'format_mismatch', enabled: false, modelIds: [] },
+        { key: 'map', name: '地图', availability: 'unsupported', enabled: false, modelIds: [] },
+    ],
+    [BAR]: { areaPercent: 75, eternal: false, maxConcurrent: 3, interval: 1.5, duration: 8, fontSize: 16, opacity: 0.9, palette: ['#FFFFFF', '#F2C94C', '#8DAF9C'] },
+    [POP]: { placement: 'random', areaPercent: 75, maxConcurrent: 2, interval: 0.5, duration: 5, columnCount: 2, sizePreset: 'normal', radius: 16, opacity: 0.92, bg: '#F8F6F2' },
+    [INL]: { columnCount: 1, sizePreset: 'normal', radius: 12, opacity: 1, bg: '#FFFFFF' },
+};
+const card = () => state[state.editing === INL ? INL : POP];
+const bar = () => state[BAR];
+const pop = () => state[POP];
+// [取模型, 字段, 标签, min, max, step, 单位, 说明] —— 范围 / 精度 / 文案照搬 builder
+const NUM = {
+    density: [bar, 'maxConcurrent', '密度', 1, 6, 1, '条', '控制垂直轨道数量与视觉密度（1–6）。'],
+    interval: [bar, 'interval', '间隔', 0.5, 10, 0.1, '秒', '相邻两条弹幕发射的最短时间（0.5–10 秒）。'],
+    duration: [bar, 'duration', '速度', 4, 20, 0.5, '秒', '数字越小移动越快（4–20 秒穿屏）。'],
+    fontSize: [bar, 'fontSize', '字号', 12, 28, 1, 'px', '弹幕文字大小（12–28px）。'],
+    opacity: [bar, 'opacity', '透明度', 0.3, 1, 0.01, '', '只改变弹幕文字透明度，不增加全屏滤镜。'],
+    pMax: [pop, 'maxConcurrent', '同时显示', 1, 6, 1, '张', '最多同时显示的普通表格弹窗数量（1–6）。'],
+    pInterval: [pop, 'interval', '交接间隔', 0, 2, 0.1, '秒', '同一来源相邻弹窗的发射间隔（0–2 秒）。'],
+    pDuration: [pop, 'duration', '停留时长', 1, 15, 0.5, '秒', '每张弹窗从淡入到淡出的显示时长（1–15 秒）。'],
+    radius: [card, 'radius', '圆角', 8, 32, 1, 'px', '普通表格弹窗圆角（8–32px）。'],
+    pOpacity: [card, 'opacity', '背景透明度', 0.72, 1, 0.01, '', '只调整弹窗背景透明度，文字保持清晰。'],
+};
+
+const SAMPLE = ['今天也辛苦了', '这里有新消息', '弹幕预览示例', '收到啦', '前方高能'];
+const dec = (s) => (String(s).split('.')[1] || '').length;
+const fmt = (v, s, u) => `${Number(v).toFixed(dec(s))}${u ? ` ${u}` : ''}`;
+const segRow = (label, name, list, val) => `<div class="row"><span class="row-label">${label}</span><div class="seg" data-seg="${name}" role="group" aria-label="${label}">${list.map(([k, l]) => `<button type="button" data-value="${k}" aria-pressed="${k === String(val)}">${esc(l)}</button>`).join('')}</div></div>`;
+const stepRow = (id, lock) => {
+    const [get, f, label, min, max, step, unit, desc] = NUM[id];
+    const v = lock ? 1 : get()[f];
+    const off = (hit) => (lock || hit ? ' disabled' : '');
+    const note = lock ? '居中模式固定一次显示 1 张，后续弹窗仍会依次出现。' : desc;
+    return `<div class="row"><span class="row-label">${label}<span class="row-sub">${note}</span></span><div class="num-step" data-num="${id}"><button type="button" aria-label="减少${label}"${off(v <= min)}>−</button><output>${fmt(v, step, unit)}</output><button type="button" aria-label="增加${label}"${off(v >= max)}>＋</button></div></div>`;
+};
+const renderSources = () => {
+    const n = state.tables.length;
+    $('#src-list').innerHTML = n ? state.tables.map((t, i) => {
+        const avail = t.availability === 'available';
+        const one = t.modelIds.length <= 1;
+        const sub = avail && t.modelIds.length
+            ? `<button type="button" class="model-pick" data-pick="${t.key}" aria-label="${esc(t.name)}播放模型：${LABEL[t.modelId]}"${one ? ' disabled' : ''}>${LABEL[t.modelId]}${one ? '' : ' ›'}</button>`
+            : `<span class="src-status is-${t.availability}">${t.availability === 'format_mismatch' ? '格式不匹配' : '暂未适配'}</span>`;
+        const mv = (d, txt, dis) => `<button type="button" class="mini-btn" data-move="${d}" data-key="${t.key}" aria-label="${txt} ${esc(t.name)}"${dis ? ' disabled' : ''}>${d === 'up' ? '↑' : '↓'}</button>`;
+        return `<div class="row${t.enabled ? '' : ' is-off'}"><span class="row-label"><span class="src-name">${esc(t.name)}</span><span class="row-sub">${sub}</span></span><span class="src-side">${mv('up', '上移', i === 0)}${mv('down', '下移', i === n - 1)}<label class="switch"><input type="checkbox" data-src="${t.key}" aria-label="播放 ${esc(t.name)}"${avail ? '' : ' disabled'}${t.enabled ? ' checked' : ''}><span></span></label></span></div>`;
+    }).join('') : '<p class="state-note">当前数据库没有可显示的物理表格。</p>';
+};
+const previewRow = () => '<div class="row block"><span class="field-label">滚动预览</span><div class="ov-preview" id="ov-preview" aria-hidden="true"></div></div>';
+const renderPreview = () => {
+    const box = $('#ov-preview');
+    if (!box) return;
+    const b = bar();
+    const lanes = Math.min(b.maxConcurrent, 3);
+    const lineH = b.fontSize + 8;
+    const count = lanes + 2;
+    box.style.height = `${lanes * lineH + 12}px`;
+    // 速度 = 穿屏秒数；负延迟让多条弹幕错开出现在不同位置
+    box.innerHTML = SAMPLE.slice(0, count).map((txt, i) => {
+        const color = b.palette[i % b.palette.length];
+        const delay = ((i * b.duration) / count).toFixed(2);
+        return `<span style="color:${color};font-size:${b.fontSize}px;opacity:${b.opacity};top:${(i % lanes) * lineH + 6}px;animation-duration:${b.duration}s;animation-delay:-${delay}s">${esc(txt)}</span>`;
+    }).join('');
+};
+const renderParams = () => {
+    const e = state.editing;
+    let html;
+    if (e === BAR) {
+        const b = bar();
+        html = segRow('弹幕区域', 'area', AREA, b.areaPercent)
+            + `<label class="row"><span class="row-label">永恒弹幕<span class="row-sub">循环播放，新内容到达后替换。</span></span><span class="switch"><input type="checkbox" id="ov-eternal"${b.eternal ? ' checked' : ''}><span></span></span></label>`
+            + ['density', 'interval', 'duration', 'fontSize', 'opacity'].map((id) => stepRow(id)).join('')
+            + previewRow();
+    } else {
+        const c = card();
+        const p = pop();
+        const head = e === POP
+            ? segRow('弹窗位置', 'placement', [['random', '随机'], ['center', '居中']], p.placement)
+                + segRow('弹窗区域', 'parea', AREA, p.areaPercent)
+                + stepRow('pMax', p.placement === 'center') + stepRow('pInterval') + stepRow('pDuration')
+            : '';
+        html = head
+            + segRow('网格列数', 'cols', COLS, c.columnCount)
+            + segRow('弹窗大小', 'size', SIZE, c.sizePreset)
+            + stepRow('radius') + stepRow('pOpacity');
+    }
+    $('#param-list').innerHTML = html;
+    renderPreview();
+};
+
+const DEFAULT_PALETTE = ['#FFFFFF', '#F2C94C', '#8DAF9C'];
+const HEX_RE = /^#[0-9a-f]{6}$/i;
+const colorRow = (idx, value, removable) => `<div class="row"><span class="color-idx">${idx === null ? '' : idx + 1}</span><span class="swatch" style="--sw:${value}"><input type="color" data-color="${idx ?? 'bg'}" value="${value}" aria-label="选择颜色"><span></span></span><input class="hex" data-hex="${idx ?? 'bg'}" value="${value}" maxlength="7" spellcheck="false" aria-label="颜色 HEX">${EYE ? `<button type="button" class="mini-btn" data-eye="${idx ?? 'bg'}" aria-label="吸管取色">吸管</button>` : ''}${removable ? `<button type="button" class="mini-btn danger" data-del="${idx}" aria-label="删除颜色 ${idx + 1}">删除</button>` : ''}</div>`;
+const renderColors = () => {
+    if (state.editing === BAR) {
+        const p = bar().palette;
+        $('#color-title').textContent = '弹幕调色板';
+        $('#color-desc').textContent = `弹幕按顺序轮流取色，最多 ${MAX_PALETTE} 种。`;
+        $('#color-list').innerHTML = p.map((c, i) => colorRow(i, c, p.length > 1)).join('')
+            + `<div class="row action" id="pal-add" role="button" tabindex="0"${p.length >= MAX_PALETTE ? ' aria-disabled="true"' : ''}>添加颜色</div>`
+            + '<div class="row action" id="pal-reset" role="button" tabindex="0">恢复默认</div>';
+    } else {
+        $('#color-title').textContent = '弹窗背景色';
+        $('#color-desc').textContent = '只影响弹窗卡片底色，文字颜色自动保持对比。';
+        $('#color-list').innerHTML = colorRow(null, card().bg, false);
+    }
+};
+const setColor = (key, value) => {
+    if (!HEX_RE.test(value)) return false;
+    const v = value.toUpperCase();
+    if (key === 'bg') card().bg = v; else bar().palette[Number(key)] = v;
+    renderColors();
+    renderPreview();
+    return true;
+};
+const renderAll = () => { renderSources(); renderParams(); renderColors(); syncEnabled(); };
+const syncEnabled = () => {
+    $('#ov-test').setAttribute('aria-disabled', String(!state.enabled));
+};
+
+// ===== 页面状态切换（原型工具栏）：正常 / 读取中 / 读取失败 / 无表格 =====
+const STATES = [['ready', '正常'], ['loading', '读取中'], ['error', '读取失败'], ['empty', '无表格']];
+const allTables = state.tables;
+let stateIdx = 0;
+$('#cycle-state').addEventListener('click', () => {
+    stateIdx = (stateIdx + 1) % STATES.length;
+    const [key, label] = STATES[stateIdx];
+    $('#cycle-state').textContent = `页面状态：${label}`;
+    $('#st-loading').hidden = key !== 'loading';
+    $('#st-error').hidden = key !== 'error';
+    $('#st-ready').hidden = key === 'loading' || key === 'error';
+    state.tables = key === 'empty' ? [] : allTables;
+    renderSources();
+});
+
+const findTable = (key) => state.tables.find((t) => t.key === key);
+const isOff = (el) => el.getAttribute('aria-disabled') === 'true' || el.disabled;
+// 重绘后把焦点还给同一控件；该控件变为禁用时退到同组另一个可用按钮
+const keepFocus = (selector, fn) => {
+    fn();
+    const el = document.querySelector(selector);
+    const target = el && el.disabled ? el.parentElement?.querySelector('button:not(:disabled)') : el;
+    target?.focus({ preventScroll: true });
+};
+
+$('#ov-enabled').addEventListener('change', (e) => { state.enabled = e.target.checked; syncEnabled(); });
+
+// 播放来源：开关 / 排序 / 选择播放模型
+$('#src-list').addEventListener('change', (e) => {
+    const t = findTable(e.target.dataset.src);
+    if (!t) return;
+    t.enabled = e.target.checked;
+    keepFocus(`[data-src="${t.key}"]`, renderSources);
+});
+$('#src-list').addEventListener('click', (e) => {
+    const mv = e.target.closest('[data-move]');
+    if (mv) {
+        if (mv.disabled) return;
+        const i = state.tables.findIndex((t) => t.key === mv.dataset.key);
+        const j = mv.dataset.move === 'up' ? i - 1 : i + 1;
+        if (i < 0 || j < 0 || j >= state.tables.length) return;
+        [state.tables[i], state.tables[j]] = [state.tables[j], state.tables[i]];
+        keepFocus(`[data-move="${mv.dataset.move}"][data-key="${mv.dataset.key}"]`, renderSources);
+        return;
+    }
+    const pick = e.target.closest('[data-pick]');
+    if (!pick || pick.disabled) return;
+    const t = findTable(pick.dataset.pick);
+    if (!t) return;
+    YZ.sheet({
+        title: '播放模型',
+        subtitle: t.name,
+        groups: [{ options: t.modelIds.map((id) => ({ value: id, label: LABEL[id], selected: id === t.modelId })) }],
+        footer: '只列出该表格可用的播放方式。',
+        onSelect: (value) => { t.modelId = value; renderSources(); },
+    });
+});
+
+
+// 播放参数：分段控件（shared 派发 yz:seg）
+document.addEventListener('yz:seg', (e) => {
+    const { name, value } = e.detail;
+    if (name === 'model') { state.editing = value; renderParams(); renderColors(); return; }
+    if (name === 'area') bar().areaPercent = Number(value);
+    else if (name === 'placement') { pop().placement = value; renderParams(); return; }
+    else if (name === 'parea') pop().areaPercent = Number(value);
+    else if (name === 'cols') card().columnCount = Number(value);
+    else if (name === 'size') card().sizePreset = value;
+});
+
+// 播放参数：步进器（夹取到范围，小数位与步长一致）与永恒弹幕
+$('#param-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-num] button');
+    if (!btn || btn.disabled) return;
+    const wrap = btn.closest('[data-num]');
+    const id = wrap.dataset.num;
+    const [get, f, , min, max, step] = NUM[id];
+    const dir = btn === wrap.querySelector('button') ? -1 : 1;
+    const next = Math.min(max, Math.max(min, Number((get()[f] + dir * step).toFixed(dec(step)))));
+    get()[f] = next;
+    keepFocus(`[data-num="${id}"] button:nth-of-type(${dir < 0 ? 1 : 2})`, renderParams);
+});
+$('#param-list').addEventListener('change', (e) => {
+    if (e.target.id === 'ov-eternal') bar().eternal = e.target.checked;
+});
+
+// 调色板 / 弹窗背景色：色块、HEX、吸管、删除、添加、恢复默认
+$('#color-list').addEventListener('input', (e) => {
+    const key = e.target.dataset.color;
+    if (key !== undefined) setColor(key, e.target.value);
+});
+$('#color-list').addEventListener('change', (e) => {
+    const key = e.target.dataset.hex;
+    if (key === undefined) return;
+    const raw = e.target.value.trim();
+    const value = raw.startsWith('#') ? raw : `#${raw}`;
+    if (!setColor(key, value)) {
+        YZ.toast('请输入 6 位 HEX 颜色，例如 #FFFFFF');
+        renderColors();
+    }
+});
+$('#color-list').addEventListener('click', async (e) => {
+    const eye = e.target.closest('[data-eye]');
+    if (eye) {
+        try {
+            const result = await new window.EyeDropper().open();
+            setColor(eye.dataset.eye, result.sRGBHex);
+        } catch (_) { /* 用户取消取色 */ }
+        return;
+    }
+    const del = e.target.closest('[data-del]');
+    if (del) {
+        const p = bar().palette;
+        if (p.length <= 1) return;
+        p.splice(Number(del.dataset.del), 1);
+        renderColors(); renderPreview();
+        return;
+    }
+    if (e.target.closest('#pal-add')) {
+        const p = bar().palette;
+        if (p.length >= MAX_PALETTE) return;
+        p.push('#FFFFFF');
+        renderColors(); renderPreview();
+        return;
+    }
+    if (e.target.closest('#pal-reset')) {
+        bar().palette = [...DEFAULT_PALETTE];
+        renderColors(); renderPreview();
+        YZ.toast('已恢复默认调色板');
+    }
+});
+
+// 测试与清空
+$('#ov-test').addEventListener('click', (e) => {
+    if (isOff(e.currentTarget)) { YZ.toast('请先开启弹幕与卡片播放。'); return; }
+    const picked = state.tables.filter((t) => t.enabled && t.availability === 'available');
+    if (!picked.length) { YZ.toast('请先勾选至少一个可用表格来源。'); return; }
+    YZ.toast(`原型：开始测试 ${picked.length} 个来源`);
+});
+$('#ov-clear').addEventListener('click', () => {
+    YZ.confirm({
+        title: '清空当前内容？',
+        message: '会立即移除屏幕上正在播放的弹幕与弹窗，不影响表格数据和设置。',
+        confirmText: '清空',
+        onConfirm: () => YZ.toast('原型：已清空当前内容'),
+    });
+});
+
+renderAll();
+})();
+</script>
+</body>
+</html>
+

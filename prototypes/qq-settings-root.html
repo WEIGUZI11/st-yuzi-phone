@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · QQ · 设置（iOS 分组列表原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 独立原型，不参与构建。只用 shared 颜色变量，白天 / 夜间自动跟随。 */
+.phone [hidden] { display: none !important; }
+.qq-root-group { margin-top: 22px; }
+
+/* 入口行：<a> 直接跳转同目录原型 */
+a.row.tappable { color: inherit; text-decoration: none; }
+a.row.tappable:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* 发送键开关：button[role=switch]，与源码结构一致 */
+.qq-switch {
+    position: relative; width: 51px; height: 31px; flex-shrink: 0; padding: 0;
+    border: 0; border-radius: 999px; background: var(--fill-strong); cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+}
+.qq-switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+    border-radius: 50%; background: var(--card); box-shadow: 0 1px 3px var(--fill-strong);
+    transition: transform 0.2s;
+}
+.qq-switch[aria-checked="true"] { background: var(--accent); }
+.qq-switch[aria-checked="true"]::after { transform: translateX(20px); }
+.qq-switch:disabled { opacity: 0.5; cursor: default; }
+.qq-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 模拟 QQ 底栏（仅视觉） */
+.qq-tabbar {
+    flex-shrink: 0; display: flex; padding: 6px 8px 26px;
+    background: var(--card); border-top: 1px solid var(--sep);
+}
+.qq-tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    border: 0; background: none; padding: 4px 0; font: inherit; font-size: 11px;
+    color: var(--text-3); cursor: pointer;
+}
+.qq-tab-icon { font-size: 20px; line-height: 1; }
+.qq-tab[aria-current="page"] { color: var(--accent); font-weight: 600; cursor: default; }
+.qq-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .qq-switch, .qq-switch::after { transition: none; }
+}
+</style>
+</head>
+
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <button type="button" id="sim-save-fail" aria-pressed="false">模拟保存失败</button>
+    <button type="button" id="sim-read-fail" aria-pressed="false">模拟读取失败</button>
+</div>
+<div class="phone" id="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <h1 class="nav-title" style="margin:0">设置</h1>
+    </header>
+    <main class="scroll">
+        <section class="group qq-root-group">
+            <a class="row tappable" href="./qq-settings-reply.html">
+                <span class="row-label">AI 回复与主动消息</span>
+                <span class="chev" aria-hidden="true">›</span>
+            </a>
+            <a class="row tappable" href="./qq-settings-context.html">
+                <span class="row-label">上下文</span>
+                <span class="chev" aria-hidden="true">›</span>
+            </a>
+        </section>
+        <section class="group qq-root-group">
+            <a class="row tappable" href="./qq-settings-worldbook.html">
+                <span class="row-label">世界书注入</span>
+                <span class="chev" aria-hidden="true">›</span>
+            </a>
+            <a class="row tappable" href="./qq-settings-image-library.html">
+                <span class="row-label">图片资料</span>
+                <span class="chev" aria-hidden="true">›</span>
+            </a>
+        </section>
+        <section class="group qq-root-group">
+            <div class="row">
+                <span class="row-label" id="send-key-label">发送键</span>
+                <button type="button" class="qq-switch" id="send-key-switch" role="switch" aria-label="发送键" aria-checked="false"></button>
+            </div>
+        </section>
+        <p class="group-footer">开启后输入框右侧显示发送按钮。</p>
+    </main>
+    <nav class="qq-tabbar" aria-label="QQ 底栏">
+        <button type="button" class="qq-tab" data-tab="消息"><span class="qq-tab-icon" aria-hidden="true">💬</span>消息</button>
+        <button type="button" class="qq-tab" data-tab="联系人"><span class="qq-tab-icon" aria-hidden="true">👥</span>联系人</button>
+        <button type="button" class="qq-tab" data-tab="助手"><span class="qq-tab-icon" aria-hidden="true">✦</span>助手</button>
+        <button type="button" class="qq-tab" data-tab="设置" aria-current="page"><span class="qq-tab-icon" aria-hidden="true">⚙</span>设置</button>
+    </nav>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+
+<div class="notes">
+    <b>原功能 → 新位置（以 modules/qq-v2/ui/app.js renderSettingsRoot 3269–3320 为准）：</b><br>
+    1. 标题栏「设置」（back: false，根页无返回按钮、无右侧按钮）→ 公共骨架标题栏，只放标题，不放 nav-back。<br>
+    2. 前两项 QQ_SETTINGS_GROUPS「AI 回复与主动消息」「上下文」→ 第一张卡片，两行入口，右侧只有 ›。<br>
+    3. 后两项「世界书注入」「图片资料」→ 第二张卡片，同上；源码两组都没有组标题，原型不加 group-header。<br>
+    4. 四个入口（data-qq-settings = reply / context / worldbook / image-library）→ 直接链接到同目录原型 qq-settings-reply.html、qq-settings-context.html、qq-settings-worldbook.html、qq-settings-image-library.html。<br>
+    5. 「发送键」开关（button role=switch，aria-label「发送键」，aria-checked 取 sendButtonEnabled）→ 第三张卡片行右侧开关，结构与源码一致。<br>
+    6. 开关点击：先翻转并禁用，保存完成后重新启用；保存失败恢复原状态并提示「保存发送键设置失败」→ 原型同样处理。<br>
+    7. 读取失败（model.ok 为假）时开关禁用 → 原型同样处理。<br>
+    8. QQ 底栏「消息 / 联系人 / 助手 / 设置」→ 页面底部模拟底栏，「设置」高亮。<br>
+    <b>新增 / 改动：</b><br>
+    · 发送键卡片下的 group-footer「开启后输入框右侧显示发送按钮。」是<b>新增说明文字</b>，源码没有。<br>
+    · 源码保存失败走 report(error) 统一报错；原型用 YZ.toast 显示「保存发送键设置失败」。<br>
+    · 入口行源码是 button，原型改用 &lt;a&gt; 直接跳转到对应二级页原型。<br>
+    <b>原型模拟：</b><br>
+    · 顶部「模拟保存失败」开启后，切换发送键会在约 400ms 后失败并恢复原状态。<br>
+    · 顶部「模拟读取失败」开启后，发送键开关禁用（关闭后恢复可用）。<br>
+    · 底栏仅视觉，点其他标签只弹出轻提示，不切换页面。<br>
+    这只是视觉原型，所有数据都是示例，不连接真实小手机，发送键状态不会保存。
+</div>
+
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+/* 本页交互：发送键开关（模拟保存 / 读取失败）与底栏轻提示。文案均为源码原文。 */
+const SAVE_DELAY = 400;
+const sendSwitch = document.getElementById('send-key-switch');
+const saveFailBtn = document.getElementById('sim-save-fail');
+const readFailBtn = document.getElementById('sim-read-fail');
+let saveFail = false;
+let readFail = false;
+let saving = false;
+
+// 源码：toggle.disabled = !model?.ok；保存进行中也保持禁用
+const syncSwitchDisabled = () => { sendSwitch.disabled = readFail || saving; };
+
+const fakeSave = () => new Promise((resolve) => {
+    setTimeout(() => resolve(saveFail ? { ok: false } : { ok: true }), SAVE_DELAY);
+});
+
+sendSwitch.addEventListener('click', async () => {
+    if (sendSwitch.disabled) return;
+    const enabled = sendSwitch.getAttribute('aria-checked') !== 'true';
+    saving = true;
+    syncSwitchDisabled();
+    sendSwitch.setAttribute('aria-checked', String(enabled));
+    try {
+        const result = await fakeSave();
+        if (!result?.ok) throw new Error('保存发送键设置失败');
+    } catch (error) {
+        sendSwitch.setAttribute('aria-checked', String(!enabled));
+        YZ.toast(error.message || '保存发送键设置失败');
+    } finally {
+        saving = false;
+        syncSwitchDisabled();
+    }
+});
+
+saveFailBtn.addEventListener('click', () => {
+    saveFail = !saveFail;
+    saveFailBtn.setAttribute('aria-pressed', String(saveFail));
+});
+
+readFailBtn.addEventListener('click', () => {
+    readFail = !readFail;
+    readFailBtn.setAttribute('aria-pressed', String(readFail));
+    syncSwitchDisabled();
+});
+
+document.querySelectorAll('.qq-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+        if (tab.getAttribute('aria-current') === 'page') return;
+        YZ.toast(`原型：切换到 ${tab.dataset.tab}`);
+    });
+});
+
+syncSwitchDisabled();
+</script>
+</body>
+</html>

@@ -38,6 +38,13 @@
 .yuzi-bottom-card dl>div:last-child { border-bottom:0; }
 .yuzi-bottom-card dt { font-size:.86em; margin-bottom:6px; color:var(--yuzi-theme-text-secondary); }
 .yuzi-bottom-card dd { margin:0; line-height:1.65; white-space:pre-wrap; }
+.yuzi-bottom-root .yuzi-bottom-edit-card.phone-generic-root .phone-generic-detail-flow-list { padding:0 14px 2px; }
+.yuzi-bottom-root .yuzi-bottom-edit-card .phone-row-detail-input { font-family:inherit; }
+.yuzi-bottom-edit-actions { display:flex; gap:6px; padding-right:8px; margin-right:2px; border-right:1px solid var(--yuzi-theme-border-strong); }
+.yuzi-bottom-root .yuzi-bottom-edit-actions [data-action="save"] { color:var(--yuzi-theme-accent); border-color:color-mix(in srgb,var(--yuzi-theme-accent) 35%,var(--yuzi-theme-border)); background:var(--yuzi-theme-accent-soft); }
+:is(.yuzi-bottom-root,.yuzi-bottom-dock) button:disabled { opacity:.45; cursor:wait; }
+.yuzi-bottom-panel>.phone-inline-toast { bottom:16px; max-width:calc(100% - 32px); color:var(--yuzi-theme-text-primary); background:var(--yuzi-theme-surface-strong); border:1px solid var(--yuzi-theme-border-strong); }
+.yuzi-bottom-panel>.phone-inline-toast.is-error { border-color:var(--yuzi-theme-accent); }
 .yuzi-bottom-bar { display:block; width:100%; padding:5px 12px; font-size:.923em; letter-spacing:.2em; }
 .yuzi-bottom-empty { text-align:center; color:var(--yuzi-theme-text-secondary); width:100%; padding:24px; }
 .yuzi-bottom-enable-row { display:flex; justify-content:space-between; }

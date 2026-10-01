@@ -53,7 +53,7 @@ export function setupReadableTextScaleSettings(container) {
     const numberInput = container?.querySelector?.('#phone-readable-text-scale-input');
     const valueLabel = container?.querySelector?.('#phone-readable-text-scale-value');
 
-    if (!(rangeInput instanceof HTMLInputElement) || !(numberInput instanceof HTMLInputElement)) {
+    if (!(rangeInput instanceof HTMLInputElement)) {
         return () => {};
     }
 
@@ -73,7 +73,9 @@ export function setupReadableTextScaleSettings(container) {
     const syncControls = (percent) => {
         const value = String(normalizeReadableTextScalePercent(percent));
         rangeInput.value = value;
-        numberInput.value = value;
+        if (numberInput instanceof HTMLInputElement) {
+            numberInput.value = value;
+        }
         if (valueLabel instanceof HTMLElement) {
             valueLabel.textContent = `${value}%`;
         }

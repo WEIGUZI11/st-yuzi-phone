@@ -1,6 +1,7 @@
 import { t } from '../i18n/index.js';
 import { Logger } from '../error-handler.js';
 import { findFirstEnumValidationError } from './ddl-field-metadata.js';
+import { resizeDetailTextarea as resizeTextarea } from './detail-edit-field.js';
 
 const logger = Logger.withScope({ scope: 'table-viewer/detail-edit', feature: 'table-viewer' });
 const DETAIL_CONTROLLER_CLEANUP_KEY = '__yuziGenericDetailControllerCleanup';
@@ -447,10 +448,4 @@ export function bindGenericDetailEditController(options = {}) {
             }
         }
     }
-}
-
-function resizeTextarea(inputEl) {
-    if (!(inputEl instanceof HTMLTextAreaElement)) return;
-    inputEl.style.height = 'auto';
-    inputEl.style.height = Math.max(inputEl.scrollHeight, 32) + 'px';
 }

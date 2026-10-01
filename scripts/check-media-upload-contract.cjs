@@ -101,10 +101,10 @@ async function main() {
     check(results, 'imageCropCss', '裁剪按钮区支持 secondary 分组', has(contents.imageCropCss, '.phone-image-crop-actions-secondary'));
     check(results, 'imageCropCss', '裁剪按钮区保持 sticky 操作区', has(contents.imageCropCss, 'position: sticky;') && has(contents.imageCropCss, 'bottom: 0;'));
     check(results, 'imageCropCss', '移动端裁剪 overlay 顶部对齐并通过语义 token 增大触摸手柄', has(contents.imageCropCss, 'align-items: flex-start;') && has(contents.imageCropCss, 'width: var(--yuzi-phone-crop-handle-compact-size);') && has(contents.imageCropCss, 'height: var(--yuzi-phone-crop-handle-compact-size);'));
-    check(results, 'imageCropCss', '裁剪弹窗复用 QQ 删除好友确认框的遮罩、表面、圆角和阴影语义变量', has(contents.imageCropCss, 'var(--yuzi-qq-overlay)')
-        && has(contents.imageCropCss, 'var(--yuzi-qq-dialog-surface)')
-        && has(contents.imageCropCss, 'var(--yuzi-qq-radius-dialog)')
-        && has(contents.imageCropCss, 'var(--yuzi-qq-shadow-dialog)'));
+    check(results, 'imageCropCss', '裁剪弹窗复用设置公共弹层的遮罩、表面、圆角和阴影语义变量', has(contents.imageCropCss, 'var(--yuzi-settings-layer-scrim)')
+        && has(contents.imageCropCss, 'var(--yuzi-settings-group-card)')
+        && has(contents.imageCropCss, 'var(--yuzi-settings-alert-radius)')
+        && has(contents.imageCropCss, 'var(--yuzi-settings-alert-shadow)'));
     check(results, 'download', '存在 downloadTextFile()', has(contents.download, 'export function downloadTextFile('));
 
     check(results, 'appearance', 'appearance-settings façade 继续组合 background/icon upload service', has(contents.appearance, 'createIconUploadService({')

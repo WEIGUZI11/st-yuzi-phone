@@ -4,7 +4,6 @@ import {
     getPhoneSettings,
     savePhoneSettingsPatch,
 } from '../../../settings.js';
-import { PHONE_ICONS } from '../../../phone-home/icons.js';
 import { cacheRemove, CACHE_STORES } from '../../../cache-manager.js';
 import { escapeHtml, escapeHtmlAttr } from '../../../utils/dom-escape.js';
 import { formatFileSize } from '../../../utils/device.js';
@@ -16,6 +15,7 @@ import {
     pickImageFile,
 } from '../media-upload.js';
 import { showToast } from '../../ui/toast.js';
+import { showConfirmDialog } from '../../ui/confirm-dialog.js';
 import { collectAppearanceIconSlots } from './icon-slots.js';
 import {
     buildAppIconAssignment,
@@ -163,10 +163,11 @@ export function createIconUploadService(deps = {}) {
             });
         };
 
-        const openPackIconPicker = (key, source) => {
+        const openPackIconPicker = (key, source, slotName = '') => {
             const mounted = showAppearancePackIconPicker({
                 packName: source.name,
                 icons: source.icons,
+                slotName,
                 runtime,
                 onSelect: icon => saveIconSelection(key, icon.dataUrl, source.id),
             });
@@ -174,6 +175,19 @@ export function createIconUploadService(deps = {}) {
                 showToast(listEl, t("图标选择器打开失败，请重试"), true);
             }
         };
+
+        const removeIcon = (key) => {
+            if (disposed || !key) return;
+            const nextState = buildAppIconRemoval(getPhoneSettings(), key);
+            savePhoneSettingsPatch(nextState);
+            cacheRemove(CACHE_STORES.images, `icon:${key}`).catch(() => {});
+            render();
+            showToast(listEl, t("图标已清除"));
+        };
+
+        const buildIconArtHtml = (dataUrl, label) => (dataUrl
+            ? `<img src="${escapeHtmlAttr(dataUrl)}" alt="">`
+            : `<span aria-hidden="true">${escapeHtml(String(label || '').trim().charAt(0) || t("默认"))}</span>`);
 
         const render = () => {
             if (disposed) return;
@@ -184,6 +198,7 @@ export function createIconUploadService(deps = {}) {
             const currentIconsBytes = estimateIconsStorageBytes(currentIcons);
             const totalLimitText = formatFileSize(STORAGE_BUDGETS.appIconsTotalBytes, 2);
             const totalUsageText = formatFileSize(currentIconsBytes, 2);
+            const usageRatio = Math.min(1, currentIconsBytes / Math.max(1, STORAGE_BUDGETS.appIconsTotalBytes));
 
             if (iconSlots.length === 0) {
                 listEl.innerHTML = `<div class="phone-empty-msg">${t("无数据")}</div>`;
@@ -198,49 +213,46 @@ export function createIconUploadService(deps = {}) {
 
             const slotMap = new Map(iconSlots.map(item => [item.key, item]));
 
-            const summaryHtml = `
-                <div class="phone-settings-desc" style="margin-bottom:10px;">
-                    ${t`已用 ${escapeHtml(totalUsageText)} / 上限 ${escapeHtml(totalLimitText)}`}
-                </div>
-            `;
-            const allCurrentIconEntries = Object.entries(currentIcons);
-            const cleanupHtml = `
-                <div class="phone-icon-cleanup-panel">
-                    <div class="phone-settings-desc" style="margin:12px 0 8px;">
-                        ${t`图标清理 · ${escapeHtml(String(allCurrentIconEntries.length))} 个。仅移除图标，不影响表格数据或背景。`}
-                    </div>
-                    ${allCurrentIconEntries.length > 0 ? allCurrentIconEntries.map(([key, dataUrl]) => {
-                        const slot = slotMap.get(key);
-                        const label = slot ? getAppearanceIconDisplayName(slot) : t("隐藏旧图标 / 无当前图标位");
-                        const statusClass = slot ? 'phone-icon-status-active' : 'phone-icon-status-orphan';
-                        return `
-                            <div class="phone-icon-cleanup-row" data-icon-key="${escapeHtmlAttr(key)}">
-                                <span class="phone-icon-name">${escapeHtml(label)}</span>
-                                <span class="phone-icon-key">${escapeHtml(key)}</span>
-                                <span class="phone-icon-status ${statusClass}">${slot ? t("当前图标位") : t("隐藏旧图标")}</span>
-                                <div class="phone-icon-actions">
-                                    <img src="${escapeHtmlAttr(dataUrl)}" class="phone-icon-thumb">
-                                    <button type="button" class="phone-settings-btn phone-settings-btn-danger phone-icon-delete-current-btn">${t`删除`}</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('') : `<div class="phone-empty-msg">${t("当前没有自定义图标")}</div>`}
-                </div>
-            `;
-
-            listEl.innerHTML = summaryHtml + iconSlots.map((item) => {
-                const hasCustom = phoneSettings.appIcons?.[item.key];
+            const gridHtml = iconSlots.map((item) => {
+                const customIcon = currentIcons[item.key] || '';
+                const label = getAppearanceIconDisplayName(item);
                 return `
-                    <div class="phone-icon-upload-row" data-icon-key="${escapeHtmlAttr(item.key)}">
-                        <span class="phone-icon-name">${escapeHtml(getAppearanceIconDisplayName(item))}</span>
-                        <div class="phone-icon-actions">
-                            ${hasCustom ? `<img src="${escapeHtmlAttr(hasCustom)}" class="phone-icon-thumb">` : `<span class="phone-icon-default">${t("默认")}</span>`}
-                            <button type="button" class="phone-settings-btn phone-icon-upload-btn" ${activePackPending ? 'disabled aria-busy="true"' : ''}>${PHONE_ICONS.upload}</button>
-                            ${hasCustom ? `<button type="button" class="phone-settings-btn phone-settings-btn-danger phone-icon-clear-btn">${t`清除`}</button>` : ''}
-                        </div>
+                    <button type="button" class="phone-ios-icon-cell phone-icon-upload-btn${customIcon ? ' is-custom' : ''}" data-icon-key="${escapeHtmlAttr(item.key)}" data-icon-name="${escapeHtmlAttr(label)}" aria-haspopup="dialog" ${activePackPending ? 'disabled aria-busy="true"' : ''}>
+                        <span class="phone-ios-icon-cell-art">${buildIconArtHtml(customIcon, label)}</span>
+                        <span class="phone-ios-icon-cell-label">${escapeHtml(label)}</span>
+                    </button>
+                `;
+            }).join('');
+
+            const allCurrentIconEntries = Object.entries(currentIcons);
+            const cleanupRowsHtml = allCurrentIconEntries.length > 0 ? allCurrentIconEntries.map(([key, dataUrl]) => {
+                const slot = slotMap.get(key);
+                const label = slot ? getAppearanceIconDisplayName(slot) : t("隐藏旧图标 / 无当前图标位");
+                return `
+                    <div class="phone-ios-row has-thumb phone-icon-cleanup-row" data-icon-key="${escapeHtmlAttr(key)}">
+                        <img src="${escapeHtmlAttr(dataUrl)}" class="phone-ios-thumb" alt="">
+                        <span class="phone-ios-row-label">${escapeHtml(label)}<span class="phone-ios-row-sub">${escapeHtml(key)}</span></span>
+                        <span class="phone-ios-badge${slot ? ' is-muted' : ' is-danger'}">${slot ? t("当前图标位") : t("隐藏旧图标")}</span>
+                        <button type="button" class="phone-ios-row-del phone-icon-delete-current-btn" aria-haspopup="dialog" aria-label="${escapeHtmlAttr(t`删除 ${label}`)}">${t`删除`}</button>
                     </div>
                 `;
-            }).join('') + cleanupHtml;
+            }).join('') : `<div class="phone-ios-row phone-ios-row-empty">${t("当前没有自定义图标")}</div>`;
+
+            listEl.innerHTML = `
+                <div class="phone-ios-group">
+                    <div class="phone-ios-icon-grid">${gridHtml}</div>
+                </div>
+                <p class="phone-ios-group-footer">${t("点按图标即可上传或恢复默认，右上角圆点表示已自定义。")}</p>
+                <h3 class="phone-ios-group-header">${t`图标清理 · ${escapeHtml(String(allCurrentIconEntries.length))} 个`}</h3>
+                <div class="phone-ios-group">
+                    <div class="phone-ios-row">
+                        <span class="phone-ios-row-label">${t("已用空间")}<span class="phone-ios-usage-bar${usageRatio >= 0.85 ? ' is-high' : ''}" style="--yuzi-settings-usage-ratio:${Math.round(usageRatio * 100)}%" aria-hidden="true"><span></span></span></span>
+                        <span class="phone-ios-row-value">${t`${escapeHtml(totalUsageText)} / ${escapeHtml(totalLimitText)}`}</span>
+                    </div>
+                    ${cleanupRowsHtml}
+                </div>
+                <p class="phone-ios-group-footer">${t("仅移除图标，不影响表格数据或背景。")}</p>
+            `;
 
             void activePackPromise.finally(() => {
                 if (disposed) return;
@@ -255,37 +267,21 @@ export function createIconUploadService(deps = {}) {
             listEl.querySelectorAll('.phone-icon-upload-btn').forEach((btn) => {
                 addListener(btn, 'click', () => {
                     if (disposed) return;
-                    const row = btn.closest('.phone-icon-upload-row');
-                    const key = row?.dataset?.iconKey;
+                    const key = btn.dataset?.iconKey;
                     if (!key) return;
-                    const iconName = String(row?.querySelector('.phone-icon-name')?.textContent || t("图标")).trim() || t("图标");
+                    const iconName = String(btn.dataset?.iconName || t("图标")).trim() || t("图标");
                     const source = activePackState.ready ? activePackState.source : null;
-                    if (!source) {
-                        openLocalIconUpload(key, iconName);
-                        return;
-                    }
-
+                    const hasCustom = !!getPhoneSettings().appIcons?.[key];
                     const mounted = showAppearanceIconSourceMenu({
-                        packName: source.name,
+                        packName: source?.name || '',
+                        iconName,
+                        previewHtml: btn.querySelector('.phone-ios-icon-cell-art')?.innerHTML || '',
                         runtime,
                         onLocalUpload: () => openLocalIconUpload(key, iconName),
-                        onPackSelect: () => openPackIconPicker(key, source),
+                        onPackSelect: source ? () => openPackIconPicker(key, source, iconName) : undefined,
+                        onReset: hasCustom ? () => removeIcon(key) : undefined,
                     });
                     if (!mounted) openLocalIconUpload(key, iconName);
-                });
-            });
-
-            listEl.querySelectorAll('.phone-icon-clear-btn').forEach((btn) => {
-                addListener(btn, 'click', () => {
-                    if (disposed) return;
-                    const row = btn.closest('.phone-icon-upload-row');
-                    const key = row?.dataset?.iconKey;
-                    if (!key) return;
-                    const nextState = buildAppIconRemoval(getPhoneSettings(), key);
-                    savePhoneSettingsPatch(nextState);
-                    cacheRemove(CACHE_STORES.images, `icon:${key}`).catch(() => {});
-                    render();
-                    showToast(listEl, t("图标已清除"));
                 });
             });
 
@@ -295,11 +291,15 @@ export function createIconUploadService(deps = {}) {
                     const row = btn.closest('.phone-icon-cleanup-row');
                     const key = row?.dataset?.iconKey;
                     if (!key) return;
-                    const nextState = buildAppIconRemoval(getPhoneSettings(), key);
-                    savePhoneSettingsPatch(nextState);
-                    cacheRemove(CACHE_STORES.images, `icon:${key}`).catch(() => {});
-                    render();
-                    showToast(listEl, t("当前设置图标已删除"));
+                    showConfirmDialog(
+                        listEl,
+                        t("删除这个图标？"),
+                        t("只移除这张自定义图标，对应 App 恢复默认图标。"),
+                        () => removeIcon(key),
+                        t("删除"),
+                        t("取消"),
+                        runtime,
+                    );
                 });
             });
         };

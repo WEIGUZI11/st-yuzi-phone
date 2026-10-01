@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · 控件与按钮（iOS 分组列表原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页专用：悬浮按钮实时预览 + 滑块端点。颜色只用 shared 变量，白天 / 夜间自动跟随 */
+.btn-preview {
+    width: 100%; min-height: 140px; padding: 16px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; background: var(--accent-soft);
+}
+/* 对应 07-settings-modern.css 的 .phone-toggle-preview-button：长方形宽 = 大小 × 2.1，圆形宽 = 大小 */
+.toggle-btn {
+    --size: 40px;
+    height: var(--size); width: calc(var(--size) * 2.1);
+    padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border-radius: 999px; border: 1px solid var(--sep);
+    background-color: var(--fill-strong); color: var(--text);
+    background-repeat: no-repeat; background-size: cover; background-position: center;
+    backdrop-filter: blur(14px) saturate(1.25);
+    overflow: hidden; transition: width 0.15s, height 0.15s;
+}
+.toggle-btn.is-circle { width: var(--size); padding: 0; }
+.toggle-btn.has-cover { border: 0; background-color: transparent; backdrop-filter: none; }
+.toggle-btn.has-cover > *, .toggle-btn.is-circle .toggle-text { display: none; }
+.toggle-icon { width: 18px; height: 18px; display: inline-flex; flex-shrink: 0; }
+.toggle-icon svg { width: 100%; height: 100%; }
+.toggle-text { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.size-dot { flex-shrink: 0; border-radius: 50%; border: 1.5px solid var(--text-2); }
+.size-dot.s { width: 10px; height: 10px; }
+.size-dot.l { width: 18px; height: 18px; }
+.size-out { min-width: 44px; text-align: right; color: var(--text-2); font-size: 15px; }
+.row.preview-row { padding-top: 12px; padding-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="toolbar"><span>原型预览：</span><button type="button" id="toggle-theme">切换白天 / 夜间</button></div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" aria-label="返回设置" data-toast="返回设置首页">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">控件与按钮</h1>
+    </header>
+    <main class="scroll">
+        <!-- 预览：原「按钮封面」区块内的 #phone-toggle-cover-preview，提到页首，随大小 / 形状 / 封面实时变化 -->
+        <h2 class="group-header">预览</h2>
+        <section class="group">
+            <div class="row preview-row">
+                <div class="btn-preview">
+                    <div class="toggle-btn is-circle no-cover" id="toggle-preview" role="img" aria-label="毛玻璃按钮预览">
+                        <span class="toggle-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/></svg></span>
+                        <span class="toggle-text">玉子</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1. 悬浮入口 -->
+        <h2 class="group-header">悬浮入口</h2>
+        <section class="group">
+            <label class="row"><span class="row-label">显示悬浮按钮</span>
+                <span class="switch"><input type="checkbox" id="floating-toggle" checked><span></span></span></label>
+            <div class="row action" role="button" tabindex="0" id="reset-position">重置位置</div>
+        </section>
+        <p class="group-footer">隐藏按钮不影响已打开的手机。</p>
+
+        <!-- 2. 按钮大小：只保留滑块 + 数值 -->
+        <h2 class="group-header">按钮大小</h2>
+        <section class="group">
+            <div class="row">
+                <div class="slider-row">
+                    <span class="size-dot s" aria-hidden="true"></span>
+                    <input type="range" min="32" max="72" step="1" value="40" id="size-range" aria-label="按钮大小">
+                    <span class="size-dot l" aria-hidden="true"></span>
+                    <output for="size-range" id="size-out" class="size-out">40px</output>
+                </div>
+            </div>
+        </section>
+        <p class="group-footer">32–72 px，默认 40。</p>
+
+        <!-- 3. 按钮形状：单选列表 → 分段控件（顺序与源码一致：长方形、圆形） -->
+        <h2 class="group-header">按钮形状</h2>
+        <section class="group">
+            <div class="row"><span class="row-label">形状</span>
+                <div class="seg" role="group" aria-label="按钮形状" id="shape-seg">
+                    <button type="button" aria-pressed="false" data-value="rounded">长方形</button>
+                    <button type="button" aria-pressed="true" data-value="circle">圆形</button>
+                </div></div>
+        </section>
+        <p class="group-footer">圆形按钮不显示文字。</p>
+
+        <!-- 4. 按钮封面：标题右侧两个按钮 → 卡片内整行操作；预览已提到页首 -->
+        <h2 class="group-header">按钮封面</h2>
+        <section class="group">
+            <div class="row action" role="button" tabindex="0" id="cover-upload" aria-haspopup="dialog">上传封面</div>
+            <div class="row action danger" role="button" id="cover-clear" aria-haspopup="dialog" tabindex="-1" aria-disabled="true">清除封面</div>
+        </section>
+        <p class="group-footer">按按钮形状裁剪。</p>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<div class="notes">
+    <b>原功能 → 新位置（源码 pages/button-style.js + appearance-builders.js）：</b><br>
+    1. 悬浮入口 · 「显示悬浮按钮」复选框 → 卡片内开关；提示「悬浮入口已显示 / 悬浮入口已隐藏」。<br>
+    2. 悬浮入口 · 标题右侧「重置位置」 → 同卡片整行操作；提示「悬浮按钮位置已重置」。<br>
+    3. 「隐藏按钮不影响已打开的手机。」 → 悬浮入口卡片下灰字。<br>
+    4. 按钮大小 · 滑块 + 数字框 → 只保留滑块，右侧显示数值；拖动时预览实时变化。<br>
+    5. 「32–72 px，默认 40。」 → 按钮大小卡片下灰字。<br>
+    6. 按钮形状 · 长方形 / 圆形单选 → 分段控件；提示「按钮已切换为圆形（文字已隐藏）」/「按钮已切换为长方形」。<br>
+    7. 按钮封面 · 预览框 → 页首「预览」卡片，随大小、形状、封面同步。<br>
+    8. 上传封面 → 整行操作，打开裁剪弹窗「裁剪悬浮按钮图片」；圆形对应 toggle-cover-circle（1:1，覆盖 0.8），长方形对应 toggle-cover-rounded（2.6:1，覆盖 0.88）；确认后预览换成封面，提示「按钮封面已更新」，清除封面解除禁用。<br>
+    9. 清除封面（无封面时禁用） → 红字整行；提示「按钮封面已清除」，清除后重新禁用。<br>
+    10. 「按按钮形状裁剪。」 → 按钮封面卡片下灰字。<br>
+    <b>新增 / 改动：</b><br>
+    · <b>新增确认</b>：清除封面先弹 YZ.confirm，原代码点了直接清除。<br>
+    · 大小提示时机：原代码只在数字框 change 时提示「按钮大小已调整为 Npx」；数字框去掉后，改为松开滑块时提示。<br>
+    · 新增文案：形状卡片下「圆形按钮不显示文字。」（原代码只在切换提示里说明）。<br>
+    · 预览从封面区块提到页首，三项设置都会影响它。<br>
+    <b>失败分支（原代码 showToast 错误样式，原型统一用 YZ.toast）：</b>
+    <button type="button" data-toast="封面读取失败：空数据">空数据</button>
+    <button type="button" data-toast="按钮封面过大（&gt;5MB）">超过 5MB</button>
+    <button type="button" data-toast="按钮封面上传失败">上传失败</button><br>
+    这只是视觉原型，所有数据都是示例，不连接真实小手机。
+</div>
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+/* 本页交互：状态与源码 pages/button-style.js 对应（size 32–72 默认 40，shape circle / rounded，cover 空表示毛玻璃） */
+(() => {
+    const $ = (id) => document.getElementById(id);
+    const preview = $('toggle-preview');
+    const range = $('size-range');
+    const out = $('size-out');
+    const clearBtn = $('cover-clear');
+    const state = { size: 40, shape: 'circle', cover: '' };
+    // 示例封面：用主题变量模拟一张图，白天 / 夜间都能看清
+    const DEMO_COVER = 'linear-gradient(135deg, var(--accent), var(--danger))';
+    const clampSize = (v) => {
+        const n = Math.round(Number(v));
+        return Number.isFinite(n) ? Math.min(72, Math.max(32, n)) : 40;
+    };
+
+    const renderPreview = () => {
+        preview.style.setProperty('--size', `${state.size}px`);
+        preview.classList.toggle('is-circle', state.shape === 'circle');
+        preview.classList.toggle('is-rounded', state.shape === 'rounded');
+        preview.classList.toggle('has-cover', !!state.cover);
+        preview.classList.toggle('no-cover', !state.cover);
+        preview.style.backgroundImage = state.cover || '';
+        preview.setAttribute('aria-label', state.cover ? '按钮封面预览' : '毛玻璃按钮预览');
+    };
+    // 源码：无封面时 clearBtn.disabled = true
+    const setClearEnabled = (on) => {
+        clearBtn.setAttribute('aria-disabled', String(!on));
+        clearBtn.tabIndex = on ? 0 : -1;
+    };
+
+    $('floating-toggle').addEventListener('change', (event) => {
+        YZ.toast(event.target.checked ? '悬浮入口已显示' : '悬浮入口已隐藏');
+    });
+    $('reset-position').addEventListener('click', () => YZ.toast('悬浮按钮位置已重置'));
+
+    // 拖动时实时预览；松开（change）时提示，对应源码数字框 change 的提示
+    range.addEventListener('input', () => {
+        state.size = clampSize(range.value);
+        out.textContent = `${state.size}px`;
+        renderPreview();
+    });
+    range.addEventListener('change', () => YZ.toast(`按钮大小已调整为 ${state.size}px`));
+
+    $('shape-seg').addEventListener('yz:seg', (event) => {
+        const next = event.detail.value === 'rounded' ? 'rounded' : 'circle';
+        if (next === state.shape) return;
+        state.shape = next;
+        renderPreview();
+        YZ.toast(next === 'circle' ? '按钮已切换为圆形（文字已隐藏）' : '按钮已切换为长方形');
+    });
+
+    // 裁剪预设：crop.js buildCenteredAspectRect —— 圆形 1:1 覆盖 0.8，长方形 2.6:1 覆盖 0.88
+    $('cover-upload').addEventListener('click', () => {
+        const circle = state.shape === 'circle';
+        YZ.crop({
+            title: '裁剪悬浮按钮图片',
+            desc: '可自由调整按钮封面区域，建议保留主体在中心位置。',
+            aspect: circle ? '1 / 1' : '2.6 / 1',
+            rect: circle ? { x: 0.1, y: 0.1, w: 0.8, h: 0.8 } : { x: 0.06, y: 0.06, w: 0.88, h: 0.88 },
+            onConfirm: () => {
+                state.cover = DEMO_COVER;
+                renderPreview();
+                setClearEnabled(true);
+                YZ.toast('按钮封面已更新');
+            },
+        });
+    });
+
+    // 新增确认：源码点击即清除，原型先二次确认
+    clearBtn.addEventListener('click', () => {
+        if (clearBtn.getAttribute('aria-disabled') === 'true') return;
+        YZ.confirm({
+            title: '清除按钮封面？',
+            message: '清除后恢复毛玻璃按钮。',
+            confirmText: '清除',
+            onConfirm: () => {
+                state.cover = '';
+                renderPreview();
+                setClearEnabled(false);
+                YZ.toast('按钮封面已清除');
+            },
+        });
+    });
+
+    renderPreview();
+    setClearEnabled(false);
+})();
+</script>
+</body>
+</html>
+

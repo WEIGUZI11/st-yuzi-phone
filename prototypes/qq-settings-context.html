@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · QQ 设置 · 上下文（iOS 分组列表原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 独立原型，不参与构建。只用 shared 颜色变量，白天 / 夜间自动跟随。 */
+.phone [hidden] { display: none !important; }
+.ctx-label label { cursor: default; }
+.stepper output { font-variant-numeric: tabular-nums; }
+.stepper button:focus-visible,
+.row input.inline:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 纵向块行里的单行输入：左对齐、占满宽度 */
+.row.block input.inline { width: 100%; text-align: left; padding: 0; }
+.row.block .row-sub { margin-top: 0; }
+.read-error .row-label { color: var(--danger); }
+</style>
+</head>
+
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <button type="button" id="sim-read-fail" aria-pressed="false">模拟读取失败</button>
+    <button type="button" id="sim-save-fail" aria-pressed="false">模拟保存失败</button>
+    <button type="button" id="sim-chat-switch" aria-pressed="false">模拟切换聊天（下次保存）</button>
+</div>
+<div class="phone" id="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" id="nav-back" aria-label="返回设置">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">上下文</h1>
+    </header>
+    <main class="scroll">
+
+        <h2 class="group-header" id="grp-host" data-ctx-content>酒馆上下文</h2>
+        <section class="group" aria-labelledby="grp-host" data-ctx-content>
+            <div class="row">
+                <span class="row-label" id="lbl-host-turns">宿主上下文条数</span>
+                <div class="stepper" id="host-turns" data-min="0" data-step="1" role="group" aria-labelledby="lbl-host-turns">
+                    <button type="button" aria-label="减少宿主上下文条数">−</button>
+                    <output aria-live="polite">3</output>
+                    <button type="button" aria-label="增加宿主上下文条数">+</button>
+                </div>
+            </div>
+            <div class="row block">
+                <label class="field-label" for="extract-tag">标签提取</label>
+                <input class="inline" id="extract-tag" type="text" placeholder="content" autocomplete="off" spellcheck="false" aria-describedby="extract-tag-hint">
+                <span class="row-sub" id="extract-tag-hint">输入标签名、不需要尖括号</span>
+            </div>
+            <div class="row block">
+                <label class="field-label" for="exclude-tags">标签排除</label>
+                <input class="inline" id="exclude-tags" type="text" placeholder="例如：status、table" autocomplete="off" spellcheck="false" aria-describedby="exclude-tags-hint">
+                <span class="row-sub" id="exclude-tags-hint">多个标签可用顿号、逗号或空格分隔、不需要尖括号</span>
+            </div>
+        </section>
+        <h2 class="group-header" id="grp-qq" data-ctx-content>QQ 聊天</h2>
+        <section class="group" aria-labelledby="grp-qq" data-ctx-content>
+            <div class="row">
+                <span class="row-label" id="lbl-history-limit">聊天历史条数</span>
+                <div class="stepper" id="history-limit" data-min="0" data-step="1" role="group" aria-labelledby="lbl-history-limit">
+                    <button type="button" aria-label="减少聊天历史条数">−</button>
+                    <output aria-live="polite">100</output>
+                    <button type="button" aria-label="增加聊天历史条数">+</button>
+                </div>
+            </div>
+        </section>
+        <p class="status-line error" id="ctx-status" role="alert" data-ctx-content hidden></p>
+        <section class="group read-error" id="ctx-read-error" hidden>
+            <div class="row"><span class="row-label">读取设置失败</span></div>
+        </section>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+
+<div class="notes">
+    <b>原功能 → 新位置（以 modules/qq-v2/ui/app.js 3735–3751、校验 5123–5148 为准）：</b><br>
+    1. 二级页标题「上下文」、返回 → 公共骨架标题栏「‹ 设置」，点击跳转 qq-settings-root.html；右侧无按钮。<br>
+    2. 数字字段「宿主上下文条数」（min=0）→ 卡片内步进器，默认 3，减到 0 为止。<br>
+    3. 文本字段「标签提取」（placeholder「content」）→ 纵向块行单行输入框。<br>
+    4. 文本字段「标签排除」（值用「、」拼接，placeholder「例如：status、table」）→ 纵向块行单行输入框。<br>
+    5. 数字字段「聊天历史条数」（min=0）→ 步进器，默认 100。<br>
+    6. 保存：失焦 / change 即保存，无保存按钮，成功无提示；错误显示在卡片下方红字状态行（role=alert）。<br>
+    7. 校验与源码一致：保存任一字段时，标签提取和标签排除都会重新校验（源码这两项不受 field 限定），所以改条数时若标签排除有非法项，也会报「标签排除包含无效标签：…」。<br>
+    8. 保存成功后标签排除输入框回填规范化值：去掉尖括号（&lt;x&gt; / &lt;/x&gt; / &lt;x/&gt;）、忽略大小写去重、用「、」连接；分隔符与标签名规则照 domain/story-context-tags.js。<br>
+    <b>新增 / 改动的交互：</b><br>
+    · 源码没有区块标题，原型新增分组标题「酒馆上下文」（1–3 项）与「QQ 聊天」（第 4 项）。<br>
+    · 源码两条提示放在输入框 title（悬停才可见），原型改为字段下方可见的灰色说明，并用 aria-describedby 关联。<br>
+    · 条数由数字输入框改为步进器：步进器只产生 ≥0 的整数，「上下文条数必须是 0 或更大的整数」在原型里正常操作不会出现，校验逻辑仍保留。<br>
+    · 标签排除未改成 chip 展示，保持单行文本输入。<br>
+    · 保存失败时界面保留用户输入的值，不回滚（原型行为，未核对源码失败后是否重绘）。<br>
+    <b>原型模拟：</b>「模拟读取失败」整页只显示一行「读取设置失败」；「模拟保存失败」开启后每次保存都显示「保存失败」；「模拟切换聊天（下次保存）」让下一次保存显示「当前聊天已切换，未保存」后自动复位。<br>
+    这只是视觉原型，数据为示例，不连接真实小手机。
+</div>
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+/* 标签规则照抄 modules/qq-v2/domain/story-context-tags.js；校验顺序与文案照抄 app.js 5123–5148 */
+const TAG_NAME = /^[\p{L}_][\p{L}\p{N}_.:-]*$/u;
+const TAG_SEP = /[\s,，、;；]+/u;
+const normalizeTag = (value) => {
+    let text = String(value ?? '').trim();
+    const wrapped = text.match(/^<\s*\/?\s*([^<>\s/]+)\s*\/?\s*>$/u);
+    if (wrapped) text = wrapped[1];
+    return TAG_NAME.test(text) ? text : '';
+};
+const parseTags = (value) => {
+    const tags = [];
+    const invalid = [];
+    const seen = new Set();
+    for (const part of String(value ?? '').trim().split(TAG_SEP).filter(Boolean)) {
+        const tag = normalizeTag(part);
+        if (!tag) { invalid.push(part); continue; }
+        const key = tag.toLocaleLowerCase('zh-CN');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        tags.push(tag);
+    }
+    return { tags, invalid };
+};
+
+/* 示例已保存值（源码默认值） */
+const saved = { hostContextTurns: 3, hostContextExtractTag: '', hostContextExcludeTags: [], conversationHistoryLimit: 100 };
+const $ = (id) => document.getElementById(id);
+const hostTurns = $('host-turns');
+const historyLimit = $('history-limit');
+const extractInput = $('extract-tag');
+const excludeInput = $('exclude-tags');
+const statusEl = $('ctx-status');
+const simRead = $('sim-read-fail');
+const simSave = $('sim-save-fail');
+const simChat = $('sim-chat-switch');
+hostTurns.dataset.field = 'hostContextTurns';
+historyLimit.dataset.field = 'conversationHistoryLimit';
+
+const pressed = (btn) => btn.getAttribute('aria-pressed') === 'true';
+const setPressed = (btn, on) => btn.setAttribute('aria-pressed', String(on));
+const showError = (message) => { statusEl.textContent = message; statusEl.hidden = !message; };
+const readCount = (stepper) => {
+    const text = stepper.querySelector('output').textContent.trim();
+    return /^\d+$/.test(text) ? Number(text) : null;
+};
+
+function save(field) {
+    const values = {};
+    const reject = (message) => { showError(message); return false; };
+    if (!field || field === 'hostContextTurns') {
+        const n = readCount(hostTurns);
+        if (n === null) return reject('上下文条数必须是 0 或更大的整数');
+        values.hostContextTurns = n;
+    }
+    // 与源码一致：标签两项不受 field 限定，每次保存都校验
+    const rawExtract = extractInput.value.trim();
+    const extractTag = normalizeTag(rawExtract);
+    if (rawExtract && !extractTag) return reject('标签提取必须是有效的标签名');
+    const excluded = parseTags(excludeInput.value);
+    if (excluded.invalid.length > 0) return reject(`标签排除包含无效标签：${excluded.invalid.join('、')}`);
+    values.hostContextExtractTag = extractTag;
+    values.hostContextExcludeTags = [...excluded.tags];
+    if (!field || field === 'conversationHistoryLimit') {
+        const n = readCount(historyLimit);
+        if (n === null) return reject('上下文条数必须是 0 或更大的整数');
+        values.conversationHistoryLimit = n;
+    }
+    if (pressed(simChat)) { setPressed(simChat, false); return reject('当前聊天已切换，未保存'); }
+    if (pressed(simSave)) return reject('保存失败');
+    Object.assign(saved, values);
+    showError('');
+    excludeInput.value = saved.hostContextExcludeTags.join('、');
+    return true;
+}
+
+extractInput.value = saved.hostContextExtractTag;
+excludeInput.value = saved.hostContextExcludeTags.join('、');
+extractInput.addEventListener('change', () => save('hostContextExtractTag'));
+excludeInput.addEventListener('change', () => save('hostContextExcludeTags'));
+// 公共脚本的步进器监听先注册，这里拿到的是加减后的值
+document.addEventListener('click', (event) => {
+    const btn = event.target instanceof Element ? event.target.closest('.phone .stepper button') : null;
+    if (btn) save(btn.closest('.stepper').dataset.field);
+});
+$('nav-back').addEventListener('click', () => { location.href = './qq-settings-root.html'; });
+
+simRead.addEventListener('click', () => {
+    const on = !pressed(simRead);
+    setPressed(simRead, on);
+    document.querySelectorAll('[data-ctx-content]').forEach((el) => { el.hidden = on; });
+    if (!on) statusEl.hidden = !statusEl.textContent;
+    $('ctx-read-error').hidden = !on;
+});
+simSave.addEventListener('click', () => setPressed(simSave, !pressed(simSave)));
+simChat.addEventListener('click', () => setPressed(simChat, !pressed(simChat)));
+</script>
+</body>
+</html>
+

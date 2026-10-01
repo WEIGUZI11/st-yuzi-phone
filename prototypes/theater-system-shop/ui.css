@@ -1,0 +1,42 @@
+/* 首页信息卡（称号、点数、晋升进度）、公共按钮与品级色映射。全部扁平色块，无描边、无发光。 */
+.ss-hero { margin-top: 4px; padding: 14px 16px 16px; border-radius: 22px; background: var(--ss-card2); }
+.ss-hero-top { display: flex; justify-content: space-between; align-items: center; }
+.ss-brand { font-size: 10px; font-weight: 800; letter-spacing: .2em; color: var(--ss-accent-ink); }
+.ss-sync { font-size: 11px; color: var(--ss-sub); animation: ss-blink 1s infinite; }
+.ss-head-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 12px; }
+
+.tier-green { --c: var(--t-green); } .tier-blue { --c: var(--t-blue); } .tier-purple { --c: var(--t-purple); }
+.tier-orange { --c: var(--t-orange); } .tier-red { --c: var(--t-red); } .tier-black { --c: var(--t-black); }
+
+.ss-badge { display: inline-flex; align-items: center; gap: 8px; max-width: 220px; padding: 5px 14px 5px 5px; border-radius: 999px; background: var(--ss-card); font-weight: 700; }
+.ss-badge-grade { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--c); color: var(--ss-on-tier); font-size: 12px; }
+.ss-badge-name { overflow: hidden; color: var(--c); font-size: 14px; white-space: nowrap; text-overflow: ellipsis; }
+.ss-badge.tier-black { background: var(--ss-black-bg); }
+.ss-badge.tier-black .ss-badge-grade { background: var(--ss-black-fg); color: var(--ss-black-bg); }
+.ss-badge.tier-black .ss-badge-name { color: var(--ss-black-fg); }
+
+.ss-points { display: flex; align-items: baseline; gap: 3px; color: var(--ss-accent-ink); }
+.ss-points b { font-size: 26px; font-variant-numeric: tabular-nums; }
+.ss-points small { font-size: 12px; color: var(--ss-sub); }
+.ss-points.bump { animation: ss-bump .5s; }
+
+.ss-rank-info { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px; color: var(--ss-sub); }
+.ss-bar { height: 6px; overflow: hidden; border-radius: 3px; background: var(--ss-card); }
+.ss-bar i { display: block; height: 100%; border-radius: 3px; background: var(--c); transition: width .5s; }
+
+.ss-sec { margin-top: 20px; }
+.ss-h-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ss-h { margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: .1em; color: var(--ss-fg); }
+.ss-h-row .ss-h { margin: 0; }
+.ss-h::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 7px 2px 0; border-radius: 50%; background: var(--ss-accent); }
+.ss-hint { font-size: 11px; color: var(--ss-sub); }
+.ss-odds, .ss-shop-hint { margin: 0 0 8px; font-size: 11px; color: var(--ss-sub); }
+.ss-chip { padding: 1px 9px; border-radius: 8px; background: var(--ss-card2); font-size: 11px; }
+
+.ss-btn { padding: 6px 14px; border-radius: 12px; font-size: 13px; font-weight: 700; }
+.ss-btn.sm { padding: 3px 10px; font-size: 11px; }
+.ss-btn.primary { background: var(--ss-accent); color: var(--ss-on-accent); }
+.ss-btn.ghost { background: var(--ss-card2); color: var(--ss-sub); }
+.ss-btn.soft { background: var(--ss-accent-soft); color: var(--ss-accent-ink); }
+.ss-btn.danger { background: var(--t-red); color: var(--ss-on-tier); }
+.ss-btn:disabled, .ss-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }

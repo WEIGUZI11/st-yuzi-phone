@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · QQ · 用户资料 / 编辑资料（iOS 分组列表原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 独立原型，不参与构建。只用 shared 颜色变量；示例头像 / 背景 / 素材色块放在 JS 示例数据里。 */
+.toolbar { flex-wrap: wrap; justify-content: center; max-width: 760px; }
+.toolbar > button[aria-pressed="true"] { color: var(--danger); border-color: currentColor; }
+.view { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+.pf-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+.pf-scroll::-webkit-scrollbar { display: none; }
+/* 资料背景层：无背景时显示默认渐变；有背景时 JS 写入示例图片 */
+.pf-bg { position: relative; height: 200px; flex-shrink: 0; background: linear-gradient(160deg, var(--accent-soft), var(--fill-strong)); }
+.pf-back {
+    position: absolute; left: 12px; top: 8px; width: 34px; height: 34px;
+    border: 0; border-radius: 50%; background: var(--nav); color: var(--text);
+    font-size: 22px; line-height: 1; cursor: pointer;
+}
+.pf-back:focus-visible, .pf-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 资料卡：大头像（可叠头像框）+ 名称 + 状态 + 详情行 */
+.pf-card { position: relative; margin: -36px 16px 16px; padding: 0 16px 4px; border-radius: 16px; background: var(--card); color: var(--text); }
+.pf-hero { display: flex; align-items: flex-end; gap: 14px; padding-bottom: 12px; }
+.pf-avatar { position: relative; flex-shrink: 0; width: 84px; height: 84px; margin-top: -30px; }
+.ava {
+    width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent); font-size: 30px; font-weight: 600;
+    box-shadow: 0 0 0 3px var(--card);
+}
+.ava-frame { position: absolute; inset: -9px; border-radius: 50%; pointer-events: none; }
+.pf-copy { min-width: 0; padding-bottom: 4px; }
+.pf-name { margin: 0; font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
+.pf-status { margin: 2px 0 0; font-size: 13px; color: var(--text-2); }
+.pf-details { border-top: 1px solid var(--sep); }
+.pf-line { display: flex; align-items: center; gap: 8px; min-height: 44px; margin: 0; font-size: 14px; color: var(--text-2); overflow-wrap: anywhere; }
+.pf-line + .pf-line { border-top: 1px solid var(--sep); }
+.pf-line::after { content: "›"; margin-left: auto; font-size: 18px; color: var(--text-3); }
+.pf-line.sig::after { content: "✎"; font-size: 14px; }
+.pf-actions { flex-shrink: 0; display: flex; gap: 8px; padding: 10px 16px 30px; background: var(--page); border-top: 1px solid var(--sep); }
+.pf-btn { flex: 1; min-height: 42px; border: 0; border-radius: 12px; background: var(--fill); color: var(--text); font: inherit; font-size: 15px; cursor: pointer; }
+.pf-btn:active { background: var(--fill-strong); }
+.pf-btn.primary { background: var(--accent); color: var(--card); font-weight: 600; }
+.pf-btn.danger { color: var(--danger); }
+/* 编辑页：缩略图、只读值、当前素材 */
+.thumb { width: 32px; height: 32px; flex-shrink: 0; display: grid; place-items: center; border-radius: 8px; background: var(--fill); font-size: 11px; color: var(--text-3); }
+.thumb.round { border-radius: 50%; }
+.thumb.tall { width: 27px; height: 36px; border-radius: 6px; }
+.ro-value { color: var(--text-2); }
+.pick-icon.is-current i { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--accent); }
+.toolbar > button[data-go][aria-pressed="true"], .toolbar > button[data-friend][aria-pressed="true"] { color: var(--accent); }
+.notes { width: 390px; max-width: 100%; font-size: 13px; line-height: 1.6; color: var(--text); }
+.notes h2 { margin: 12px 0 4px; font-size: 14px; }
+.notes ul { margin: 0; padding-left: 18px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <button type="button" data-go="me">我的资料</button>
+    <button type="button" data-go="meEdit">我的编辑</button>
+    <button type="button" data-go="ct">联系人资料</button>
+    <button type="button" data-go="ctEdit">联系人编辑</button>
+    <span>联系人状态：</span>
+    <button type="button" data-friend="1">好友</button>
+    <button type="button" data-friend="0">已不是好友</button>
+    <button type="button" id="tb-fail" aria-pressed="false">模拟保存失败</button>
+    <button type="button" id="tb-lib" aria-pressed="false">图片资料为空</button>
+</div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <!-- 资料页（我的资料 / 联系人资料共用） -->
+    <section class="view" id="view-profile" aria-label="资料页">
+        <div class="pf-scroll">
+            <div class="pf-bg" id="pf-bg"><button type="button" class="pf-back" id="pf-back" aria-label="返回">‹</button></div>
+            <div class="pf-card">
+                <div class="pf-hero">
+                    <div class="pf-avatar" id="pf-avatar"></div>
+                    <div class="pf-copy">
+                        <h2 class="pf-name" id="pf-name"></h2>
+                        <p class="pf-status" id="pf-status" hidden></p>
+                    </div>
+                </div>
+                <div class="pf-details" id="pf-details" hidden></div>
+            </div>
+        </div>
+        <div class="pf-actions" id="pf-actions"></div>
+    </section>
+    <!-- 编辑页（我的编辑 / 联系人编辑共用），二级页标题「编辑资料」 -->
+    <section class="view" id="view-edit" aria-label="编辑资料" hidden>
+        <header class="nav">
+            <button type="button" class="nav-back" id="ed-back" aria-label="返回资料页">‹ 资料</button>
+            <h1 class="nav-title" style="margin:0">编辑资料</h1>
+        </header>
+        <main class="scroll" id="ed-list"></main>
+    </section>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+<section class="notes" aria-label="原型说明">
+    <h2>原功能 → 新位置</h2>
+    <ul>
+        <li>renderProfileSurface（app.js 1940–1982）→ 资料页：背景层（无背景显示默认渐变）、大头像叠头像框、名称（空显示「未命名」）、状态文字（非空才显示）、「性别 | 生日」摘要与签名行（空不显示）。详情行与源码一致只是装饰，点击无操作。</li>
+        <li>renderProfile（1984–2015）联系人底部操作栏：好友「删除好友 / 编辑资料 / 发消息」；已不是好友「添加好友 / 编辑资料 / 查看消息」，状态文字「已不是好友」。</li>
+        <li>当前用户资料（2108 处调用 renderProfileSurface）：只有「编辑资料」主按钮；名称取用户名，默认「我」。返回按钮 aria-label 按需求写「当前用户资料」（源码 makeProfileTop 为「返回」）。</li>
+        <li>renderProfileEditorSurface（2220–2290）→ 编辑页：头像、头像框、气泡、消息字色、名字（我的只读）、签名、性别、生日、资料背景，顺序不变；maxLength 沿用 PROFILE_FIELD_META（120 / 1000 / 120 / 120）。</li>
+        <li>保存：每个字段 change 单独保存，无保存按钮，成功无提示；失败在列表底部状态行显示「保存失败」（源码 3032 / 3050）。</li>
+    </ul>
+    <h2>新增 / 改动</h2>
+    <ul>
+        <li>分组标题「形象」（1–4）「资料」（5–8）「背景」（9）为新增。</li>
+        <li>上传 / 删除 / 选择图标按钮 → 整行点击 + 操作菜单，右侧显示缩略图或素材名。</li>
+        <li>头像「从本地上传」后新增 1:1 裁剪、资料背景新增 3:4 裁剪（源码无裁剪；建议保留，与外观页换图流程一致）。</li>
+        <li>「删除头像」新增二次确认；「删除资料背景」保持源码的直接删除。</li>
+        <li>头像框 / 气泡：网格选图面板「选择头像框」「选择气泡」，无「无」选项；点选素材即保存并收起，右上「完成」/ 遮罩 / Esc 等同取消；有值时点行先出操作菜单「选择头像框 / 清除头像框」（气泡同理）。</li>
+        <li>消息字色下拉框 → 分段控件「白字 / 黑字」，默认我的白字、联系人黑字。</li>
+        <li>删除好友：源码（4276 附近）为带插图的确认界面，这里改为确认框，文案不变。</li>
+        <li>删除好友成功后源码会切回联系人标签；原型停留在资料页并切到「已不是好友」，便于预览。</li>
+    </ul>
+    <h2>原型模拟</h2>
+    <ul>
+        <li>头像、资料背景、素材均为色块；裁剪确认后轮换一张示例图。</li>
+        <li>「模拟保存失败」：名字 / 签名 / 性别 / 生日、消息字色失败时底部状态行显示「保存失败」（字色分段回到已保存值）；头像、头像框、气泡、资料背景失败 toast「图片保存失败」。</li>
+        <li>「图片资料为空」：选图面板显示「图片资料中还没有可用素材」。</li>
+        <li>返回按钮、发消息 / 查看消息只弹轻提示。</li>
+    </ul>
+</section>
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// 示例数据：头像 / 背景 / 素材用渐变色块模拟图片（颜色只出现在 JS 示例数据里）
+const AVATARS = ['linear-gradient(135deg,#E8B4A0,#C47F6B)', 'linear-gradient(135deg,#A8C3D8,#5E7F99)', 'linear-gradient(135deg,#C9B8DD,#86709F)'];
+const BACKGROUNDS = ['linear-gradient(160deg,#F2D7C4,#B98F7A)', 'linear-gradient(160deg,#BFD4C6,#5B7A6A)', 'linear-gradient(160deg,#3E4A5C,#1F2530)'];
+const FRAMES = [
+    { id: 'f-sakura', label: '樱花', color: '#E7A9B8' },
+    { id: 'f-gold', label: '金边', color: '#C9A45C' },
+    { id: 'f-mint', label: '薄荷', color: '#8CC7AE' },
+    { id: 'f-night', label: '夜空', color: '#4A5A7A' },
+];
+const BUBBLES = [
+    { id: 'b-cream', label: '奶油', color: '#E9D9B8' },
+    { id: 'b-sky', label: '天空', color: '#9CC3E6' },
+    { id: 'b-ink', label: '墨色', color: '#3A3D3B' },
+];
+// 当前用户：名称取用户名（此处为空，显示默认「我」）；联系人：正式名，空显示「未命名」
+const S = {
+    me: { name: '', avatar: AVATARS[0], frame: 'f-gold', bubble: 'b-cream', color: 'white', signature: '今天也要好好吃饭。', gender: '女', birthday: '3 月 14 日', bg: '' },
+    ct: { name: '玉子', avatar: AVATARS[1], frame: '', bubble: '', color: 'black', signature: '', gender: '', birthday: '', bg: BACKGROUNDS[1] },
+};
+let view = 'me';
+let friend = true;
+let fail = false;
+let libEmpty = false;
+const who = () => (view.startsWith('me') ? 'me' : 'ct');
+const nameOf = (k) => (k === 'me' ? S.me.name || '我' : S.ct.name);
+const libItem = (key, id) => (key === 'frame' ? FRAMES : BUBBLES).find((x) => x.id === id);
+const next = (list, cur) => list[(list.indexOf(cur) + 1) % list.length];
+const avaHtml = (k) => {
+    const p = S[k];
+    const fr = libItem('frame', p.frame);
+    const initial = esc((nameOf(k) || '未命名').slice(0, 1));
+    return `<div class="ava"${p.avatar ? ` style="background:${p.avatar}"` : ''}>${p.avatar ? '' : initial}</div>`
+        + (fr ? `<i class="ava-frame" style="box-shadow:0 0 0 4px ${fr.color}" aria-hidden="true"></i>` : '');
+};
+const actBtn = (act, label, cls = '') => `<button type="button" class="pf-btn ${cls}" data-act="${act}">${label}</button>`;
+
+// A. 资料页（renderProfileSurface 1940–1982）：背景层 / 资料卡 / 详情行 / 底部操作栏
+const renderProfile = () => {
+    const k = who();
+    const p = S[k];
+    $('#pf-bg').style.background = p.bg || '';
+    $('#pf-back').setAttribute('aria-label', k === 'me' ? '当前用户资料' : '返回');
+    $('#pf-avatar').innerHTML = avaHtml(k);
+    $('#pf-name').textContent = nameOf(k) || '未命名';
+    const status = k === 'ct' && !friend ? '已不是好友' : '';
+    $('#pf-status').textContent = status;
+    $('#pf-status').hidden = !status;
+    const summary = [p.gender, p.birthday].filter(Boolean).join(' | ');
+    const details = $('#pf-details');
+    details.innerHTML = (summary ? `<p class="pf-line">${esc(summary)}</p>` : '')
+        + (p.signature ? `<p class="pf-line sig">${esc(p.signature)}</p>` : '');
+    details.hidden = !details.innerHTML;
+    $('#pf-actions').innerHTML = k === 'me'
+        ? actBtn('edit', '编辑资料', 'primary')
+        : (friend ? actBtn('remove', '删除好友', 'danger') : actBtn('add', '添加好友', 'primary'))
+            + actBtn('edit', '编辑资料') + actBtn('msg', friend ? '发消息' : '查看消息');
+};
+
+// B. 编辑页（renderProfileEditorSurface 2220–2290）：行顺序与源码一致，分组标题为原型新增
+const chev = '<span class="chev" aria-hidden="true">›</span>';
+const imgRow = (key, label, cls) => {
+    const v = S[who()][key];
+    return `<div class="row tappable" role="button" tabindex="0" data-img="${key}"><span class="row-label">${label}</span><span class="row-value"><span class="thumb ${cls}"${v ? ` style="background:${v}"` : ''}>${v ? '' : '无'}</span>${chev}</span></div>`;
+};
+const libRow = (key, label) => {
+    const item = libItem(key, S[who()][key]);
+    return `<div class="row tappable" role="button" tabindex="0" data-pick="${key}"><span class="row-label">${label}</span><span class="row-value">${item ? `<span class="thumb" style="background:${item.color}"></span>${esc(item.label)}` : '未设置'}${chev}</span></div>`;
+};
+// maxLength 沿用 PROFILE_FIELD_META
+const FIELDS = { name: ['名字', 120], signature: ['签名', 1000], gender: ['性别', 120], birthday: ['生日', 120] };
+const inputRow = (f) => `<label class="row"><span class="row-label">${FIELDS[f][0]}</span><input class="inline" type="text" data-field="${f}" maxlength="${FIELDS[f][1]}" autocomplete="off" value="${esc(S[who()][f])}"></label>`;
+const renderEdit = () => {
+    const k = who();
+    const p = S[k];
+    const segBtn = (v, label) => `<button type="button" data-value="${v}" aria-pressed="${p.color === v}">${label}</button>`;
+    // 名字：我的编辑只读（取「我」），联系人可编辑
+    const nameRow = k === 'me'
+        ? `<div class="row"><span class="row-label">名字</span><span class="ro-value">${esc(nameOf('me'))}</span></div>`
+        : inputRow('name');
+    $('#ed-list').innerHTML = `
+        <h2 class="group-header">形象</h2>
+        <section class="group">${imgRow('avatar', '头像', 'round')}${libRow('frame', '头像框')}${libRow('bubble', '气泡')}
+            <div class="row"><span class="row-label">消息字色</span><div class="seg" data-seg="color" role="group" aria-label="消息字色">${segBtn('white', '白字')}${segBtn('black', '黑字')}</div></div>
+        </section>
+        <h2 class="group-header">资料</h2>
+        <section class="group">${nameRow}${inputRow('signature')}${inputRow('gender')}${inputRow('birthday')}</section>
+        <h2 class="group-header">背景</h2>
+        <section class="group">${imgRow('bg', '资料背景', 'tall')}</section>
+        <p class="status-line error" id="ed-status" role="status" aria-live="polite"></p>`;
+};
+const setStatus = (text) => { const el = $('#ed-status'); if (el) el.textContent = text; };
+// 文字字段 / 消息字色：change 单独保存，成功无提示；失败在底部状态行显示「保存失败」
+const saveField = (apply) => {
+    if (fail) { setStatus('保存失败'); return false; }
+    apply();
+    setStatus('');
+    return true;
+};
+// 图片类（头像 / 头像框 / 气泡 / 资料背景）：失败 toast「图片保存失败」；成功后重绘并把焦点还给对应行
+const saveImage = (apply, focusSel) => {
+    if (fail) { YZ.toast('图片保存失败'); return; }
+    apply();
+    renderEdit();
+    if (focusSel) requestAnimationFrame(() => $(focusSel)?.focus());
+};
+const sync = () => {
+    document.querySelectorAll('.toolbar [data-go]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.go === view)));
+    document.querySelectorAll('.toolbar [data-friend]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.friend === '1') === friend)));
+    $('#tb-fail').setAttribute('aria-pressed', String(fail));
+    $('#tb-lib').setAttribute('aria-pressed', String(libEmpty));
+};
+const show = (v) => {
+    view = v;
+    const edit = v.endsWith('Edit');
+    $('#view-profile').hidden = edit;
+    $('#view-edit').hidden = !edit;
+    if (edit) renderEdit(); else renderProfile();
+    sync();
+};
+
+// 头像框 / 气泡选图面板：网格无「无」选项，点选即保存并收起；右上「完成」即取消
+const openPicker = (key) => {
+    const p = S[who()];
+    const list = libEmpty ? [] : (key === 'frame' ? FRAMES : BUBBLES);
+    const cell = (x) => `<button type="button" class="pick-icon${x.id === p[key] ? ' is-current' : ''}" data-id="${x.id}" aria-pressed="${x.id === p[key]}"><i style="background:${x.color}" aria-hidden="true"></i><span>${esc(x.label)}</span></button>`;
+    YZ.formSheet({
+        title: key === 'frame' ? '选择头像框' : '选择气泡',
+        bodyHtml: list.length
+            ? `<div class="group picker-grid">${list.map(cell).join('')}</div>`
+            : '<div class="group"><p class="empty">图片资料中还没有可用素材</p></div>',
+        onMount: (root) => root.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-id]');
+            if (!btn) return;
+            root.parentElement.querySelector('.sheet-done').click();
+            saveImage(() => { p[key] = btn.dataset.id; }, `[data-pick="${key}"]`);
+        }),
+    });
+};
+const openImage = (key) => {
+    const p = S[who()];
+    const isAvatar = key === 'avatar';
+    const sel = `[data-img="${key}"]`;
+    const upload = () => YZ.crop({
+        title: isAvatar ? '裁剪头像' : '裁剪资料背景',
+        aspect: isAvatar ? '1 / 1' : '3 / 4',
+        onConfirm: () => saveImage(() => { p[key] = next(isAvatar ? AVATARS : BACKGROUNDS, p[key]); }, sel),
+    });
+    const remove = isAvatar
+        ? () => YZ.confirm({ title: '删除头像', message: '删除后显示默认头像。', confirmText: '删除头像', onConfirm: () => saveImage(() => { p.avatar = ''; }, sel) })
+        : () => saveImage(() => { p.bg = ''; }, sel);
+    YZ.actionSheet({
+        title: isAvatar ? '头像' : '资料背景',
+        actions: [
+            { label: '从本地上传', onSelect: upload },
+            p[key] && { label: isAvatar ? '删除头像' : '删除资料背景', danger: true, onSelect: remove },
+        ],
+    });
+};
+const openLib = (key) => {
+    const p = S[who()];
+    const label = key === 'frame' ? '头像框' : '气泡';
+    if (!p[key]) { openPicker(key); return; }
+    YZ.actionSheet({ title: label, actions: [
+        { label: `选择${label}`, onSelect: () => openPicker(key) },
+        { label: `清除${label}`, danger: true, onSelect: () => saveImage(() => { p[key] = ''; }, `[data-pick="${key}"]`) },
+    ] });
+};
+
+$('#ed-list').addEventListener('click', (e) => {
+    const img = e.target.closest('[data-img]');
+    const pick = e.target.closest('[data-pick]');
+    if (img) openImage(img.dataset.img);
+    else if (pick) openLib(pick.dataset.pick);
+});
+$('#ed-list').addEventListener('change', (e) => {
+    const input = e.target.closest('[data-field]');
+    if (input) saveField(() => { S[who()][input.dataset.field] = input.value.trim(); });
+});
+document.addEventListener('yz:seg', (e) => {
+    if (e.detail.name !== 'color') return;
+    const p = S[who()];
+    if (saveField(() => { p.color = e.detail.value; })) return;
+    // 保存失败：分段控件回到已保存的值
+    e.target.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.value === p.color)));
+});
+$('#pf-actions').addEventListener('click', (e) => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'edit') show(who() === 'me' ? 'meEdit' : 'ctEdit');
+    else if (act === 'remove') {
+        YZ.confirm({
+            title: '删除好友',
+            message: '删除后将从联系人中移除，对话记录会保留为只读。',
+            cancelText: '取消',
+            confirmText: '删除好友',
+            onConfirm: () => { friend = false; YZ.toast('原型：已删除好友'); show('ct'); },
+        });
+    } else if (act === 'add') { friend = true; YZ.toast('原型：已添加好友'); show('ct'); }
+    else if (act === 'msg') YZ.toast('原型：打开聊天');
+});
+$('#pf-back').addEventListener('click', () => YZ.toast('原型：返回上一页'));
+$('#ed-back').addEventListener('click', () => show(who() === 'me' ? 'me' : 'ct'));
+document.querySelector('.toolbar').addEventListener('click', (e) => {
+    const go = e.target.closest('[data-go]');
+    const fb = e.target.closest('[data-friend]');
+    if (go) show(go.dataset.go);
+    else if (fb) { friend = fb.dataset.friend === '1'; show(view); }
+    else if (e.target.closest('#tb-fail')) { fail = !fail; sync(); }
+    else if (e.target.closest('#tb-lib')) { libEmpty = !libEmpty; sync(); }
+});
+show('me');
+})();
+</script>
+</body>
+</html>

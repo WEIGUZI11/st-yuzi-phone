@@ -1,6 +1,5 @@
 import { t, getPhoneLanguage } from '../../../i18n/index.js';
 import {
-    buildSettingsHeroHtml,
     buildSettingsPageFrame,
     buildSettingsSectionHtml,
 } from '../primitives.js';
@@ -14,15 +13,207 @@ function formatBytes(bytes) {
     return `${Math.max(0, Math.round(value))}B`;
 }
 
+// 界面外观页：iOS 分组列表结构。原生 select / input 隐藏保留，外观由 settings-controls.js 桥接，
+// 既有服务仍按原 id 监听 change / input。规范见 docs/phone-ui-variables.md「设置分组列表」。
+
+const CHEVRON_HTML = '<span class="phone-ios-row-chevron" aria-hidden="true">›</span>';
+
+function buildSelectRowHtml({ selectId, label, valueText, sheetFooter = '' }) {
+    return `
+        <button type="button" class="phone-ios-row is-tappable" data-settings-select="${escapeHtmlAttr(selectId)}" data-sheet-footer="${escapeHtmlAttr(sheetFooter)}" aria-haspopup="dialog">
+            <span class="phone-ios-row-label">${escapeHtml(label)}</span>
+            <span class="phone-ios-row-value"><span class="phone-ios-row-value-text">${escapeHtml(valueText)}</span>${CHEVRON_HTML}</span>
+        </button>
+    `;
+}
+
+function buildSegRowHtml({ selectId, label, value, options }) {
+    return `
+        <div class="phone-ios-row">
+            <span class="phone-ios-row-label">${escapeHtml(label)}</span>
+            <div class="phone-ios-seg" role="group" aria-label="${escapeHtmlAttr(label)}" data-settings-seg="${escapeHtmlAttr(selectId)}">
+                ${options.map(option => `<button type="button" class="phone-ios-seg-item" data-value="${escapeHtmlAttr(option.value)}" aria-pressed="${option.value === value ? 'true' : 'false'}">${escapeHtml(option.label)}</button>`).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function buildStepperRowHtml({ inputId, label, value, min, max, step = 1, inputStep = '', unit = 'px' }) {
+    const display = `${Math.round(Number(value) * 1000) / 1000}${unit}`;
+    return `
+        <div class="phone-ios-row">
+            <span class="phone-ios-row-label">${escapeHtml(label)}</span>
+            <div class="phone-ios-stepper" data-settings-stepper="${escapeHtmlAttr(inputId)}" data-step="${escapeHtmlAttr(step)}" data-unit="${escapeHtmlAttr(unit)}">
+                <button type="button" class="phone-ios-stepper-btn" data-direction="-1" aria-label="${escapeHtmlAttr(t`减少${label}`)}">−</button>
+                <output class="phone-ios-stepper-value">${escapeHtml(display)}</output>
+                <button type="button" class="phone-ios-stepper-btn" data-direction="1" aria-label="${escapeHtmlAttr(t`增加${label}`)}">+</button>
+            </div>
+            <input type="number" id="${escapeHtmlAttr(inputId)}" min="${escapeHtmlAttr(min)}" max="${escapeHtmlAttr(max)}" ${inputStep ? `step="${escapeHtmlAttr(inputStep)}"` : ''} value="${escapeHtmlAttr(value)}" hidden>
+        </div>
+    `;
+}
+
 function buildFontLibraryOptionsHtml(fontLibrary) {
     const activeFontId = String(fontLibrary?.activeFontId || 'builtin.system-ui');
     const options = Array.isArray(fontLibrary?.options) ? fontLibrary.options : [];
-    return options.map((font) => {
+    const buildOption = (font) => {
         const id = String(font?.id || '').trim();
         if (!id) return '';
-        const label = `${font?.builtin ? t("内置") : t("用户")} · ${String(font?.name || id)}`;
-        return `<option value="${escapeHtmlAttr(id)}" ${id === activeFontId ? 'selected' : ''}>${escapeHtmlAttr(label)}</option>`;
-    }).join('');
+        const name = String(font?.name || id);
+        const short = `${font?.builtin ? t("内置") : t("用户")} · ${name}`;
+        return `<option value="${escapeHtmlAttr(id)}" data-short="${escapeHtmlAttr(short)}" ${id === activeFontId ? 'selected' : ''}>${escapeHtml(name)}</option>`;
+    };
+    const builtinHtml = options.filter(font => font?.builtin).map(buildOption).join('');
+    const userHtml = options.filter(font => !font?.builtin).map(buildOption).join('');
+    return `
+        ${builtinHtml ? `<optgroup label="${escapeHtmlAttr(t("内置"))}">${builtinHtml}</optgroup>` : ''}
+        ${userHtml ? `<optgroup label="${escapeHtmlAttr(t("我导入的"))}">${userHtml}</optgroup>` : ''}
+    `;
+}
+
+function buildThemeSectionHtml({ phoneThemeMode, homeAppLabelColorMode }) {
+    const language = getPhoneLanguage();
+    return `
+        <h2 class="phone-ios-group-header">${t("主题与背景")}</h2>
+        <section class="phone-ios-group">
+            ${buildSegRowHtml({ selectId: 'phone-theme-mode-select', label: t`主题模式`, value: phoneThemeMode, options: [{ value: 'light', label: t`白天` }, { value: 'dark', label: t`夜间` }] })}
+            ${buildSegRowHtml({ selectId: 'phone-home-app-label-color-mode', label: t`首页名称颜色`, value: homeAppLabelColorMode, options: [{ value: 'white', label: t`白色` }, { value: 'black', label: t`黑色` }] })}
+            ${buildSelectRowHtml({ selectId: 'phone-language-select', label: '语言 / Language', valueText: language === 'en' ? 'English' : '简体中文' })}
+            <select id="phone-theme-mode-select" class="phone-settings-select" hidden>
+                <option value="light" ${phoneThemeMode === 'light' ? 'selected' : ''}>${t`白天`}</option>
+                <option value="dark" ${phoneThemeMode === 'dark' ? 'selected' : ''}>${t`夜间`}</option>
+            </select>
+            <select id="phone-home-app-label-color-mode" class="phone-settings-select" hidden>
+                <option value="white" ${homeAppLabelColorMode === 'white' ? 'selected' : ''}>${t`白色`}</option>
+                <option value="black" ${homeAppLabelColorMode === 'black' ? 'selected' : ''}>${t`黑色`}</option>
+            </select>
+            <select id="phone-language-select" class="phone-settings-select" hidden>
+                <option value="zh-CN" data-sub="Simplified Chinese" ${language === 'zh-CN' ? 'selected' : ''}>简体中文</option>
+                <option value="en" data-sub="英语" ${language === 'en' ? 'selected' : ''}>English</option>
+            </select>
+        </section>
+        <section class="phone-ios-group">
+            <button type="button" class="phone-ios-row is-action" id="phone-upload-bg">${t`上传背景图`}</button>
+            <button type="button" class="phone-ios-row is-action is-danger" id="phone-clear-bg" aria-haspopup="dialog">${t`清除背景`}</button>
+        </section>
+        <p class="phone-ios-group-footer">${t("上传的图片会作为首页壁纸显示。")}</p>
+    `;
+}
+
+function buildPackSectionHtml() {
+    return `
+        <h2 class="phone-ios-group-header">${t("外观资源包")}</h2>
+        <div id="phone-appearance-pack-repository" class="phone-appearance-pack-repository">
+            <div id="phone-appearance-pack-repository-list" class="phone-appearance-pack-repository-list" aria-live="polite"></div>
+        </div>
+        <section class="phone-ios-group">
+            <button type="button" class="phone-ios-row is-action" id="phone-import-appearance-pack">${t`导入到仓库`}</button>
+            <button type="button" class="phone-ios-row is-action" id="phone-export-appearance-pack">${t`导出当前外观`}</button>
+            <input type="file" id="phone-appearance-pack-file" accept="application/json,.json" hidden>
+        </section>
+        <p class="phone-ios-group-footer">${t("导入官方美化包。")}${t("导出只打包当前背景与自定义图标。")}</p>
+    `;
+}
+function buildFontSectionHtml(fontLibrary) {
+    const activeFont = fontLibrary?.activeFont || {};
+    const userFontCount = Number(fontLibrary?.stats?.userFontCount) || 0;
+    const maxFonts = Number(fontLibrary?.limits?.maxFonts) || 0;
+    const totalFontBytes = Number(fontLibrary?.stats?.totalBytes) || 0;
+    const maxTotalFontBytes = Number(fontLibrary?.limits?.totalFontBytes) || 0;
+    const singleFontBytes = Number(fontLibrary?.limits?.singleFontBytes) || 0;
+    const canDeleteActiveFont = !!activeFont?.id && !activeFont?.builtin;
+    const activeShort = `${activeFont?.builtin === false ? t("用户") : t("内置")} · ${String(activeFont?.name || t("系统默认"))}`;
+    const quotaText = t`${escapeHtml(String(userFontCount))}/${escapeHtml(String(maxFonts))} 个 · ${escapeHtml(formatBytes(totalFontBytes))}/${escapeHtml(formatBytes(maxTotalFontBytes))} · 单文件 ≤${escapeHtml(formatBytes(singleFontBytes))}`;
+    return `
+        <h2 class="phone-ios-group-header">${t("字体库")}</h2>
+        <section class="phone-ios-group">
+            <div class="phone-ios-font-preview" id="phone-font-preview" style="font-family: var(--yuzi-phone-font-family);">
+                <span class="phone-ios-font-preview-title">${escapeHtml(activeFont.name || t("系统默认"))}</span>
+                <span class="phone-ios-font-preview-sample">${escapeHtml(activeFont.previewText || t("玉子手机 · 字体预览 Aa 123"))}</span>
+            </div>
+            ${buildSelectRowHtml({ selectId: 'phone-font-select', label: t`当前字体`, valueText: activeShort })}
+            <select id="phone-font-select" class="phone-settings-select" hidden>
+                ${buildFontLibraryOptionsHtml(fontLibrary)}
+            </select>
+            <button type="button" class="phone-ios-row is-action" id="phone-import-font-btn">${t`导入本地字体`}</button>
+            <button type="button" class="phone-ios-row is-action is-danger" id="phone-delete-font-btn" aria-haspopup="dialog" ${canDeleteActiveFont ? '' : 'disabled'}>${t`删除当前字体`}</button>
+            <input type="file" id="phone-font-file" accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf,application/x-font-ttf,application/x-font-otf" hidden>
+        </section>
+        <p class="phone-ios-group-footer">${quotaText}${t("内置字体不可删除。")}</p>
+        <section class="phone-ios-group">
+            <details class="phone-ios-details">
+                <summary class="phone-ios-row is-tappable">
+                    <span class="phone-ios-row-label">${t`添加网络字体`}</span>
+                    <span class="phone-ios-row-value">${CHEVRON_HTML}</span>
+                </summary>
+                <label class="phone-ios-row">
+                    <span class="phone-ios-row-field-label">${t`显示名称`}</span>
+                    <input type="text" id="phone-font-url-name" class="phone-ios-inline-input" placeholder="${t`例如：寒蝉全圆体`}">
+                </label>
+                <label class="phone-ios-row">
+                    <span class="phone-ios-row-field-label">${t`字体 CSS URL`}</span>
+                    <input type="url" id="phone-font-css-url" class="phone-ios-inline-input" placeholder="https://fontsapi.zeoseven.com/3/main/result.css" inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off">
+                </label>
+                <label class="phone-ios-row">
+                    <span class="phone-ios-row-field-label">${t`字体族名`}</span>
+                    <input type="text" id="phone-font-url-family" class="phone-ios-inline-input" placeholder="${t`例如：寒蝉全圆体`}">
+                </label>
+                <button type="button" class="phone-ios-row is-action" id="phone-import-font-url-btn">${t`保存网络字体`}</button>
+            </details>
+        </section>
+        <p class="phone-ios-group-footer">${t`仅支持 HTTPS 字体 CSS 地址，需联网加载。`}</p>
+    `;
+}
+
+function buildTextScaleSectionHtml(readableTextScalePercent) {
+    const value = Math.max(80, Math.min(160, Math.round(Number(readableTextScalePercent) || 100)));
+    return `
+        <h2 class="phone-ios-group-header">${t("主要内容字体大小")}</h2>
+        <section class="phone-ios-group">
+            <div class="phone-ios-row">
+                <div class="phone-ios-slider-row">
+                    <span class="phone-ios-slider-glyph" aria-hidden="true">A</span>
+                    <input type="range" min="80" max="160" step="1" id="phone-readable-text-scale-range" value="${escapeHtmlAttr(value)}" aria-label="${t`主要内容字体大小`}">
+                    <span class="phone-ios-slider-glyph is-large" aria-hidden="true">A</span>
+                    <span class="phone-ios-stepper-value" id="phone-readable-text-scale-value">${escapeHtml(String(value))}%</span>
+                </div>
+            </div>
+        </section>
+        <p class="phone-ios-group-footer">${t("调整首页名称与通用表格文字，不影响按钮和标题栏。")}</p>
+    `;
+}
+
+function buildLayoutSectionHtml(layoutValues) {
+    return `
+        <h2 class="phone-ios-group-header">${t("图标布局")}</h2>
+        <section class="phone-ios-group">
+            ${buildStepperRowHtml({ inputId: 'phone-app-grid-columns', label: t`每行图标`, value: layoutValues.appGridColumns, min: 3, max: 6, unit: '' })}
+            ${buildStepperRowHtml({ inputId: 'phone-app-icon-size', label: t`图标大小`, value: layoutValues.appIconSize, min: 40, max: 88, step: 2 })}
+            ${buildStepperRowHtml({ inputId: 'phone-app-icon-radius', label: t`圆角`, value: layoutValues.appIconRadius, min: 6, max: 26 })}
+            ${buildStepperRowHtml({ inputId: 'phone-app-grid-gap', label: t`图标间距`, value: layoutValues.appGridGap, min: 8, max: 24, inputStep: '0.001' })}
+            ${buildStepperRowHtml({ inputId: 'phone-dock-icon-size', label: t`Dock 图标大小`, value: layoutValues.dockIconSize, min: 32, max: 72, step: 2 })}
+        </section>
+    `;
+}
+
+function buildDisplaySectionHtml(hideTableCountBadge) {
+    return `
+        <h2 class="phone-ios-group-header">${t("显示控制")}</h2>
+        <section class="phone-ios-group">
+            <label class="phone-ios-row" for="phone-hide-table-count-badge">
+                <span class="phone-ios-row-label">${t`隐藏数量徽标`}</span>
+                <span class="phone-ios-switch">
+                    <input type="checkbox" id="phone-hide-table-count-badge" role="switch" ${hideTableCountBadge ? 'checked' : ''}>
+                    <span class="phone-ios-switch-track" aria-hidden="true"></span>
+                </span>
+            </label>
+        </section>
+        <h2 class="phone-ios-group-header">${t("在首页显示的表格 App")}</h2>
+        <section class="phone-ios-group" id="phone-hidden-table-apps"></section>
+        <p class="phone-ios-group-footer">${t("关闭后该 App 不在首页显示，数据不受影响。")}</p>
+        <h2 class="phone-ios-group-header">${t("自定义图标")}</h2>
+        <div id="phone-icon-upload-list" class="phone-icon-upload-list"></div>
+    `;
 }
 
 export function buildAppearancePageHtml({
@@ -33,211 +224,23 @@ export function buildAppearancePageHtml({
     fontLibrary = {},
     readableTextScalePercent = 100,
 }) {
-    const activeFont = fontLibrary?.activeFont || {};
-    const userFontCount = Number(fontLibrary?.stats?.userFontCount) || 0;
-    const maxFonts = Number(fontLibrary?.limits?.maxFonts) || 0;
-    const totalFontBytes = Number(fontLibrary?.stats?.totalBytes) || 0;
-    const maxTotalFontBytes = Number(fontLibrary?.limits?.totalFontBytes) || 0;
-    const singleFontBytes = Number(fontLibrary?.limits?.singleFontBytes) || 0;
-    const fontOptionsHtml = buildFontLibraryOptionsHtml(fontLibrary);
-    const canDeleteActiveFont = !!activeFont?.id && !activeFont?.builtin;
-    const readableTextScaleValue = Math.max(80, Math.min(160, Math.round(Number(readableTextScalePercent) || 100)));
-
-    const heroHtml = buildSettingsHeroHtml({
-        eyebrow: t("界面外观"),
-        title: t("桌面视觉与布局"),
-        description: t("统一管理背景、图标密度、显示细节与自定义图标资源。"),
-        chips: [
-            { text: t`${layoutValues.appGridColumns} 列网格`, tone: 'info' },
-            { text: t`图标 ${layoutValues.appIconSize}px`, tone: 'soft' },
-            { text: hideTableCountBadge ? t("数量徽标已隐藏") : t("数量徽标显示中"), tone: 'neutral' },
-        ],
-    });
-
     const bodyHtml = `
-        ${buildSettingsSectionHtml({
-            title: t("主题与背景"),
-            desc: t("上传背景图。"),
-            actionsHtml: `
-                <div class="phone-settings-action">
-                    <button type="button" class="phone-settings-btn" id="phone-upload-bg">
-                        ${PHONE_ICONS.upload}
-                        <span>${t('上传')}</span>
-                    </button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-danger" id="phone-clear-bg">${t`清除`}</button>
-                </div>
-            `,
-            bodyHtml: `
-                <div class="phone-settings-layout-grid">
-                    <label class="phone-settings-field-inline" for="phone-language-select">
-                        <span>语言 / Language</span>
-                        <select id="phone-language-select" class="phone-settings-select">
-                            <option value="zh-CN" ${getPhoneLanguage() === 'zh-CN' ? 'selected' : ''}>简体中文</option>
-                            <option value="en" ${getPhoneLanguage() === 'en' ? 'selected' : ''}>English</option>
-                        </select>
-                    </label>
-                    <label class="phone-settings-field-inline" for="phone-theme-mode-select">
-                        <span>${t`主题模式`}</span>
-                        <select id="phone-theme-mode-select" class="phone-settings-select">
-                            <option value="light" ${phoneThemeMode === 'light' ? 'selected' : ''}>${t`白天`}</option>
-                            <option value="dark" ${phoneThemeMode === 'dark' ? 'selected' : ''}>${t`夜间`}</option>
-                        </select>
-                    </label>
-                    <label class="phone-settings-field-inline" for="phone-home-app-label-color-mode">
-                        <span>${t`首页名称颜色`}</span>
-                        <select id="phone-home-app-label-color-mode" class="phone-settings-select">
-                            <option value="white" ${homeAppLabelColorMode === 'white' ? 'selected' : ''}>${t`白色`}</option>
-                            <option value="black" ${homeAppLabelColorMode === 'black' ? 'selected' : ''}>${t`黑色`}</option>
-                        </select>
-                    </label>
-                </div>
-            `,
-        })}
-
-        ${buildSettingsSectionHtml({
-            title: t("外观资源包"),
-            desc: t("导入官方美化包。"),
-            actionsHtml: `
-                <div class="phone-settings-action phone-settings-action-wrap">
-                    <button type="button" class="phone-settings-btn" id="phone-import-appearance-pack">
-                        ${PHONE_ICONS.upload}
-                        <span>${t`导入到仓库`}</span>
-                    </button>
-                    <button type="button" class="phone-settings-btn" id="phone-export-appearance-pack">${t`导出当前外观`}</button>
-                    <input type="file" id="phone-appearance-pack-file" accept="application/json,.json" hidden>
-                </div>
-            `,
-            bodyHtml: `
-                <div id="phone-appearance-pack-repository" class="phone-appearance-pack-repository">
-                    <div id="phone-appearance-pack-repository-list" class="phone-appearance-pack-repository-list" aria-live="polite"></div>
-                </div>
-            `,
-        })}
-
-        ${buildSettingsSectionHtml({
-            title: t("字体库"),
-            desc: t("选择或导入字体。"),
-            actionsHtml: `
-                <div class="phone-settings-action phone-settings-action-wrap">
-                    <button type="button" class="phone-settings-btn" id="phone-import-font-btn">
-                        ${PHONE_ICONS.upload}
-                        <span>${t`导入字体`}</span>
-                    </button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-danger" id="phone-delete-font-btn" ${canDeleteActiveFont ? '' : 'disabled'}>${t`删除当前字体`}</button>
-                    <input type="file" id="phone-font-file" accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf,application/x-font-ttf,application/x-font-otf" hidden>
-                </div>
-            `,
-            bodyHtml: `
-                <div class="phone-settings-font-panel">
-                    <label class="phone-settings-field-inline phone-settings-field-full">
-                        <span>${t`当前字体`}</span>
-                        <select id="phone-font-select" class="phone-settings-select">
-                            ${fontOptionsHtml}
-                        </select>
-                    </label>
-                    <div class="phone-settings-font-preview" id="phone-font-preview" style="font-family: var(--yuzi-phone-font-family);">
-                        <span class="phone-settings-font-preview-title">${escapeHtml(activeFont.name || t("系统默认"))}</span>
-                        <span class="phone-settings-font-preview-sample">${escapeHtml(activeFont.previewText || t("玉子手机 · 字体预览 Aa 123"))}</span>
-                    </div>
-                    <div class="phone-settings-font-panel">
-                        <label class="phone-settings-field-inline phone-settings-field-full">
-                            <span>${t`显示名称`}</span>
-                            <input type="text" id="phone-font-url-name" class="phone-settings-input" placeholder="${t`例如：寒蝉全圆体`}">
-                        </label>
-                        <label class="phone-settings-field-inline phone-settings-field-full">
-                            <span>${t`字体 CSS URL`}</span>
-                            <input type="url" id="phone-font-css-url" class="phone-settings-input" placeholder="https://fontsapi.zeoseven.com/3/main/result.css" inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off">
-                        </label>
-                        <label class="phone-settings-field-inline phone-settings-field-full">
-                            <span>${t`字体族名`}</span>
-                            <input type="text" id="phone-font-url-family" class="phone-settings-input" placeholder="${t`例如：寒蝉全圆体`}">
-                        </label>
-                        <div class="phone-settings-action phone-settings-action-wrap">
-                            <button type="button" class="phone-settings-btn" id="phone-import-font-url-btn">
-                                <span>${t`保存网络字体`}</span>
-                            </button>
-                        </div>
-                        <div class="phone-settings-note">${t`仅支持 HTTPS 字体 CSS 地址，需联网加载。`}</div>
-                    </div>
-                    <div class="phone-settings-note">${t`${escapeHtml(String(userFontCount))}/${escapeHtml(String(maxFonts))} 个 · ${escapeHtml(formatBytes(totalFontBytes))}/${escapeHtml(formatBytes(maxTotalFontBytes))} · 单文件 ≤${escapeHtml(formatBytes(singleFontBytes))}`}</div>
-                </div>
-            `,
-        })}
-
-        ${buildSettingsSectionHtml({
-            title: t("主要内容字体大小"),
-            desc: t("调整首页名称与通用表格文字，不影响按钮和标题栏。"),
-            bodyHtml: `
-                <div class="phone-settings-readable-text-scale-panel">
-                    <div class="phone-settings-readable-text-scale-row">
-                        <input type="range" min="80" max="160" step="1" id="phone-readable-text-scale-range" value="${escapeHtmlAttr(readableTextScaleValue)}" aria-label="${t`主要内容字体大小`}">
-                        <input type="number" min="80" max="160" step="1" id="phone-readable-text-scale-input" class="phone-settings-input" value="${escapeHtmlAttr(readableTextScaleValue)}" aria-label="${t`主要内容字体大小百分比`}">
-                        <span class="phone-settings-readable-text-scale-value" id="phone-readable-text-scale-value">${escapeHtml(String(readableTextScaleValue))}%</span>
-                    </div>
-                </div>
-            `,
-        })}
-
-        ${buildSettingsSectionHtml({
-            title: t("图标布局"),
-            bodyHtml: `
-                <div class="phone-settings-layout-grid">
-                    <label class="phone-settings-field-inline">
-                        <span>${t`每行图标`}</span>
-                        <input type="number" min="3" max="6" id="phone-app-grid-columns" class="phone-settings-input" value="${escapeHtmlAttr(layoutValues.appGridColumns)}">
-                    </label>
-                    <label class="phone-settings-field-inline">
-                        <span>${t`图标大小`}</span>
-                        <input type="number" min="40" max="88" id="phone-app-icon-size" class="phone-settings-input" value="${escapeHtmlAttr(layoutValues.appIconSize)}">
-                    </label>
-                    <label class="phone-settings-field-inline">
-                        <span>${t`圆角`}</span>
-                        <input type="number" min="6" max="26" id="phone-app-icon-radius" class="phone-settings-input" value="${escapeHtmlAttr(layoutValues.appIconRadius)}">
-                    </label>
-                    <label class="phone-settings-field-inline">
-                        <span>${t`图标间距`}</span>
-                        <input type="number" min="8" max="24" step="0.001" id="phone-app-grid-gap" class="phone-settings-input" value="${escapeHtmlAttr(layoutValues.appGridGap)}">
-                    </label>
-                    <label class="phone-settings-field-inline">
-                        <span>${t`Dock 图标大小`}</span>
-                        <input type="number" min="32" max="72" id="phone-dock-icon-size" class="phone-settings-input" value="${escapeHtmlAttr(layoutValues.dockIconSize)}">
-                    </label>
-                </div>
-            `,
-        })}
-
-        ${buildSettingsSectionHtml({
-            title: t("显示控制"),
-            bodyHtml: `
-                <div class="phone-appearance-switch-list">
-                    <label class="phone-appearance-switch-item" for="phone-hide-table-count-badge">
-                        <span class="phone-appearance-switch-main">${t`隐藏数量徽标`}</span>
-                        <input type="checkbox" id="phone-hide-table-count-badge" class="phone-settings-switch" ${hideTableCountBadge ? 'checked' : ''}>
-                    </label>
-                </div>
-            `,
-        })}
-
-        ${buildSettingsSectionHtml({
-            title: t("隐藏表格类 App"),
-            desc: t("勾选后在首页隐藏。"),
-            bodyHtml: `<div id="phone-hidden-table-apps" class="phone-appearance-checklist"></div>`,
-        })}
-
-        ${buildSettingsSectionHtml({
-            title: t("自定义图标"),
-            desc: t("上传或清除应用图标。"),
-            bodyHtml: `<div id="phone-icon-upload-list" class="phone-icon-upload-list"></div>`,
-        })}
+        ${buildThemeSectionHtml({ phoneThemeMode, homeAppLabelColorMode })}
+        ${buildPackSectionHtml()}
+        ${buildFontSectionHtml(fontLibrary)}
+        ${buildTextScaleSectionHtml(readableTextScalePercent)}
+        ${buildLayoutSectionHtml(layoutValues)}
+        ${buildDisplaySectionHtml(hideTableCountBadge)}
     `;
 
     return buildSettingsPageFrame({
         title: t("界面外观"),
-        heroHtml,
-        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open',
+        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-ios-grouped-page',
         bodyHtml,
     });
 }
+
+
 
 function buildToggleCoverPreviewHtml(shape, coverDataUrl, sizePx = 40) {
     const safeShape = String(shape || 'circle') === 'rounded' ? 'rounded' : 'circle';

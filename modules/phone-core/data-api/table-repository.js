@@ -760,7 +760,10 @@ export async function updateTableCell(tableName, rowIndex, colIdentifier, value,
 
 export async function updateTableRow(tableName, rowIndex, data, options = {}) {
     return enqueueTableMutation('updateTableRow', async () => {
-        void options;
+        // Check at execution time: a queued edit may have been closed or its chat retired.
+        if (typeof options.isCurrent === 'function' && !options.isCurrent()) {
+            return { ok: false, code: 'cancelled', persisted: false, refreshed: false };
+        }
         const api = getDB();
         const safeTableName = normalizeTableName(tableName);
         const payload = normalizePayload(data);

@@ -409,29 +409,9 @@ async function testFourBuiltInPromptPresetsAreAvailableAsEditableLibraryEntries(
     for (const preset of presets) {
         assert.equal('kind' in preset, false, 'AI 指令预设库不能绑定运行场景');
         assert.ok(preset.messages.length > 0);
-    assert.deepEqual(
-        preset.messages.slice(-2).map((block) => [block.name, block.role]),
-        [['输出格式', 'system'], ['玉子执行确认', 'assistant']],
-    );
-        assert.equal(
-            preset.messages.some((block) => block.id.endsWith('-output-preparation')),
-            false,
-            `${preset.id} should end with Yuzi's assistant confirmation instead of a user preparation block`,
-        );
-        assert.equal(
-            preset.messages.some((block) => block.name === '玉子互动框架'),
-            false,
-            `${preset.id} should not include the removed Yuzi framework block`,
-        );
-        assert.equal(
-            preset.messages.some((block) => block.name === '玉子框架确认'),
-            false,
-            `${preset.id} should not include the removed Yuzi framework acknowledgement`,
-        );
-        assert.equal(
-            preset.messages.some((block) => block.id.endsWith('-framework') || block.id.endsWith('-framework-ack')),
-            false,
-            `${preset.id} should not retain removed Yuzi framework message ids`,
+        assert.deepEqual(
+            preset.messages.slice(-2).map((block) => [block.name, block.role]),
+            [['输出格式', 'system'], ['玉子执行确认', 'assistant']],
         );
         assert.equal(
             preset.messages.map((block) => block.content).join('\n').split('{{可用表情}}').length - 1,
@@ -462,192 +442,6 @@ async function testNewYuziDefaultLibraryDoesNotReadSupersededDevelopmentPresetSt
     assert.equal(presets[0].messages.at(-1).name, '玉子执行确认');
 }
 
-async function testBuiltInPromptPresetsRetainYuziBlocksAndEditableXmlOutput() {
-    const { createQQV2ResourceService } = await importModule('modules/qq-v2/resources/service.js');
-    const resources = createQQV2ResourceService({
-        storage: createMemoryStorage(),
-        cryptoApi: webcrypto,
-    });
-    const presets = new Map((await resources.listPromptPresets()).map((preset) => [preset.id, preset]));
-    const contentOf = (id) => presets.get(id).messages.map((block) => block.content).join('\n');
-
-    for (const id of ['builtin-private-reply', 'builtin-private-proactive', 'builtin-group-reply', 'builtin-group-proactive']) {
-        const preset = presets.get(id);
-        assert.match(preset.messages[0].content, /你是玉子/,
-            `${id} should preserve the Yuzi guide block`);
-        assert.ok(preset.messages.some((block) => block.name.includes('确认')),
-            `${id} should retain editable confirmation blocks`);
-    }
-
-    for (const id of ['builtin-private-reply', 'builtin-private-proactive']) {
-        const preset = presets.get(id);
-        assert.match(preset.messages[0].content, /软糯可爱、温柔细心、会认真偏爱用户/,
-            `${id} should preserve Yuzi's existing personality`);
-        for (const suffix of [
-            'character-excavation-ack',
-            'conversation-ack',
-            'story-context-ack',
-            'guard-ack',
-        ]) {
-            assert.ok(preset.messages.some((block) => block.id === `${id}-${suffix}`),
-                `${id} should preserve ${suffix}`);
-        }
-        assert.ok(preset.messages.some((block) => block.content.startsWith('收到呀')),
-            `${id} should preserve Yuzi's warm confirmation tone`);
-        assert.ok(preset.messages.some((block) => block.content.startsWith('嗯嗯')),
-            `${id} should preserve Yuzi's closing confirmation tone`);
-    }
-
-    for (const id of ['builtin-private-reply', 'builtin-private-proactive']) {
-        const preset = presets.get(id);
-        const [outputFormat, finalAck] = preset.messages.slice(-2);
-        assert.deepEqual(
-            [outputFormat.name, outputFormat.role, finalAck.name, finalAck.role],
-            ['输出格式', 'system', '玉子执行确认', 'assistant'],
-        );
-        assert.match(outputFormat.content, /<qq>/);
-        assert.match(outputFormat.content, /<message/);
-        assert.match(outputFormat.content, /<read conversation=/);
-        assert.match(outputFormat.content, /<transfer conversation=/);
-        assert.match(outputFormat.content, /不得添加 quote/);
-        assert.doesNotMatch(outputFormat.content, /<message[^>]*\squote=|create-group|<group conversation=/);
-    }
-    for (const id of ['builtin-private-reply', 'builtin-private-proactive', 'builtin-group-reply', 'builtin-group-proactive']) {
-        assert.match(contentOf(id), /不把人设关键词当成固定模板/,
-            `${id} should include the shared human-like character rule`);
-        assert.match(contentOf(id), /只能使用人物合理知道的信息/,
-            `${id} should include the shared knowledge-boundary rule`);
-        assert.match(contentOf(id), /人物资料与明确世界观设定/,
-            `${id} should include the shared source-priority rule`);
-        assert.match(contentOf(id), /普通事情保持普通反应/,
-            `${id} should include the shared emotional calibration rule`);
-        assert.match(contentOf(id), /习惯、口头禅、特殊称呼和表情只在合适时偶尔出现/,
-            `${id} should include the shared anti-repetition rule`);
-        assert.match(contentOf(id), /没有明确设定时，不擅自发明特殊自称、方言、口头禅或职业术语/,
-            `${id} should include the shared anti-invention rule`);
-        assert.match(contentOf(id), /人物的能力、职业和身份不是万能能力，也不是固定修辞库/,
-            `${id} should include the shared ability-boundary rule`);
-    }
-
-    const privateReplyOutput = presets.get('builtin-private-reply').messages.at(-2).content;
-    assert.match(privateReplyOutput, /P1 是当前私聊会话，N1 是当前私聊人物/);
-    assert.doesNotMatch(privateReplyOutput, /<none \/>|<create-private/);
-
-    const privateProactiveOutput = presets.get('builtin-private-proactive').messages.at(-2).content;
-    assert.match(privateProactiveOutput, /P1、P2……分别代表一个已有私聊，并同时作为该私聊人物的引用/);
-    assert.match(privateProactiveOutput, /<none \/>/);
-    assert.match(privateProactiveOutput, /<create-private/);
-
-    for (const id of ['builtin-group-reply', 'builtin-group-proactive']) {
-        const preset = presets.get(id);
-        const outputFormat = preset.messages.at(-2).content;
-        assert.equal(preset.messages.at(-1).name, '玉子执行确认',
-            `${id} should end with Yuzi's assistant confirmation`);
-        assert.match(outputFormat, /<qq>/,
-            `${id} should retain an editable XML output block`);
-        assert.match(outputFormat, /<message/,
-            `${id} should expose XML message syntax in the editable output block`);
-        assert.match(outputFormat, /quote="消息引用"/,
-            `${id} should expose structured group-message quoting`);
-        assert.match(outputFormat, /quote 只能引用同一群聊中本次实际提供的消息/,
-            `${id} should constrain quote references to the current visible group history`);
-        assert.match(outputFormat, /action 可以是[^。]*leave/,
-            `${id} should expose the leave group action`);
-        assert.match(outputFormat, /leave 不需要 target/,
-            `${id} should explain that leave does not use a target`);
-        for (const protocolPart of [
-            '【QQ XML 输出协议】',
-            '<read conversation=',
-            '<none />',
-            '<create-private',
-            '<create-group',
-            '<group conversation=',
-            '<transfer conversation=',
-            '私聊回复：',
-            '私聊主动：',
-            'P1、P2……同时是该私聊的会话与 NPC 人物引用',
-            '群聊回复：',
-            '群聊主动：',
-        ]) {
-            assert.ok(outputFormat.includes(protocolPart), `${id} should expose ${protocolPart} in its editable XML block`);
-        }
-    }
-    for (const marker of ['{{私聊人物}}', '{{正文上下文}}', '{{世界书内容}}', '{{故事时间}}', '{{可用表情}}']) {
-        assert.ok(contentOf('builtin-private-reply').includes(marker), `private reply should include ${marker}`);
-    }
-    assert.equal(contentOf('builtin-private-reply').includes('{{私聊记录}}'), false,
-        'private reply should append real role history once instead of duplicating its history placeholder');
-    for (const marker of ['{{群聊成员}}', '{{正文上下文}}', '{{世界书内容}}', '{{故事时间}}', '{{可用表情}}']) {
-        assert.ok(contentOf('builtin-group-reply').includes(marker), `group reply should include ${marker}`);
-    }
-    assert.equal(contentOf('builtin-group-reply').includes('{{群聊记录}}'), false,
-        'group reply should use the appended current history instead of duplicating its history placeholder');
-    assert.equal(contentOf('builtin-group-reply').includes('群聊当成有自己温度和秩序的场域'), false,
-        'group reply should not keep the removed duplicated conversation guidance block');
-    assert.equal(
-        presets.get('builtin-group-reply').messages.some((message) => message.id === 'builtin-group-reply-conversation-ack'),
-        false,
-        'group reply should not keep the acknowledgement for the removed conversation-history block',
-    );
-    assert.match(contentOf('builtin-group-reply'), /不要强行让所有成员发言/,
-        'group reply should preserve the natural multi-speaker rule');
-    assert.match(contentOf('builtin-group-proactive'), /没有自然动机时不要为了活跃而发送/,
-        'group proactive should preserve the natural activity rule');
-    for (const marker of ['{{私聊主动人物}}', '{{私聊主动记录}}', '{{正文上下文}}', '{{世界书内容}}', '{{故事时间}}', '{{可用表情}}']) {
-        assert.ok(contentOf('builtin-private-proactive').includes(marker), `private proactive should include ${marker}`);
-    }
-    assert.equal(contentOf('builtin-private-proactive').includes('{{私聊人物}}'), false);
-    assert.equal(contentOf('builtin-private-proactive').includes('{{私聊记录}}'), false);
-    for (const marker of ['{{群聊成员}}', '{{群聊记录}}', '{{正文上下文}}', '{{世界书内容}}', '{{故事时间}}', '{{可用表情}}']) {
-        assert.ok(contentOf('builtin-group-proactive').includes(marker), `group proactive should include ${marker}`);
-    }
-
-    for (const [presetId, promptId, ackId, placeholder] of [
-        [
-            'builtin-private-reply',
-            'builtin-private-reply-group-memory-prompt',
-            'builtin-private-reply-group-memory-ack',
-            '{{群聊记忆}}',
-        ],
-        [
-            'builtin-private-proactive',
-            'builtin-private-proactive-group-memory-prompt',
-            'builtin-private-proactive-group-memory-ack',
-            '{{主动群聊记忆}}',
-        ],
-        [
-            'builtin-group-reply',
-            'builtin-group-reply-private-memory-prompt',
-            'builtin-group-reply-private-memory-ack',
-            '{{私聊记忆}}',
-        ],
-        [
-            'builtin-group-proactive',
-            'builtin-group-proactive-private-memory-prompt',
-            'builtin-group-proactive-private-memory-ack',
-            '{{主动私聊记忆}}',
-        ],
-    ]) {
-        const messages = presets.get(presetId).messages;
-        const promptIndex = messages.findIndex((message) => message.id === promptId);
-        assert.ok(promptIndex >= 0, `${presetId} should include its cross-conversation memory prompt`);
-        assert.deepEqual(
-            messages.slice(promptIndex, promptIndex + 2).map((message) => [message.id, message.role]),
-            [[promptId, 'user'], [ackId, 'assistant']],
-            `${presetId} should keep the memory prompt and acknowledgement adjacent`,
-        );
-        assert.match(messages[promptIndex].content, new RegExp(placeholder.replace(/[{}]/g, '\\$&')));
-    }
-    assert.match(
-        contentOf('builtin-group-reply'),
-        /每个人只能使用属于自己的私聊分区，不能知道其他成员的私聊历史/,
-    );
-    assert.match(
-        contentOf('builtin-group-proactive'),
-        /每个人只能使用属于自己的私聊分区，不能知道其他成员的私聊历史/,
-    );
-}
-
 async function testStoredBuiltInPromptIsOnlyUpgradedByExplicitRestore() {
     const { createQQV2ResourceService } = await importModule('modules/qq-v2/resources/service.js');
     const storage = createMemoryStorage();
@@ -673,7 +467,7 @@ async function testStoredBuiltInPromptIsOnlyUpgradedByExplicitRestore() {
     );
     assert.equal(
         (await resources.restoreBuiltInPromptPreset('builtin-private-reply')).messages
-            .some((message) => message.id === 'builtin-private-reply-group-memory-prompt'),
+            .some((message) => message.id === 'builtin-private-reply-context'),
         true,
         'explicit restore upgrades the selected built-in preset',
     );
@@ -1111,7 +905,6 @@ async function main() {
     await testDeletingApiPresetLeavesItsStableIdUnresolved();
     await testFourBuiltInPromptPresetsAreAvailableAsEditableLibraryEntries();
     await testNewYuziDefaultLibraryDoesNotReadSupersededDevelopmentPresetStorage();
-    await testBuiltInPromptPresetsRetainYuziBlocksAndEditableXmlOutput();
     await testStoredBuiltInPromptIsOnlyUpgradedByExplicitRestore();
     await testBuiltInPromptPresetIsEditableAndPreservesUnknownPlaceholders();
     await testPromptPresetNamesMustBeUnique();

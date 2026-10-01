@@ -1,0 +1,18 @@
+/* 测试面板（不属于小剧场页面本身） */
+.dev { width: 360px; max-width: 100%; padding: 18px; border-radius: 16px; border: 1px solid #262a38; background: #12141d; }
+.dev h2 { margin: 0 0 12px; font-size: 16px; }
+.dev h3 { margin: 18px 0 6px; font-size: 13px; color: #9aa3bf; }
+.dev-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dev-btns button, .dev-field select { padding: 8px 10px; border-radius: 10px; border: 1px solid #30364a; background: #1b1f2c; color: #e5e9f6; }
+.dev-btns button:hover { border-color: #5ee6ff; }
+.dev-field { display: grid; gap: 6px; margin-top: 12px; font-size: 12px; color: #9aa3bf; }
+.dev-note { margin: 0 0 8px; font-size: 12px; color: #737c98; }
+.dev-cells { display: grid; gap: 8px; }
+.dev-cells label { display: grid; gap: 4px; font-size: 12px; color: #9aa3bf; }
+.dev-cells textarea { width: 100%; resize: vertical; padding: 6px 8px; border-radius: 8px; border: 1px solid #30364a; background: #0d0f16; color: #dfe5f5; font: 12px/1.45 ui-monospace, Consolas, monospace; }
+.dev-composer { width: 100%; resize: vertical; padding: 8px 10px; border-radius: 8px; border: 1px solid #30364a; background: #0d0f16; color: #dfe5f5; font: 13px/1.5 inherit; }
+.dev-log { max-height: 220px; overflow: auto; margin: 0; padding-left: 18px; font-size: 12px; color: #b5bdd6; }
+.dev-log b { margin-right: 6px; }
+.dev-log .by-ai b { color: #5ee6ff; }
+.dev-log .by-ui b { color: #f2cd72; }
+.dev-log .by-dev b { color: #ff7a8a; }

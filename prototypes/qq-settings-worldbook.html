@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉子手机 · QQ 设置 · 世界书注入（iOS 分组列表原型）</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页局部样式：颜色只用 shared 配色变量 */
+.toolbar { flex-wrap: wrap; justify-content: center; max-width: 420px; }
+.toolbar button[aria-pressed="true"] { font-weight: 600; }
+button.row.tappable {
+    width: 100%; border: 0; background: none; color: inherit;
+    font: inherit; font-size: 16px; text-align: left;
+}
+button.row:focus-visible, .row input.inline:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tw-sub { justify-content: space-between; }
+.tw-sub .seg button { padding: 4px 10px; }
+.is-off { opacity: 0.45; }
+.seg button:disabled, .stepper button:disabled { cursor: default; }
+.seg button:focus-visible, .stepper button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.stepper output[role="button"] { cursor: pointer; border-radius: 6px; padding: 2px 4px; }
+.stepper output[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stepper[aria-disabled="true"] output { cursor: default; }
+.num-field {
+    width: 100%; border: 0; background: none; padding: 0; outline: none;
+    color: var(--text); font: inherit; font-size: 17px;
+}
+#wb-read-error { margin-top: 22px; }
+.empty.is-error { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <button type="button" data-demo="readFail" aria-pressed="false">模拟世界书读取失败</button>
+    <button type="button" data-demo="noBooks" aria-pressed="false">模拟无世界书</button>
+    <button type="button" data-demo="saveFail" aria-pressed="false">模拟保存失败</button>
+</div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" id="wb-back" aria-label="返回设置">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">世界书注入</h1>
+    </header>
+    <main class="scroll">
+        <section class="group" id="wb-read-error" hidden>
+            <div class="empty is-error" role="alert">读取世界书资源失败</div>
+        </section>
+        <div id="wb-content">
+        <h2 class="group-header">注入</h2>
+        <section class="group">
+            <div class="row">
+                <span class="row-label" id="wb-enabled-label">启用世界书注入</span>
+                <label class="switch"><input type="checkbox" id="wb-enabled" role="switch" aria-labelledby="wb-enabled-label" checked><span aria-hidden="true"></span></label>
+            </div>
+            <button type="button" class="row tappable" id="wb-book">
+                <span class="row-label">注入世界书</span>
+                <span class="row-value"><span id="wb-book-value">未选择</span><span class="chev" aria-hidden="true">›</span></span>
+            </button>
+        </section>
+
+        <h2 class="group-header">范围</h2>
+        <section class="group">
+            <div class="row">
+                <span class="row-label">时间范围</span>
+                <div class="seg" id="wb-tw-mode" role="group" aria-label="时间范围模式">
+                    <button type="button" data-value="relative" aria-pressed="true">最近一段时间</button><button type="button" data-value="all" aria-pressed="false">全部消息</button>
+                </div>
+            </div>
+            <div class="row tw-sub" id="wb-tw-sub">
+                <div class="stepper" id="wb-tw-value" data-min="1" data-step="1" data-label="时间范围数值" role="group" aria-label="时间范围数值">
+                    <button type="button" aria-label="减少">−</button><output role="button" tabindex="0">1</output><button type="button" aria-label="增加">+</button>
+                </div>
+                <div class="seg" id="wb-tw-unit" role="group" aria-label="时间范围单位">
+                    <button type="button" data-value="hour" aria-pressed="false">小时</button><button type="button" data-value="day" aria-pressed="false">天</button><button type="button" data-value="month" aria-pressed="true">月</button><button type="button" data-value="year" aria-pressed="false">年</button>
+                </div>
+            </div>
+            <div class="row">
+                <span class="row-label">注入条数</span>
+                <div class="stepper" id="wb-count" data-min="0" data-step="1" data-label="注入条数" role="group" aria-label="注入条数">
+                    <button type="button" aria-label="减少">−</button><output role="button" tabindex="0">30</output><button type="button" aria-label="增加">+</button>
+                </div>
+            </div>
+        </section>
+
+        <h2 class="group-header">触发</h2>
+        <section class="group">
+            <div class="row">
+                <span class="row-label">灯色</span>
+                <div class="seg" id="wb-light" role="group" aria-label="灯色">
+                    <button type="button" data-value="blue" aria-pressed="true">蓝灯</button><button type="button" data-value="green" aria-pressed="false">绿灯</button>
+                </div>
+            </div>
+            <div class="row">
+                <span class="row-label">深度</span>
+                <div class="stepper" id="wb-depth" data-step="1" data-label="深度" role="group" aria-label="深度">
+                    <button type="button" aria-label="减少">−</button><output role="button" tabindex="0">999</output><button type="button" aria-label="增加">+</button>
+                </div>
+            </div>
+            <div class="row" id="wb-keywords-row" hidden>
+                <label class="row-label" for="wb-keywords">关键词</label>
+                <input type="text" class="inline" id="wb-keywords" value="" autocomplete="off" spellcheck="false">
+            </div>
+        </section>
+        <p class="group-footer">绿灯条目按关键词触发，多个用顿号分隔。</p>
+        <p class="status-line error" id="wb-status" role="alert" hidden></p>
+        </div>
+    </main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<section class="notes" aria-label="原型说明">
+    <b>原功能 → 新位置</b><br>
+    1. 复选框「启用世界书注入」→「注入」分组 switch，不联动其它控件。<br>
+    2. 下拉「注入世界书」（首项「未选择」）→ 选择行 + YZ.sheet。<br>
+    3. 「时间范围」模式下拉 + 数值输入（min=1）+ 单位下拉 →「范围」分组：模式分段控件；下一行数值步进器 + 单位分段控件（默认月）。「全部消息」时二者禁用置灰，不隐藏（同源码）。<br>
+    4. 「注入条数」数字输入（min=0）→ 步进器，默认 30。<br>
+    5. 「灯色」下拉 →「触发」分组分段控件，默认蓝灯。<br>
+    6. 「深度」数字输入（源码无 min）→ 步进器，默认 999，不设下限，可减到负数以演示校验。<br>
+    7. 「关键词」文本输入（「、」拼接）→ 行内输入，仅绿灯时显示。<br>
+    · 保存：change 即保存，无按钮，成功无提示；失败在底部状态行显示校验文案或「保存失败」。<br>
+    <b>新增 / 改动</b><br>
+    · 分组标题「注入 / 范围 / 触发」为新增，源码无区块标题。<br>
+    · footer「绿灯条目按关键词触发，多个用顿号分隔。」为新增说明。<br>
+    · 步进器 step 1；点数字用 formSheet 精确输入整数，按源码校验文案报错。<br>
+    <b>原型模拟</b><br>
+    · 「模拟世界书读取失败」：整页只显示「读取世界书资源失败」。「模拟无世界书」：列表只剩「未选择」。「模拟保存失败」：开启期间每次保存显示「保存失败」。<br>
+    · 示例世界书：玉子市场、兔山商店街、QQ 记忆。校验失败时保留显示值、不写入状态（源码回显方式未核对）；关键词按「、」拆分去空（源码解析未核对）。<br>
+    · 「‹ 设置」跳转 qq-settings-root.html。
+</section>
+
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+    const $ = (id) => document.getElementById(id);
+    const BOOKS = ['玉子市场', '兔山商店街', 'QQ 记忆']; // 示例世界书名
+    const demo = { readFail: false, noBooks: false, saveFail: false };
+    // 模拟已保存的 settings.worldbook（默认值同源码）
+    const saved = {
+        enabled: true, bookName: '', timeWindowMode: 'relative', timeWindowValue: 1, timeWindowUnit: 'month',
+        injectionCount: 30, light: 'blue', depth: 999, keywords: [],
+    };
+    // 数值字段：[stepper id, 下限, 校验文案]（app.js 5151–5169）
+    const NUM = {
+        depth: ['wb-depth', 0, '深度必须是 0 或更大的整数'],
+        timeWindowValue: ['wb-tw-value', 1, '时间范围必须是正整数'],
+        injectionCount: ['wb-count', 0, '注入条数必须是 0 或更大的整数'],
+    };
+    const TW = ['timeWindowMode', 'timeWindowValue', 'timeWindowUnit'];
+    const status = $('wb-status');
+    const showError = (msg) => { status.textContent = msg; status.hidden = !msg; };
+    const segValue = (id) => $(id).querySelector('[aria-pressed="true"]')?.dataset.value ?? '';
+    const toInt = (raw, min) => {
+        const text = String(raw).trim();
+        return /^-?\d+$/.test(text) && Number(text) >= min ? Number(text) : null;
+    };
+    const readNum = (key) => toInt($(NUM[key][0]).querySelector('output').textContent, NUM[key][1]);
+    // 无 field 时全量校验，否则只校验变更字段（同源码 !field || field === ...）
+    const collect = (field) => {
+        const v = {
+            enabled: $('wb-enabled').checked,
+            bookName: $('wb-book').dataset.value ?? '',
+            timeWindowMode: segValue('wb-tw-mode'),
+            timeWindowUnit: segValue('wb-tw-unit'),
+            light: segValue('wb-light'),
+            keywords: $('wb-keywords').value.split('、').map((s) => s.trim()).filter(Boolean),
+        };
+        if (!field || field === 'depth') {
+            v.depth = readNum('depth');
+            if (v.depth === null) return { error: NUM.depth[2] };
+        }
+        if (!field || TW.includes(field)) {
+            const tw = readNum('timeWindowValue');
+            if (v.timeWindowMode !== 'all' && tw === null) return { error: NUM.timeWindowValue[2] };
+            v.timeWindowValue = tw ?? saved.timeWindowValue;
+        }
+        if (!field || field === 'injectionCount') {
+            v.injectionCount = readNum('injectionCount');
+            if (v.injectionCount === null) return { error: NUM.injectionCount[2] };
+        }
+        return { values: v };
+    };
+
+    // change 即保存：成功清空状态行、无提示；失败不写入 saved
+    const save = (field) => {
+        const r = collect(field);
+        if (r.error) return showError(r.error);
+        if (demo.saveFail) return showError('保存失败');
+        Object.assign(saved, r.values);
+        showError('');
+    };
+    // 禁用置灰（不隐藏）：aria-disabled 让 shared 委托忽略点击
+    const setDisabled = (el, off) => {
+        el.classList.toggle('is-off', off);
+        el.setAttribute('aria-disabled', String(off));
+        el.querySelectorAll('button').forEach((b) => { b.disabled = off; });
+        const out = el.querySelector('output');
+        if (out) out.tabIndex = off ? -1 : 0;
+    };
+    const syncTimeWindow = () => {
+        const off = segValue('wb-tw-mode') === 'all';
+        setDisabled($('wb-tw-value'), off);
+        setDisabled($('wb-tw-unit'), off);
+    };
+    const syncKeywords = () => { $('wb-keywords-row').hidden = segValue('wb-light') !== 'green'; };
+    const SEG_FIELD = { 'wb-tw-mode': 'timeWindowMode', 'wb-tw-unit': 'timeWindowUnit', 'wb-light': 'light' };
+    document.addEventListener('yz:seg', (event) => {
+        const field = SEG_FIELD[event.target.id];
+        if (!field) return;
+        if (field === 'timeWindowMode') syncTimeWindow();
+        if (field === 'light') syncKeywords();
+        save(field);
+    });
+    const STEP_FIELD = { 'wb-depth': 'depth', 'wb-tw-value': 'timeWindowValue', 'wb-count': 'injectionCount' };
+    // 点数字：formSheet 精确输入整数，不合法时保持打开并提示源码校验文案
+    const editNumber = (stepper) => {
+        const key = STEP_FIELD[stepper.id];
+        const out = stepper.querySelector('output');
+        const label = stepper.dataset.label;
+        YZ.formSheet({
+            title: label,
+            bodyHtml: `<div class="group"><div class="row block"><label class="field-label" for="wb-num-input">${label}</label><input class="num-field" id="wb-num-input" name="num" type="number" step="1" inputmode="numeric"></div></div>`,
+            onMount: (rootEl) => { rootEl.querySelector('[name=num]').value = out.textContent; },
+            onDone: (rootEl) => {
+                const raw = rootEl.querySelector('[name=num]').value;
+                if (toInt(raw, NUM[key][1]) === null) { YZ.toast(NUM[key][2]); return false; }
+                out.textContent = String(Number(raw.trim()));
+                save(key);
+            },
+        });
+    };
+    // shared 的步进委托先注册，这里读取的是加减后的值
+    document.addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        const stepper = target?.closest('.stepper');
+        if (!stepper || !STEP_FIELD[stepper.id] || stepper.getAttribute('aria-disabled') === 'true') return;
+        if (target.closest('button')) save(STEP_FIELD[stepper.id]);
+        else if (target.closest('output')) editNumber(stepper);
+    });
+
+    // 注入世界书：首项「未选择」，模拟无世界书时只剩这一项
+    const bookBtn = $('wb-book');
+    const available = () => (demo.noBooks ? [] : BOOKS);
+    const renderBook = () => {
+        const value = bookBtn.dataset.value;
+        $('wb-book-value').textContent = available().includes(value) ? value : '未选择';
+    };
+    bookBtn.addEventListener('click', () => {
+        const current = available().includes(bookBtn.dataset.value) ? bookBtn.dataset.value : '';
+        const options = [['', '未选择']].concat(available().map((name) => [name, name]))
+            .map(([value, label]) => ({ value, label, selected: value === current }));
+        YZ.sheet({
+            title: '注入世界书',
+            groups: [{ options }],
+            onSelect: (value) => {
+                bookBtn.dataset.value = value;
+                renderBook();
+                save('bookName');
+            },
+        });
+    });
+    $('wb-enabled').addEventListener('change', () => save('enabled'));
+    $('wb-keywords').addEventListener('change', () => save('keywords'));
+    $('wb-back').addEventListener('click', () => { location.href = 'qq-settings-root.html'; });
+
+    // 原型工具栏：三个开关式模拟
+    document.querySelectorAll('.toolbar [data-demo]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const key = btn.dataset.demo;
+            demo[key] = !demo[key];
+            btn.setAttribute('aria-pressed', String(demo[key]));
+            if (key === 'readFail') {
+                $('wb-content').hidden = demo.readFail;
+                $('wb-read-error').hidden = !demo.readFail;
+            }
+            if (key === 'noBooks') renderBook();
+        });
+    });
+
+    // 初始化：按 saved 回填
+    bookBtn.dataset.value = saved.bookName;
+    $('wb-keywords').value = saved.keywords.join('\u3001');
+    renderBook();
+    syncTimeWindow();
+    syncKeywords();
+})();
+</script>
+</body>
+</html>
+

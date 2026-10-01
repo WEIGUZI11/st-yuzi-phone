@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模板工坊 · 设置二级页原型</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页补充样式：颜色只用 shared 变量 */
+.toolbar { flex-wrap: wrap; }
+.toolbar button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.scroll > .status-line { margin: 12px 16px 0; }
+.scroll .group + .group { margin-top: 12px; }
+.table-title { font-weight: 600; }
+.row .row-value { max-width: 58%; min-width: 0; }
+.row-value .val { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preset-main { flex: 1; min-width: 0; }
+.issues { margin: 4px 0 0; padding: 0; list-style: none; }
+.issues li { margin-top: 2px; font-size: 12px; line-height: 1.4; color: var(--danger); }
+.row[aria-disabled="true"], .mini-btn:disabled { opacity: .5; }
+.notes h3 { margin: 14px 0 4px; font-size: 14px; color: var(--text); }
+.notes table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.notes th, .notes td { padding: 4px 6px; border-top: 1px solid var(--sep); text-align: left; vertical-align: top; color: var(--text-2); }
+.notes th { color: var(--text); }
+.notes ul { margin: 4px 0; padding-left: 18px; color: var(--text-2); }
+</style>
+</head>
+<body>
+<div class="toolbar">
+    <span>原型预览：</span>
+    <button type="button" id="toggle-theme">切换白天 / 夜间</button>
+    <span>数据状态：</span>
+    <button type="button" data-state="loading" aria-pressed="false">加载中</button>
+    <button type="button" data-state="error" aria-pressed="false">错误</button>
+    <button type="button" data-state="ready" aria-pressed="true">就绪</button>
+    <button type="button" id="toggle-refresh-fail" aria-pressed="false">模拟提交后刷新失败</button>
+</div>
+<div class="phone">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+    <header class="nav">
+        <button type="button" class="nav-back" aria-label="返回设置">‹ 设置</button>
+        <h1 class="nav-title" style="margin:0">模板工坊</h1>
+    </header>
+    <main class="scroll" id="content" aria-live="polite"></main>
+    <div class="home-bar" aria-hidden="true"></div>
+</div>
+
+<div class="notes">
+    <h3>原功能 → 新位置</h3>
+    <table>
+        <tr><th>原功能（源码）</th><th>新位置</th></tr>
+        <tr><td>hero：eyebrow / 标题「模板工坊」、描述「导入预设，为表格选择展示。」</td><td>标题栏「模板工坊」；描述并入「完整预设」分组脚注</td></tr>
+        <tr><td>状态提示：正在读取模板仓库… / 模板仓库不可用：{错误}</td><td>页顶 .status-line（错误态加 .error）；工具栏切换三态</td></tr>
+        <tr><td>QQ 分组：主题应用 / 弹窗应用 两个 select + 说明</td><td>「QQ」分组两行 → YZ.sheet；说明进分组脚注</td></tr>
+        <tr><td>导入预设按钮（.json 文件选择）</td><td>「完整预设」首组操作行 → 示例文件面板</td></tr>
+        <tr><td>覆盖同 ID 预设？/ 导入 QQ 美化素材？/ 导入失败</td><td>YZ.confirm，文案照搬；失败走 toast</td></tr>
+        <tr><td>预设卡片：名称、N个模板项、issues 列表、导出、删除</td><td>预设行：名称 + 副标题 + 问题列表 + 行内 mini-btn</td></tr>
+        <tr><td>删除完整预设？</td><td>YZ.confirm</td></tr>
+        <tr><td>「尚未导入玉子美化预设。」</td><td>分组内 .empty</td></tr>
+        <tr><td>表卡片：表格美化应用 / 弹窗应用 / 底部可视化美化 三个 select</td><td>每表一组（首行为表名），三行 → YZ.sheet</td></tr>
+        <tr><td>页面美化选中 / 选「默认页面」（单表恢复）</td><td>sheet；toast 照搬</td></tr>
+        <tr><td>弹窗应用选中 / 选「内置展示」/ 需要整体替换组合展示</td><td>sheet；需替换时 YZ.confirm，取消保持原值</td></tr>
+        <tr><td>底部可视化：默认 / 内置美化（仅剧场表）/ 预设项</td><td>sheet；「小剧场」示例表演示内置美化</td></tr>
+        <tr><td>「没有可配置的真实表。」</td><td>分组内 .empty</td></tr>
+        <tr><td>全部恢复页面默认 / 全部清空弹窗应用 / 全部恢复底部默认（各自确认）</td><td>「表格应用」末组三条红色操作行 + YZ.confirm</td></tr>
+        <tr><td>操作已提交，但模板工坊刷新失败</td><td>工具栏「模拟提交后刷新失败」开关：提交后进入错误态并 toast</td></tr>
+    </table>
+    <h3>新增 / 改动的交互</h3>
+    <ul>
+        <li>select 改为行 + 底部选择面板，当前值显示在行右侧；未改值不提交（同原 change 事件）。</li>
+        <li>去掉 hero 卡片；eyebrow 与标题重复，描述移入脚注。</li>
+        <li>提交中只禁用触发元素，期间其他操作被忽略（对应源码 busy 锁），模拟耗时 400ms。</li>
+        <li>导入用「选择预设文件（模拟）」面板代替系统文件框，含新预设 / 含 QQ 素材 / 同 ID / 无效文件四例。</li>
+        <li>加载中 / 错误态与源码一致：分组仍渲染为空，此时提交类操作模拟服务失败，toast「操作失败」，导入 toast「导入失败：文件无效」。</li>
+        <li>示例数据下无法自然触发的提示「页面美化暂不可用」「弹窗美化暂不可用」「所选美化预设无效」，在页底「原型演示」组用三条模拟行演示。</li>
+        <li>源码 handleAction 还接受 activate / clear / clear-all（toast「已设为当前美化」「该表已恢复默认展示」），builder 不渲染这些按钮；原型在「原型演示」组提供 activate / clear 入口，clear-all 与「全部恢复页面默认」同路径。</li>
+        <li>返回按钮仅 toast 提示，原型不跳转。</li>
+    </ul>
+</div>
+
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+    'use strict';
+    const $content = document.getElementById('content');
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // 示例数据：结构对齐 contentPresetWorkshopService.getViewModel() 的 qq / presets / tables
+    const data = {
+        qq: {
+            bindings: { theme: 'yz-pink', popup: '' },
+            presets: [
+                { id: 'yz-pink', name: '玉子粉樱', qq: { theme: true, popup: true } },
+                { id: 'mint-fog', name: '薄荷晨雾', qq: { theme: true } },
+            ],
+        },
+        presets: [
+            { id: 'yz-pink', name: '玉子粉樱', items: 3, issues: [] },
+            { id: 'mint-fog', name: '薄荷晨雾', items: 2, issues: [] },
+            { id: 'old-notebook', name: '旧手账', items: 1, issues: [{ code: 'ASSET_MISSING', message: '引用的图片素材 paper-bg 不存在，相关模板项回退默认展示' }] },
+        ],
+        tables: [
+            {
+                sheetKey: 'chat', tableName: '聊天记录', presentation: '', sceneId: '',
+                pageCandidates: [
+                    { presetId: 'yz-pink', presetName: '玉子粉樱', itemId: 'bubble', itemName: '粉樱气泡' },
+                    { presetId: 'mint-fog', presetName: '薄荷晨雾', itemId: 'list', itemName: '清爽列表' },
+                ],
+                popupCandidates: [
+                    { presetId: 'yz-pink', presetName: '玉子粉樱', itemName: '', displays: 3, linked: ['theater'] },
+                    { presetId: 'mint-fog', presetName: '薄荷晨雾', itemName: '晨雾卡片', displays: 1 },
+                ],
+                pageActive: { presetId: 'yz-pink', itemId: 'bubble' }, popupActive: null, bottomActive: null,
+            },
+            {
+                sheetKey: 'theater', tableName: '小剧场', presentation: 'theater', sceneId: 'stage',
+                pageCandidates: [{ presetId: 'yz-pink', presetName: '玉子粉樱', itemId: 'stage', itemName: '樱花舞台' }],
+                popupCandidates: [{ presetId: 'yz-pink', presetName: '玉子粉樱', itemName: '', displays: 3, linked: ['chat'] }],
+                pageActive: null, popupActive: null, bottomActive: { kind: 'builtin', sceneId: 'stage' },
+            },
+        ],
+    };
+
+    const ui = { state: 'ready', error: '', refreshFail: false, busy: false };
+    const EMPTY = { qq: { bindings: {}, presets: [] }, presets: [], tables: [] };
+    // 加载中 / 错误态与源码一致：presets、tables 为空，QQ 无候选
+    const view = () => (ui.state === 'ready' ? data : EMPTY);
+    const pick = (list, a, pop) => (a ? list.find((c) => c.presetId === a.presetId && (pop || c.itemId === a.itemId)) : undefined);
+    const itemText = (c, pop) => `${c.presetName} / ${pop ? (c.displays > 1 ? `${c.displays} 款展示样式` : (c.itemName || '自定义展示')) : c.itemName}`;
+    const isBuiltin = (t, a) => t.presentation === 'theater' && !!a && a.kind === 'builtin' && a.sceneId === t.sceneId;
+    const LIST = { page: 'pageCandidates', popup: 'popupCandidates', bottom: 'pageCandidates' };
+    const ACTIVE = { page: 'pageActive', popup: 'popupActive', bottom: 'bottomActive' };
+    const EMPTY_LABEL = { page: '默认页面', popup: '内置展示', bottom: '默认' };
+    const APP_LABEL = { page: '表格美化应用', popup: '弹窗应用', bottom: '底部可视化美化' };
+    const QQ_LABEL = { theme: '主题应用', popup: '弹窗应用' };
+    const QQ_FALLBACK = { theme: '默认主题（保留个人装饰）', popup: '内置通知样式' };
+    const qqList = (k) => view().qq.presets.filter((p) => p.qq && p.qq[k]);
+    const findTable = (k) => data.tables.find((x) => x.sheetKey === k);
+    const appText = (t, app) => {
+        if (app === 'bottom' && isBuiltin(t, t.bottomActive)) return '内置美化';
+        const c = pick(t[LIST[app]], t[ACTIVE[app]], app === 'popup');
+        return c ? itemText(c, app === 'popup') : EMPTY_LABEL[app];
+    };
+
+    const chev = '<span class="chev" aria-hidden="true">›</span>';
+    const pickRow = (attrs, label, value) => `<div class="row tappable" role="button" tabindex="0" aria-haspopup="dialog" ${attrs}><span class="row-label">${esc(label)}</span><span class="row-value"><span class="val">${esc(value)}</span> ${chev}</span></div>`;
+    const actionRow = (act, label, danger) => `<div class="row action${danger ? ' danger' : ''}" role="button" tabindex="0" data-act="${act}" aria-haspopup="dialog">${esc(label)}</div>`;
+    const presetRow = (p) => `<div class="row"><div class="preset-main"><span class="row-label">${esc(p.name || p.id)}</span><span class="row-sub">${p.items}个模板项 · ${esc(p.id)}</span>${p.issues.length ? `<ul class="issues">${p.issues.map((i) => `<li><strong>${esc(i.code || 'issue')}</strong>：${esc(i.message)}</li>`).join('')}</ul>` : ''}</div><div class="row-actions"><button type="button" class="mini-btn" data-act="export" data-id="${esc(p.id)}">导出</button><button type="button" class="mini-btn danger" data-act="delete" data-id="${esc(p.id)}" aria-haspopup="dialog">删除</button></div></div>`;
+    const render = () => {
+        const v = view();
+        let h = '';
+        if (ui.state === 'loading') h += '<p class="status-line" role="status">正在读取模板仓库…</p>';
+        if (ui.state === 'error') h += `<p class="status-line error" role="alert">模板仓库不可用：${esc(ui.error || '未知错误')}</p>`;
+        h += '<h2 class="group-header">QQ</h2><section class="group">';
+        ['theme', 'popup'].forEach((k) => {
+            const cur = qqList(k).find((p) => p.id === v.qq.bindings[k]);
+            h += pickRow(`data-qq="${k}" aria-label="QQ ${QQ_LABEL[k]}"`, QQ_LABEL[k], cur ? cur.name : QQ_FALLBACK[k]);
+        });
+        h += '</section><p class="group-footer">主题与通知独立应用；恢复默认不清除个人装饰。</p>';
+        h += '<h2 class="group-header">完整预设</h2><section class="group">' + actionRow('import', '导入预设', false) + '</section><section class="group">';
+        h += v.presets.length ? v.presets.map(presetRow).join('') : '<div class="empty">尚未导入玉子美化预设。</div>';
+        h += '</section><p class="group-footer">导入预设，为表格选择展示。</p>';
+        h += '<h2 class="group-header">表格应用</h2>';
+        if (v.tables.length) {
+            v.tables.forEach((t) => {
+                h += `<section class="group"><div class="row"><span class="row-label table-title">${esc(t.tableName || t.sheetKey)}</span></div>`;
+                ['page', 'popup', 'bottom'].forEach((a) => { h += pickRow(`data-app="${a}" data-table="${esc(t.sheetKey)}" aria-label="${esc(t.tableName)} ${APP_LABEL[a]}"`, APP_LABEL[a], appText(t, a)); });
+                h += '</section>';
+            });
+        } else {
+            h += '<section class="group"><div class="empty">没有可配置的真实表。</div></section>';
+        }
+        h += '<section class="group">' + actionRow('clear-all-page', '全部恢复页面默认', true) + actionRow('clear-all-popup', '全部清空弹窗应用', true) + actionRow('clear-all-bottom', '全部恢复底部默认', true) + '</section>';
+        h += '<p class="group-footer">导入后，请分别选择页面和弹窗应用。底部可视化美化独立选择，重开面板后生效。</p>';
+        $content.innerHTML = h + demoGroup();
+    };
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    // 对应源码 run()：busy 锁 + 禁用触发元素 + 等待刷新 + 成功 / 失败 toast
+    const run = async (el, op, ok) => {
+        if (ui.busy) return;
+        ui.busy = true;
+        if (el) { el.setAttribute('aria-disabled', 'true'); if ('disabled' in el) el.disabled = true; }
+        try {
+            await sleep(400);
+            if (ui.state !== 'ready') throw new Error('操作失败');
+            op();
+            if (ui.refreshFail) {
+                ui.state = 'error'; ui.error = '读取最新状态失败'; syncStateButtons();
+                throw new Error('操作已提交，但模板工坊刷新失败：读取最新状态失败');
+            }
+            YZ.toast(ok);
+        } catch (e) {
+            YZ.toast(e.message || '操作失败');
+        } finally {
+            ui.busy = false;
+            render();
+        }
+    };
+    const openQQ = (row) => {
+        const k = row.dataset.qq, cur = view().qq.bindings[k] || '';
+        YZ.sheet({
+            title: `QQ ${QQ_LABEL[k]}`,
+            groups: [{ options: [{ value: '', label: QQ_FALLBACK[k], selected: !cur }].concat(qqList(k).map((p) => ({ value: p.id, label: p.name, selected: p.id === cur }))) }],
+            onSelect: (val) => { if (val !== cur) run(row, () => { data.qq.bindings[k] = val; }, 'QQ 美化应用已更新'); },
+        });
+    };
+
+    const key = (c, pop) => c.presetId + ':' + (pop ? '' : c.itemId);
+    const openApp = (row) => {
+        const t = findTable(row.dataset.table), a = row.dataset.app, pop = a === 'popup', list = t[LIST[a]];
+        const cc = pick(list, t[ACTIVE[a]], pop), bi = a === 'bottom' && isBuiltin(t, t.bottomActive);
+        const cur = bi ? 'builtin' : cc ? key(cc, pop) : '';
+        const opts = [{ value: '', label: EMPTY_LABEL[a], selected: !cur }];
+        if (a === 'bottom' && t.presentation === 'theater') opts.push({ value: 'builtin', label: '内置美化', selected: bi });
+        list.forEach((c) => opts.push({ value: key(c, pop), label: itemText(c, pop), selected: key(c, pop) === cur }));
+        YZ.sheet({ title: `${t.tableName} · ${APP_LABEL[a]}`, groups: [{ options: opts }], onSelect: (val) => {
+            if (val === cur) return;
+            const c = list.find((x) => key(x, pop) === val);
+            const set = () => { t[ACTIVE[a]] = val === 'builtin' ? { kind: 'builtin', sceneId: t.sceneId } : c ? { presetId: c.presetId, itemId: c.itemId } : null; };
+            if (a === 'bottom') return run(row, set, '底部美化已保存，重开面板后生效');
+            if (!val) return run(row, set, pop ? '该表已恢复内置展示' : '该表已恢复默认页面');
+            if (!pop) return run(row, set, '已设为当前页面美化');
+            if (!(c.linked && c.linked.length)) return run(row, set, '已设为当前弹窗美化');
+            YZ.confirm({ title: '需要整体替换组合展示', message: '这套弹窗美化会同时应用到关联表。确认后会一起替换关联表当前的弹窗美化，避免组合只生效一半。', confirmText: '确认一起替换', onConfirm: () => run(row, () => { set(); c.linked.forEach((k) => { const o = findTable(k); if (o) o.popupActive = { presetId: c.presetId }; }); }, '已设为当前弹窗美化') });
+        } });
+    };
+    const clearRefs = (id) => {
+        data.tables.forEach((t) => ['pageActive', 'popupActive', 'bottomActive'].forEach((k) => { if (t[k] && t[k].presetId === id) t[k] = null; }));
+        ['theme', 'popup'].forEach((k) => { if (data.qq.bindings[k] === id) data.qq.bindings[k] = ''; });
+    };
+    const CLEAR_ALL = {
+        'clear-all-page': ['全部恢复页面默认？', '将清除全部表格美化应用，但保留弹窗应用和已导入预设。', 'pageActive', '全部页面已恢复默认展示'],
+        'clear-all-popup': ['全部清空弹窗应用？', '将移除全部自定义弹窗应用，但保留页面美化、内置展示和已导入预设。', 'popupActive', '全部弹窗应用已清空'],
+        'clear-all-bottom': ['全部恢复底部默认？', '将清除全部底部可视化美化应用，但保留页面美化、弹窗应用和已导入预设。', 'bottomActive', '全部底部可视化已恢复默认'],
+    };
+    const FILES = [
+        ['樱花信笺.json', '新预设', 'sakura-letter', '樱花信笺', []],
+        ['玉子QQ套装.json', '含 QQ 素材', 'yz-qq', '玉子 QQ 套装', ['avatar-frame / sakura-ring', 'bubble / pink-cloud']],
+        ['玉子粉樱.json', '同 ID：yz-pink', 'yz-pink', '玉子粉樱', []],
+        ['损坏文件.json', '无效文件'],
+    ];
+
+    const OUTFITS = { 'yz-qq': 1 }; // 示例：含 QQ 素材的预设附带的装饰套数（源码 record.qq.outfits.length）
+    const syncStateButtons = () => {
+        document.querySelectorAll('.toolbar [data-state]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.state === ui.state)));
+    };
+    // 对应源码 importFile()：prepareImport → 同 ID 覆盖确认 / QQ 素材确认 / 直接提交；解析失败 toast「导入失败：…」
+    const importFile = (el) => {
+        if (ui.busy) return;
+        YZ.sheet({
+            title: '选择预设文件（模拟）',
+            footer: '原型用示例文件代替系统文件框，仅接受 .json。',
+            groups: [{ options: FILES.map((f, i) => ({ value: String(i), label: f[0], sub: f[1] })) }],
+            onSelect: (val) => {
+                const f = FILES[Number(val)];
+                // 无效文件或仓库未就绪：prepareImport 抛错，error.message 缺省为「文件无效」
+                if (!f || f.length < 5 || ui.state !== 'ready') { YZ.toast('导入失败：文件无效'); return; }
+                const [, , id, name, materials] = f;
+                const idx = data.presets.findIndex((p) => p.id === id);
+                const replaces = idx >= 0;
+                const outfits = OUTFITS[id] || 0;
+                const summary = materials.length ? `将追加保留 ${materials.length} 个 QQ 素材和 ${outfits} 套装饰；相同素材不重复入库。` : '';
+                const op = () => {
+                    if (replaces) clearRefs(id); // 原子覆盖：同时清除引用旧预设的表格及 QQ 应用绑定
+                    const record = { id, name, items: replaces ? data.presets[idx].items : 1, issues: [] };
+                    if (replaces) data.presets[idx] = record; else data.presets.push(record);
+                    if (materials.length && !data.qq.presets.some((p) => p.id === id)) data.qq.presets.push({ id, name, qq: { theme: true, popup: true } });
+                };
+                const commit = () => run(el, op, replaces ? '预设已原子覆盖，旧绑定已清除' : '预设已导入');
+                if (replaces) {
+                    YZ.confirm({ title: '覆盖同 ID 预设？', message: `预设 ${id} 已存在。覆盖会原子清除引用它的表格及 QQ 应用绑定，不删除已收入 QQ 图库的素材。` + summary, confirmText: '确认覆盖', onConfirm: commit });
+                } else if (materials.length) {
+                    YZ.confirm({ title: '导入 QQ 美化素材？', message: summary + '\n' + materials.join('\n'), confirmText: '确认导入', onConfirm: commit });
+                } else {
+                    commit();
+                }
+            },
+        });
+    };
+
+    // 删除预设：原子清除引用它的表格 / QQ 绑定，并移除该预设提供的候选（素材不在原型中建模）
+    const dropPreset = (id) => {
+        clearRefs(id);
+        data.presets = data.presets.filter((p) => p.id !== id);
+        data.qq.presets = data.qq.presets.filter((p) => p.id !== id);
+        data.tables.forEach((t) => {
+            t.pageCandidates = t.pageCandidates.filter((c) => c.presetId !== id);
+            t.popupCandidates = t.popupCandidates.filter((c) => c.presetId !== id);
+        });
+    };
+    // 对应源码 handleAction()：data-act → 操作；文案照搬 beautify-behavior.js
+    const ACTIONS = {
+        import: (el) => importFile(el),
+        // 源码 exportPreset + downloadTextFile 下载 JSON；原型不产生文件
+        export: (el) => run(el, () => {}, '预设已导出'),
+        delete: (el) => {
+            const id = el.dataset.id;
+            YZ.confirm({ title: '删除完整预设？', message: `将删除预设 ${id}，并原子清除引用它的表格及 QQ 应用绑定；已收入 QQ 图库的素材仍保留。`, confirmText: '确认删除', onConfirm: () => run(el, () => dropPreset(id), '预设已删除') });
+        },
+        activate: (el) => run(el, () => {
+            const t = findTable('chat'), c = t && t.pageCandidates[0];
+            if (!c) throw new Error('所选美化预设无效');
+            t.pageActive = { presetId: c.presetId, itemId: c.itemId };
+        }, '已设为当前美化'),
+        clear: (el) => run(el, () => { const t = findTable('chat'); if (t) t.pageActive = null; }, '该表已恢复默认展示'),
+        // 源码 handleApplicationChange 的前置校验分支：不提交，直接 toast
+        'demo-page-off': () => YZ.toast('页面美化暂不可用'),
+        'demo-popup-off': () => YZ.toast('弹窗美化暂不可用'),
+        'demo-invalid': () => YZ.toast('所选美化预设无效'),
+    };
+    Object.keys(CLEAR_ALL).forEach((act) => {
+        const [title, message, field, ok] = CLEAR_ALL[act];
+        ACTIONS[act] = (el) => YZ.confirm({ title, message, confirmText: '确认清除', onConfirm: () => run(el, () => data.tables.forEach((t) => { t[field] = null; }), ok) });
+    });
+    const demoRow = (act, label, sub) => `<div class="row tappable" role="button" tabindex="0" data-act="${act}"><span class="row-label">${esc(label)}<span class="row-sub">${esc(sub)}</span></span>${chev}</div>`;
+    // builder 不渲染的源码分支，集中放在「原型演示」组
+    const demoGroup = () => '<h2 class="group-header">原型演示</h2><section class="group">'
+        + demoRow('activate', '设为当前美化', '源码 activate：聊天记录 → 首个页面候选')
+        + demoRow('clear', '单表恢复默认', '源码 clear：聊天记录页面美化')
+        + demoRow('demo-page-off', '模拟页面美化服务缺失', '源码 setPageActive 不可用时')
+        + demoRow('demo-popup-off', '模拟弹窗美化服务缺失', '源码 setPopupActive 不可用时')
+        + demoRow('demo-invalid', '模拟候选缺少 presetId / itemId', '源码选中项数据无效时')
+        + '</section><p class="group-footer">正式页面不提供这些入口，此组仅演示源码保留的分支与提示。</p>';
+
+
+    // 全局事件委托：内容区 data-act / data-qq / data-app；提交中（ui.busy）或已禁用元素忽略点击
+    $content.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element) || ui.busy) return;
+        if (target.closest('[aria-disabled="true"]')) return;
+        const act = target.closest('[data-act]');
+        if (act) { const fn = ACTIONS[act.dataset.act]; if (fn) fn(act); return; }
+        const qq = target.closest('[data-qq]');
+        if (qq) { openQQ(qq); return; }
+        const app = target.closest('[data-app]');
+        if (app && findTable(app.dataset.table)) openApp(app);
+    });
+    // 返回：源码调用 onBack()，原型不跳转
+    document.querySelector('.nav-back').addEventListener('click', () => YZ.toast('原型不跳转：返回设置'));
+
+    // 工具栏：数据三态 + 「模拟提交后刷新失败」开关（#toggle-theme 由 shared 脚本处理）
+    document.querySelector('.toolbar').addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) return;
+        const stateBtn = target.closest('[data-state]');
+        if (stateBtn) {
+            ui.state = stateBtn.dataset.state;
+            ui.error = ui.state === 'error' ? '读取仓库失败（模拟）' : '';
+            syncStateButtons();
+            render();
+            return;
+        }
+        const failBtn = target.closest('#toggle-refresh-fail');
+        if (failBtn) {
+            ui.refreshFail = !ui.refreshFail;
+            failBtn.setAttribute('aria-pressed', String(ui.refreshFail));
+            YZ.toast(ui.refreshFail ? '已开启：下次提交后刷新失败' : '已关闭：提交后正常刷新');
+        }
+    });
+
+    syncStateButtons();
+    render();
+})();
+</script>
+</body>
+</html>

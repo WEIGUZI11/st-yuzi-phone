@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>表格内容词汇替换 · 分组列表原型</title>
+<link rel="stylesheet" href="./shared/ios-settings.css">
+<style>
+/* 本页专属：只用 shared 变量，白天 / 夜间自动跟随 */
+button.row { width: 100%; border: 0; background: none; font: inherit; }
+.row.action:disabled { color: var(--text-3); cursor: default; }
+.rule { flex-direction: column; align-items: stretch; gap: 6px; }
+.rule-fields { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 8px; }
+.rule-fields label { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rule-fields label:focus-within .field-label { color: var(--accent); }
+.rule-input { width: 100%; min-height: 32px; resize: vertical; border: 0; border-radius: 8px; padding: 6px 8px; background: var(--fill); color: var(--text); font: inherit; line-height: 1.35; }
+.rule-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rule.has-error .rule-input { box-shadow: inset 0 0 0 1px var(--danger); }
+.rule-arrow { padding-bottom: 7px; color: var(--text-3); }
+.rule-foot { display: flex; align-items: center; font-size: 12px; color: var(--text-2); }
+.rule-err { margin: 0; font-size: 12px; color: var(--danger); }
+.badge.warn { background: var(--fill-strong); color: var(--danger); }
+.run-list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.run-list li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; align-items: center; }
+.run-list code { padding: 3px 6px; border-radius: 6px; background: var(--fill); color: var(--text); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.run-list span { font-size: 12px; color: var(--text-3); text-align: center; }
+.notes { max-width: 760px; margin: 24px auto 40px; padding: 16px 20px; border-radius: 14px; background: var(--card); color: var(--text); font-size: 13px; line-height: 1.65; }
+.notes h2 { margin: 12px 0 6px; font-size: 15px; }
+.notes ul { margin: 0; padding-left: 18px; }
+.notes b { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="toolbar"><span>原型预览：</span><button type="button" id="toggle-theme">切换白天 / 夜间</button> <button type="button" id="sim-catalog">模拟目录：正常</button> <button type="button" id="sim-fail">保存结果：成功</button></div>
+<div class="phone">
+<div class="island" aria-hidden="true"></div>
+<div class="status" aria-hidden="true"><span>12:55</span><span class="status-icons">▂▄▆ ◔ ▭</span></div>
+<header class="nav"><button type="button" class="nav-back" aria-label="返回设置">‹ 设置</button><h1 class="nav-title" style="margin:0">表格内容词汇替换</h1></header>
+<main class="scroll" id="page"></main>
+<div class="home-bar" aria-hidden="true"></div>
+</div>
+<section class="notes" aria-label="原型说明">
+<h2>原功能 → 新位置</h2>
+<ul>
+<li>表格目录读取状态（读取中 / 读取失败）→ 页面顶部状态行，文案沿用源码。</li>
+<li>已生效规则汇总 → 首个分组「已生效规则」：只读已保存配置，仅列已启用且通过校验的规则；「合计」行显示「N条」，每组显示「N 条」；空白值显示「（空白）」，换行 / 制表 / 空格显示为 ↵ ⇥ ·。</li>
+<li>全局替换开关 → 「全局替换」分组首行开关，适用范围说明作为副标题；匹配方式与保存提示放在分组页脚。</li>
+<li>规则编辑（原词、替换为、↑、↓、删除）→ 每条规则一个块行，操作在标题行右侧；区域末行为「添加规则」「保存并应用」。</li>
+<li>单表下拉选择 → 「选择表格」行 + 底部选择表；已配置的表不再列出，不可用表置灰并标「（当前不可用）」，无可选项时显示「没有可添加的表格」。</li>
+<li>每张单表配置 → 独立分组：表名作分组标题并带「当前不可用」徽标，组内依次为「启用此表替换」、规则、「移除配置」；不可用时页脚提示规则保留。</li>
+<li>保存校验错误 → 显示在对应规则下方，输入框加危险色描边，并以 aria-describedby 关联。</li>
+<li>替换为空的保存确认、移除单表确认、结果提示 → 沿用源码标题、正文与按钮文案。</li>
+</ul>
+<h2>新增 / 改动交互</h2>
+<ul>
+<li><b>新增确认</b>：删除单条规则前弹出确认框；删除只改草稿，点「保存并应用」后才写入。</li>
+<li><b>改动</b>：选择表格由原生下拉改为行 + YZ.sheet。</li>
+<li>未加入源码不存在的「重置」。</li>
+<li>工具栏「模拟目录」在正常 / 读取中 / 读取失败间切换（目录不可用时单表区域按不可用显示，「选择表格」置灰）；「保存结果」切换成功 / 失败。</li>
+</ul>
+</section>
+<script src="./shared/ios-settings.js"></script>
+<script>
+(() => {
+'use strict';
+// 校验错误文案：与 modules/settings-app/services/table-content-replacement.js 一致
+const ERR = {
+    source_empty: '原词不能为空；如果需要匹配空白，请至少输入一个空格或换行。',
+    source_target_equal: '原词与替换词不能完全相同。',
+    target_contains_source: '替换词不能包含原词，避免同一轮替换不断膨胀。',
+    duplicate_source: '同一区域内不能重复使用相同原词。',
+};
+// 示例目录：两张已配置（其中一张不可用），另两张可供添加
+const tables = [
+    { sheetKey: 'sheet_role', tableName: '角色档案', status: 'available' },
+    { sheetKey: 'sheet_place', tableName: '地点记录', status: 'unavailable' },
+    { sheetKey: 'sheet_item', tableName: '物品清单', status: 'available' },
+    { sheetKey: 'sheet_old', tableName: '旧剧情表', status: 'unavailable' },
+];
+
+// ---- 状态：saved = 已保存配置（汇总只读它），draft = 编辑草稿 ----
+let ruleSeq = 0;
+const newRule = (source = '', target = '') => ({ id: `r${++ruleSeq}`, source, target });
+const clone = (v) => JSON.parse(JSON.stringify(v));
+const saved = {
+    global: { enabled: true, rules: [newRule('旧称', '新称'), newRule('\n\n', '\n')] },
+    tableRules: [
+        { mappingId: 'm1', sheetKey: 'sheet_role', tableNameSnapshot: '角色档案', enabled: true, rules: [newRule('未知', '待定'), newRule(' ', '')] },
+        { mappingId: 'm2', sheetKey: 'sheet_place', tableNameSnapshot: '地点记录', enabled: true, rules: [newRule('旧城', '北城')] },
+    ],
+};
+let mappingSeq = 2;
+const state = { saved, draft: clone(saved), errors: {}, catalog: 'ok', failSave: false, pick: '' };
+const page = document.getElementById('page');
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// 与 formatRunningRuleValue 一致
+const showValue = (s) => (s.length === 0 ? '（空白）' : s.replace(/\r\n|\r|\n/g, '↵').replace(/\t/g, '⇥').replace(/ /g, '·'));
+// 与 validateReplacementRule 顺序一致；返回按下标对齐的错误码（'' 表示有效）
+function validate(rules) {
+    return rules.map((r, i) => {
+        if (r.source.length === 0) return 'source_empty';
+        if (r.source === r.target) return 'source_target_equal';
+        if (r.target.includes(r.source)) return 'target_contains_source';
+        if (rules.some((o, j) => j !== i && o.source === r.source)) return 'duplicate_source';
+        return '';
+    });
+}
+const runnable = (rules) => { const codes = validate(rules); return rules.filter((_, i) => !codes[i]); };
+// 目录未就绪时按源码 table=null → missing → 不可用处理
+const tableOf = (key) => (state.catalog === 'ok' ? tables.find((t) => t.sheetKey === key) || null : null);
+const isAvailable = (key) => tableOf(key)?.status === 'available';
+const areaOf = (key) => (key === 'global' ? state.draft.global : state.draft.tableRules.find((a) => a.mappingId === key));
+const ruleOf = (el) => areaOf(el.dataset.key)?.rules.find((r) => r.id === el.dataset.id);
+const nameOf = (a) => tableOf(a.sheetKey)?.tableName || a.tableNameSnapshot || a.sheetKey || '未命名表格';
+
+// ---- 已生效规则汇总：只读 state.saved，仅列已启用且通过校验的规则 ----
+function summaryHtml() {
+    const groups = [];
+    const g = state.saved.global;
+    const gRules = g.enabled ? runnable(g.rules) : [];
+    if (gRules.length) groups.push({ label: '全局替换', rules: gRules });
+    state.saved.tableRules.forEach((a) => {
+        const rules = a.enabled ? runnable(a.rules) : [];
+        if (rules.length) groups.push({ label: nameOf(a), rules });
+    });
+    const total = groups.reduce((n, x) => n + x.rules.length, 0);
+    const body = groups.length
+        ? groups.map((x) => `<div class="row block"><div class="rule-foot"><span class="row-label">${esc(x.label)}</span><span>${x.rules.length} 条</span></div><ol class="run-list">${x.rules.map((r, i) => `<li><span>${i + 1}</span><code>${esc(showValue(r.source))}</code><span aria-hidden="true">→</span><code>${esc(showValue(r.target))}</code></li>`).join('')}</ol></div>`).join('')
+        : '<div class="row"><span class="row-sub">暂无已生效规则。</span></div>';
+    return `<h2 class="group-header">已生效规则</h2><section class="group" aria-label="已生效规则"><div class="row"><span class="row-label">合计</span><span class="row-value">${total}条</span></div>${body}</section>`;
+}
+// ---- 规则卡：code 为该条校验错误码；textarea 内容前补一个换行，抵消 HTML 解析器吞掉的首个换行 ----
+function ruleHtml(key, r, i, code) {
+    const eid = `err-${key}-${r.id}`;
+    const aria = code ? ` aria-invalid="true" aria-describedby="${eid}"` : '';
+    const field = (name, label) => `<label><span class="field-label">${label}</span><textarea class="rule-input" rows="1" data-field="${name}"${aria}>\n${esc(r[name])}</textarea></label>`;
+    return `<div class="row block rule${code ? ' has-error' : ''}" data-key="${key}" data-id="${r.id}">
+<div class="rule-foot"><span class="row-label">规则 ${i + 1}</span><span class="row-actions">
+<button type="button" class="mini-btn" data-act="up" aria-label="上移规则 ${i + 1}"${i === 0 ? ' disabled' : ''}>↑</button>
+<button type="button" class="mini-btn" data-act="down" aria-label="下移规则 ${i + 1}">↓</button>
+<button type="button" class="mini-btn danger" data-act="del" aria-label="删除规则 ${i + 1}">删除</button></span></div>
+<div class="rule-fields">${field('source', '原词')}<span class="rule-arrow" aria-hidden="true">→</span>${field('target', '替换为')}</div>
+${code ? `<p class="rule-err" id="${eid}">${ERR[code]}</p>` : ''}</div>`;
+}
+function rulesHtml(key, area) {
+    const errs = state.errors[key] || {};
+    const list = area.rules.length
+        ? area.rules.map((r, i) => ruleHtml(key, r, i, errs[r.id])).join('')
+        : '<div class="row"><span class="row-sub">暂无规则。</span></div>';
+    return `${list}<button type="button" class="row action" data-act="add" data-key="${key}">添加规则</button><button type="button" class="row action" data-act="save" data-key="${key}">保存并应用</button>`;
+}
+const switchRow = (key, label, on, subHtml = '') => `<div class="row"><span class="row-label">${label}${subHtml}</span><label class="switch"><input type="checkbox" data-toggle="${key}" aria-label="${label}"${on ? ' checked' : ''}><span></span></label></div>`;
+// ---- 页面渲染：顶部状态 / 汇总 / 全局 / 单表 ----
+function statusHtml() {
+    if (state.catalog === 'loading') return '<p class="status-line" role="status">正在读取表格目录…</p>';
+    if (state.catalog === 'error') return '<p class="status-line error" role="alert">当前无法读取表格目录；已保存的规则仍会保留。</p>';
+    return '';
+}
+function globalHtml() {
+    const g = state.draft.global;
+    return `<h2 class="group-header">全局替换</h2><section class="group" aria-label="全局替换">${switchRow('global', '启用全局替换', g.enabled, '<span class="row-sub">适用于当前及后续可用的普通数据表，先于单表规则执行。</span>')}${rulesHtml('global', g)}</section><p class="group-footer">按普通文字匹配；修改后需点击「保存并应用」。</p>`;
+}
+// 可添加的表：目录正常时，排除已配置的表
+function candidates() {
+    if (state.catalog !== 'ok') return [];
+    const used = new Set(state.draft.tableRules.map((a) => a.sheetKey));
+    return tables.filter((t) => !used.has(t.sheetKey));
+}
+function tablesHtml() {
+    const list = candidates();
+    const picked = list.find((t) => t.sheetKey === state.pick && t.status === 'available');
+    const ready = state.catalog === 'ok';
+    const pickText = picked ? esc(picked.tableName) : (!ready || list.length ? '请选择一张表' : '没有可添加的表格');
+    const head = `<h2 class="group-header">单表替换</h2><section class="group" aria-label="单表替换">
+<button type="button" class="row tappable" data-act="pick"${ready ? '' : ' disabled'}><span class="row-label">选择表格</span><span class="row-value">${pickText}<span class="chev" aria-hidden="true">›</span></span></button>
+<button type="button" class="row action" data-act="add-table"${picked ? '' : ' disabled'}>添加表格</button></section><p class="group-footer">仅作用于指定表格。</p>`;
+    const areas = state.draft.tableRules.map((a) => {
+        const off = !isAvailable(a.sheetKey);
+        const name = esc(nameOf(a));
+        return `<h2 class="group-header">${name}${off ? '<span class="badge warn">当前不可用</span>' : ''}</h2><section class="group" aria-label="${name}">${switchRow(a.mappingId, '启用此表替换', a.enabled)}${rulesHtml(a.mappingId, a)}<button type="button" class="row action danger" data-act="remove" data-key="${a.mappingId}">移除配置</button></section>${off ? '<p class="group-footer">表格暂不可用，规则保留，恢复后继续生效。</p>' : ''}`;
+    }).join('');
+    return head + (areas || '<section class="group"><div class="row"><span class="row-sub">暂无单表配置。</span></div></section>');
+}
+function render() {
+    page.innerHTML = statusHtml() + summaryHtml() + globalHtml() + tablesHtml();
+}
+// 重绘后把焦点放回对应控件，避免键盘用户丢失位置
+const paint = (sel) => { render(); if (sel) page.querySelector(sel)?.focus({ preventScroll: true }); };
+function commit(key) {
+    const d = clone(areaOf(key));
+    if (key === 'global') { state.saved.global = d; return; }
+    const i = state.saved.tableRules.findIndex((a) => a.mappingId === key);
+    if (i < 0) state.saved.tableRules.push(d); else state.saved.tableRules[i] = d;
+}
+function doSave(key) {
+    const sel = `[data-act="save"][data-key="${key}"]`;
+    if (state.failSave) { YZ.toast('设置保存失败，请稍后重试。'); return; }
+    const area = areaOf(key);
+    const codes = validate(area.rules);
+    if (codes.some(Boolean)) {
+        state.errors[key] = Object.fromEntries(area.rules.map((r, i) => [r.id, codes[i]]).filter((x) => x[1]));
+        paint(sel);
+        return;
+    }
+    delete state.errors[key];
+    commit(key);
+    paint(sel);
+    const off = key === 'global' ? state.catalog !== 'ok' : !isAvailable(area.sheetKey);
+    if (off) { YZ.toast('规则已保存，但当前表格暂时无法应用。'); return; }
+    const n = area.enabled ? runnable(area.rules).length * 3 : 0; // 模拟命中数
+    if (n > 0) YZ.toast(`已替换 ${n} 个单元格`);
+}
+function requestSave(key) {
+    const empty = areaOf(key).rules.filter((r) => r.target.length === 0).length;
+    if (!empty) { doSave(key); return; }
+    YZ.confirm({ title: '确认删除匹配文本？', message: `本区域有 ${empty} 条规则的“替换为”为空，保存后会删除匹配到的文字。是否继续？`, confirmText: '继续保存', onConfirm: () => doSave(key) });
+}
+page.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn || btn.disabled) return;
+    const act = btn.dataset.act;
+    const ruleEl = btn.closest('.rule');
+    const key = ruleEl ? ruleEl.dataset.key : btn.dataset.key;
+    const area = key ? areaOf(key) : null;
+    if (act === 'up' || act === 'down') {
+        const i = area.rules.findIndex((r) => r.id === ruleEl.dataset.id);
+        const j = act === 'up' ? i - 1 : i + 1;
+        if (j < 0 || j >= area.rules.length) return;
+        [area.rules[i], area.rules[j]] = [area.rules[j], area.rules[i]];
+        paint(`.rule[data-id="${ruleEl.dataset.id}"] [data-act="${act}"]`);
+    } else if (act === 'del') {
+        const i = area.rules.findIndex((r) => r.id === ruleEl.dataset.id);
+        YZ.confirm({ title: '删除这条规则？', message: `将从草稿中删除「规则 ${i + 1}」，点击「保存并应用」后才会写入。`, confirmText: '删除', onConfirm: () => { area.rules.splice(i, 1); paint(`[data-act="add"][data-key="${key}"]`); } });
+    } else if (act === 'add') {
+        const r = newRule();
+        area.rules.push(r);
+        paint(`.rule[data-id="${r.id}"] textarea`);
+    } else if (act === 'save') requestSave(key);
+    else if (act === 'remove') {
+        YZ.confirm({ title: '删除单表替换区域？', message: `将删除“${nameOf(area)}”的替换配置，不会回滚已经写入表格的数据。`, confirmText: '确认删除', onConfirm: () => {
+            if (state.failSave) { YZ.toast('设置保存失败，请稍后重试。'); return; }
+            state.draft.tableRules = state.draft.tableRules.filter((a) => a.mappingId !== key);
+            state.saved.tableRules = state.saved.tableRules.filter((a) => a.mappingId !== key);
+            delete state.errors[key];
+            paint('[data-act="pick"]');
+            YZ.toast('单表替换区域已删除');
+        } });
+    } else if (act === 'pick') {
+        const list = candidates();
+        if (!list.length) { YZ.toast('没有可添加的表格'); return; }
+        YZ.sheet({ title: '选择表格', groups: [{ options: list.map((t) => {
+            const ok = t.status === 'available';
+            return { value: t.sheetKey, label: t.tableName + (ok ? '' : '（当前不可用）'), disabled: !ok, selected: t.sheetKey === state.pick };
+        }) }], onSelect: (v) => { state.pick = v; paint('[data-act="add-table"]'); } });
+    } else if (act === 'add-table') {
+        const t = candidates().find((x) => x.sheetKey === state.pick);
+        if (!t) return;
+        state.draft.tableRules.push({ mappingId: `m${++mappingSeq}`, sheetKey: t.sheetKey, tableNameSnapshot: t.tableName, enabled: true, rules: [] });
+        state.pick = '';
+        paint(`[data-act="add"][data-key="m${mappingSeq}"]`);
+    }
+});
+// 输入与开关只改草稿，不重绘（保持光标）
+page.addEventListener('input', (e) => {
+    const f = e.target.dataset.field;
+    if (f) { const r = ruleOf(e.target.closest('.rule')); if (r) r[f] = e.target.value; }
+});
+page.addEventListener('change', (e) => {
+    const key = e.target.dataset.toggle;
+    if (key) areaOf(key).enabled = e.target.checked;
+});
+const CATALOG = { ok: '正常', loading: '读取中', error: '读取失败' };
+document.getElementById('sim-catalog').addEventListener('click', (e) => {
+    state.catalog = { ok: 'loading', loading: 'error', error: 'ok' }[state.catalog];
+    state.pick = '';
+    e.currentTarget.textContent = `模拟目录：${CATALOG[state.catalog]}`;
+    render();
+});
+document.getElementById('sim-fail').addEventListener('click', (e) => {
+    state.failSave = !state.failSave;
+    e.currentTarget.textContent = `保存结果：${state.failSave ? '失败' : '成功'}`;
+});
+render();
+})();
+</script>
+</body>
+</html>
+
+
+
+
+
