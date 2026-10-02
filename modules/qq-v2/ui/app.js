@@ -15,6 +15,7 @@ import { isScrollContainerNearBottom } from '../../phone-core/stable-scroll-anch
 import { createPhoneViewScrollState } from '../../phone-core/view-scroll-state.js';
 import { getPhoneSettings } from '../../settings.js';
 import { createLazyLoader } from '../../utils/observers.js';
+import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { showSettingsSheet } from '../../settings-app/ui/settings-layer.js';
 import { createEmojiPanelTemporaryLayerController } from './emoji-panel.js';
 import { createStickerUploadDialog } from './sticker-upload-dialog.js';
@@ -1750,8 +1751,6 @@ export function createQQApp({
         if (!conversationId) return;
         conversationSnapshots.set(conversationId, target);
         jumpCounts.delete(conversationId);
-        pages.reset(conversationId);
-        viewSnapshotCache.take('page:chat:' + conversationId)?.holder?.replaceChildren?.();
         go({ type: 'chat', conversationId });
         const opened = await facade.intent.openConversation({ conversationId: target.conversationId });
         if (!opened?.ok) {
@@ -3534,9 +3533,20 @@ export function createQQApp({
         return row;
     };
 
-    const qqSettingsSegment = (label, name, value, options, { onChange = null } = {}) => {
-        const row = createElement('div', 'phone-ios-row is-block yuzi-qq-settings-row yuzi-qq-settings-segment-row');
-        const labelEl = createElement('span', 'phone-ios-field-label');
+    const qqSettingsSegment = (label, name, value, options, {
+        onChange = null,
+        inline = false,
+    } = {}) => {
+        const row = createElement(
+            'div',
+            [
+                'phone-ios-row',
+                inline ? 'is-inline' : 'is-block',
+                'yuzi-qq-settings-row',
+                'yuzi-qq-settings-segment-row',
+            ].join(' '),
+        );
+        const labelEl = createElement('span', inline ? 'phone-ios-row-label' : 'phone-ios-field-label');
         labelEl.textContent = label;
         const select = qqSettingsNativeControl('select', name);
         asArray(options).forEach(([optionValue, optionLabel]) => {
@@ -3567,10 +3577,10 @@ export function createQQApp({
         const mode = source.mode === 'all' ? 'all' : 'relative';
         const value = Number.isInteger(Number(source.value)) ? Number(source.value) : 1;
         const unit = ['hour', 'day', 'month', 'year'].includes(source.unit) ? source.unit : 'month';
-        const modeRow = qqSettingsSegment(t("模式"), 'timeWindowMode', mode, [
+        const modeRow = qqSettingsSegment(t("时间范围"), 'timeWindowMode', mode, [
             ['relative', t("最近一段时间")],
             ['all', t("全部消息")],
-        ]);
+        ], { inline: true });
         const valueRow = qqSettingsNumber(t("时间范围"), 'timeWindowValue', value, { min: 1 });
         const unitRow = qqSettingsSegment(t("单位"), 'timeWindowUnit', unit, [
             ['hour', t("小时")],
@@ -3578,25 +3588,32 @@ export function createQQApp({
             ['month', t("月")],
             ['year', t("年")],
         ]);
+        const valueStepper = valueRow.querySelector('.phone-ios-stepper');
+        const valueInput = valueRow.querySelector('.yuzi-qq-settings-native-control');
+        const unitSegment = unitRow.querySelector('.phone-ios-seg');
+        const unitSelect = unitRow.querySelector('.yuzi-qq-settings-native-control');
+        const subRow = createElement(
+            'div',
+            'phone-ios-row yuzi-qq-settings-row yuzi-qq-settings-time-window-subrow yuzi-qq-settings-number-row yuzi-qq-settings-segment-row',
+        );
+        subRow.append(valueStepper, unitSegment, valueInput, unitSelect);
         const syncDisabled = () => {
             const disabled = modeRow.querySelector('select')?.value === 'all';
-            const input = valueRow.querySelector('input[type="number"]');
-            if (input) input.disabled = disabled;
-            valueRow.querySelectorAll('button').forEach((button) => {
+            if (valueInput) valueInput.disabled = disabled;
+            valueStepper?.querySelectorAll('.phone-ios-stepper-btn').forEach((button) => {
                 button.disabled = disabled;
             });
-            const unitSelect = unitRow.querySelector('select');
             if (unitSelect) unitSelect.disabled = disabled;
-            unitRow.querySelectorAll('.phone-ios-seg-item').forEach((button) => {
+            unitSegment?.querySelectorAll('.phone-ios-seg-item').forEach((button) => {
                 button.disabled = disabled;
             });
-            valueRow.classList.toggle('is-disabled', disabled);
-            unitRow.classList.toggle('is-disabled', disabled);
+            subRow.classList.toggle('is-disabled', disabled);
+            subRow.setAttribute('aria-disabled', String(disabled));
         };
         modeRow.querySelector('select')?.addEventListener('change', syncDisabled);
         syncDisabled();
         const field = createElement('div', 'yuzi-qq-settings-time-window');
-        field.append(modeRow, valueRow, unitRow);
+        field.append(modeRow, subRow);
         return field;
     };
 
@@ -3608,12 +3625,24 @@ export function createQQApp({
             if (!button || !form.contains(button)) return;
             const input = form.querySelector(`#${CSS.escape(button.dataset.qqNumberEditor || '')}`);
             if (!input) return;
+            const label = button.getAttribute('aria-label') || t("编辑数值");
             const sheet = showSettingsSheet({
-                title: button.getAttribute('aria-label') || t("编辑数值"),
+                title: label,
                 doneText: t("确定"),
                 bodyHtml: `
-                    <div class="yuzi-qq-number-editor-form">
-                        <input class="yuzi-qq-field-control" type="number" inputmode="numeric" step="1" aria-label="">
+                    <div class="yuzi-qq-number-editor-form phone-settings-page">
+                        <section class="phone-ios-group">
+                            <label class="phone-ios-row is-block">
+                                <span class="phone-ios-field-label">${escapeHtml(label)}</span>
+                                <input class="phone-ios-field" type="number"
+                                    inputmode="numeric"
+                                    min="${escapeHtmlAttr(input.min)}"
+                                    max="${escapeHtmlAttr(input.max)}"
+                                    step="${escapeHtmlAttr(input.step || '1')}"
+                                    value="${escapeHtmlAttr(input.value)}"
+                                    aria-label="${escapeHtmlAttr(label)}">
+                            </label>
+                        </section>
                         <p class="yuzi-qq-form-error" role="alert"></p>
                     </div>
                 `,
@@ -4041,7 +4070,7 @@ export function createQQApp({
             const lightField = qqSettingsSegment(t("灯色"), 'light', settings.worldbook.light, [
                 ['blue', t("蓝灯")],
                 ['green', t("绿灯")],
-            ]);
+            ], { inline: true });
             const keywordField = qqSettingsText(t("关键词"), 'keywords', settings.worldbook.keywords.join('\u3001'));
             keywordField.setAttribute('data-qq-worldbook-keywords', '1');
             const injectionCount = qqSettingsNumber(t("注入条数"), 'injectionCount', settings.worldbook.injectionCount, { min: 0 });

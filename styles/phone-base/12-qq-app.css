@@ -2792,7 +2792,7 @@
 }
 
 .yuzi-qq-settings-group-header {
-    margin: var(--yuzi-settings-group-block-gap) var(--yuzi-settings-group-text-inset) var(--yuzi-settings-group-header-gap);
+    margin: var(--yuzi-settings-group-block-gap) var(--yuzi-qq-page-padding) var(--yuzi-settings-group-header-gap);
     color: var(--yuzi-qq-muted);
     font-size: var(--yuzi-settings-group-header-size);
     font-weight: var(--yuzi-qq-body-weight);
@@ -2895,7 +2895,17 @@
 }
 
 .yuzi-qq-settings-stepper {
+    flex: 0 0 auto;
+    min-inline-size: 0;
     gap: var(--yuzi-qq-inline-gap);
+}
+
+.yuzi-qq-settings-number-row {
+    min-inline-size: 0;
+}
+
+.yuzi-qq-settings-number-row > .phone-ios-row-label {
+    min-inline-size: 0;
 }
 
 .yuzi-qq-settings-stepper .phone-ios-stepper-btn {
@@ -2909,7 +2919,8 @@
 }
 
 .yuzi-qq-settings-stepper .phone-ios-stepper-value {
-    min-inline-size: var(--yuzi-qq-secondary-control-max-width);
+    min-inline-size: var(--yuzi-settings-stepper-value-width);
+    max-inline-size: var(--yuzi-settings-stepper-value-width);
     color: var(--yuzi-qq-muted);
 }
 
@@ -2924,6 +2935,17 @@
 
 .yuzi-qq-settings-segment-row {
     align-items: stretch;
+}
+
+.yuzi-qq-settings-segment-row.is-inline {
+    align-items: center;
+    justify-content: space-between;
+    min-inline-size: 0;
+}
+
+.yuzi-qq-settings-segment-row.is-inline .phone-ios-row-label {
+    min-inline-size: 0;
+    white-space: nowrap;
 }
 
 .yuzi-qq-settings-segment-row .phone-ios-seg {
@@ -2943,6 +2965,29 @@
     color: var(--yuzi-qq-text);
     background: var(--yuzi-qq-elevated);
     box-shadow: var(--yuzi-qq-shadow);
+}
+
+.yuzi-qq-settings-segment-row.is-inline .phone-ios-seg,
+.yuzi-qq-settings-time-window-subrow .phone-ios-seg {
+    flex: 0 1 auto;
+    align-self: center;
+    justify-content: flex-start;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.yuzi-qq-settings-segment-row.is-inline .phone-ios-seg::-webkit-scrollbar,
+.yuzi-qq-settings-time-window-subrow .phone-ios-seg::-webkit-scrollbar {
+    display: none;
+}
+
+.yuzi-qq-settings-segment-row.is-inline .phone-ios-seg-item,
+.yuzi-qq-settings-time-window-subrow .phone-ios-seg-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding-inline: var(--yuzi-qq-inline-gap);
 }
 
 .yuzi-qq-settings-switch-row {
@@ -2990,6 +3035,18 @@
 
 .yuzi-qq-settings-time-window {
     display: contents;
+}
+
+.yuzi-qq-settings-time-window-subrow {
+    align-items: center;
+    justify-content: space-between;
+    min-inline-size: 0;
+    gap: var(--yuzi-qq-inline-gap);
+}
+
+.yuzi-qq-settings-time-window-subrow .phone-ios-stepper {
+    flex: 0 0 auto;
+    min-inline-size: 0;
 }
 
 .yuzi-qq-settings-time-window > .phone-ios-row + .phone-ios-row::before {
@@ -3041,6 +3098,10 @@
 }
 
 .phone-ios-layer.yuzi-qq-settings-layer .phone-ios-row {
+    color: var(--yuzi-qq-text);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-field-label {
     color: var(--yuzi-qq-text);
 }
 
@@ -3131,13 +3192,26 @@
 .yuzi-qq-number-editor-form {
     display: flex;
     flex-direction: column;
+    inline-size: 100%;
+    max-inline-size: 100%;
     gap: var(--yuzi-qq-inline-gap);
     padding-block-end: var(--yuzi-qq-page-padding);
 }
 
 .yuzi-qq-number-editor-form input {
     inline-size: 100%;
-    text-align: center;
+    max-inline-size: none;
+    min-inline-size: 0;
+    text-align: start;
+}
+
+#yuzi-phone-standalone .yuzi-phone-shell .phone-ios-layer.yuzi-qq-settings-layer
+    .yuzi-qq-number-editor-form input.phone-ios-field {
+    color: var(--yuzi-qq-text) !important;
+    -webkit-text-fill-color: var(--yuzi-qq-text) !important;
+    background: var(--yuzi-qq-input) !important;
+    border-color: var(--yuzi-qq-line) !important;
+    color-scheme: var(--yuzi-phone-native-control-color-scheme);
 }
 
 .yuzi-qq-settings-detail-sheet {
@@ -3551,7 +3625,7 @@
 .yuzi-qq-image-library-heading {
     display: flex;
     flex-direction: column;
-    margin: var(--yuzi-settings-group-block-gap) var(--yuzi-settings-group-text-inset) var(--yuzi-settings-group-header-gap);
+    margin: var(--yuzi-settings-group-block-gap) var(--yuzi-qq-page-padding) var(--yuzi-settings-group-header-gap);
     color: var(--yuzi-qq-muted);
     font-size: var(--yuzi-settings-group-header-size);
     font-weight: var(--yuzi-qq-body-weight);
