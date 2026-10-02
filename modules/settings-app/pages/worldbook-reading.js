@@ -1,6 +1,6 @@
 import { t } from '../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
-import { buildSettingsPageFrame, buildSettingsSectionHtml } from '../layout/primitives.js';
+import { buildSettingsPageFrame } from '../layout/primitives.js';
 import { createRuntimeScrollPreserver } from '../../ui-runtime/scroll-preserver-core.js';
 
 function asArray(value) {
@@ -16,21 +16,29 @@ function sourceLabel(sourceRole) {
     return sourceRole === 'primary' ? t("主世界书") : t("附加世界书");
 }
 
-function buildEntryHtml(entry) {
+function buildEntryHtml(entry, blockedKeywords) {
     const bookName = String(entry?.ref?.bookName ?? '').trim();
     const uid = String(entry?.ref?.uid ?? '').trim();
     const enabled = entry?.enabled === true;
     const selected = enabled && entry?.selected === true;
+    const comment = String(entry?.value?.comment || entry?.value?.name || '');
+    const blocked = enabled && blockedKeywords.some((keyword) => comment.includes(keyword));
+    const badge = !enabled ? t("已禁用") : blocked ? t("已排除") : '';
     return `
-        <div class="phone-worldbook-entry${enabled ? '' : ' is-disabled'}">
-            <label class="phone-worldbook-entry-label">
-                <input type="checkbox" class="phone-worldbook-entry-checkbox"
+        <label class="phone-ios-row${enabled ? '' : ' is-disabled'}">
+            <span class="phone-ios-row-label">
+                <span class="phone-ios-row-title">${escapeHtml(entryTitle(entry))}</span>
+                <span class="phone-ios-row-sub">${escapeHtml(`${bookName} · ${sourceLabel(entry?.sourceRole)}`)}</span>
+            </span>
+            ${badge ? `<span class="phone-ios-badge is-muted">${escapeHtml(badge)}</span>` : ''}
+            <span class="phone-ios-switch">
+                <input type="checkbox" class="phone-worldbook-reading-entry-checkbox"
                     data-worldbook="${escapeHtmlAttr(bookName)}" data-uid="${escapeHtmlAttr(uid)}"
+                    aria-label="${escapeHtmlAttr(`${entryTitle(entry)} · ${bookName}`)}"
                     ${enabled ? '' : 'disabled'} ${selected ? 'checked' : ''}>
-                <span class="phone-worldbook-entry-name">${escapeHtml(entryTitle(entry))}</span>
-                <span class="phone-worldbook-entry-meta">${escapeHtml(`${bookName} · ${sourceLabel(entry?.sourceRole)}`)}</span>
-            </label>
-        </div>
+                <span class="phone-ios-switch-track" aria-hidden="true"></span>
+            </span>
+        </label>
     `;
 }
 
@@ -40,6 +48,7 @@ function blockedKeywordsText(pageState = {}) {
 
 function buildWorldbookReadingView(pageState = {}) {
     const entries = asArray(pageState?.snapshot?.entries);
+    const blockedKeywords = asArray(pageState?.snapshot?.blockedKeywords);
     const query = String(pageState.query ?? '').trim();
     const normalizedQuery = query.toLocaleLowerCase();
     const filteredEntries = normalizedQuery
@@ -52,12 +61,12 @@ function buildWorldbookReadingView(pageState = {}) {
     const enabledEntries = entries.filter((entry) => entry?.enabled === true);
     const selectedCount = enabledEntries.filter((entry) => entry?.selected === true).length;
     let entriesHtml = filteredEntries.length > 0
-        ? filteredEntries.map(buildEntryHtml).join('')
-        : `<div class="phone-worldbook-empty">${query ? t("未找到匹配的条目") : t("当前角色没有可读取的世界书条目")}</div>`;
+        ? filteredEntries.map((entry) => buildEntryHtml(entry, blockedKeywords)).join('')
+        : `<div class="phone-ios-row phone-ios-row-empty phone-worldbook-empty">${query ? t("未找到匹配的条目") : t("当前角色没有可读取的世界书条目")}</div>`;
     if (pageState.loading === true) {
-        entriesHtml = `<div class="phone-worldbook-loading">${t("正在读取角色世界书...")}</div>`;
+        entriesHtml = `<div class="phone-ios-row phone-ios-row-empty phone-worldbook-loading" role="status">${t("正在读取角色世界书...")}</div>`;
     } else if (String(pageState.error ?? '').trim()) {
-        entriesHtml = `<div class="phone-worldbook-error">${escapeHtml(pageState.error)}</div>`;
+        entriesHtml = `<div class="phone-ios-row phone-ios-row-empty is-danger phone-worldbook-error" role="alert">${escapeHtml(pageState.error)}</div>`;
     }
     return {
         query,
@@ -68,37 +77,38 @@ function buildWorldbookReadingView(pageState = {}) {
 
 export function buildWorldbookReadingPageHtml(pageState = {}) {
     const { query, entriesHtml, statusText } = buildWorldbookReadingView(pageState);
-    const blockedKeywordsSectionHtml = buildSettingsSectionHtml({
-        title: t("自动排除关键词"),
-        desc: t("条目 comment 包含任一关键词时自动取消勾选；不检查条目正文。每行一个关键词。"),
-        bodyHtml: `
-            <textarea id="phone-worldbook-reading-blocked-keywords" class="phone-settings-textarea" rows="6" spellcheck="false" placeholder="${t`例如：MVU`}">${escapeHtml(blockedKeywordsText(pageState))}</textarea>
-            <div class="phone-settings-action phone-settings-action-wrap">
-                <button type="button" class="phone-settings-btn" id="phone-worldbook-reading-blocked-keywords-save">${t`保存排除词`}</button>
+    const bodyHtml = `
+        <h2 class="phone-ios-group-header">${t("自动排除关键词")}</h2>
+        <section class="phone-ios-group">
+            <div class="phone-ios-row is-block">
+                <label class="phone-ios-field-label" for="phone-worldbook-reading-blocked-keywords">${t("关键词（每行一个）")}</label>
+                <textarea id="phone-worldbook-reading-blocked-keywords" class="phone-ios-field" rows="6" spellcheck="false" placeholder="${t`例如：MVU`}">${escapeHtml(blockedKeywordsText(pageState))}</textarea>
             </div>
-        `,
-    });
-    const sectionHtml = buildSettingsSectionHtml({
-        title: t("条目范围"),
-        desc: t("默认读取当前角色主世界书和附加世界书中的所有未禁用条目。"),
-        bodyHtml: `
-            <label class="phone-ai-preset-segment-field" for="phone-worldbook-reading-search">
-                <span>${t`搜索条目`}</span>
-                <input id="phone-worldbook-reading-search" class="phone-settings-input" value="${escapeHtmlAttr(query)}" placeholder="${t`输入条目名、书名或 UID`}">
-            </label>
-            <div class="phone-settings-action phone-settings-action-wrap">
-                <button type="button" class="phone-settings-btn" id="phone-worldbook-reading-select-all">${t`全选`}</button>
-                <button type="button" class="phone-settings-btn" id="phone-worldbook-reading-deselect-all">${t`取消全选`}</button>
+            <button type="button" class="phone-ios-row is-action" id="phone-worldbook-reading-blocked-keywords-save">${t`保存排除词`}</button>
+        </section>
+        <p class="phone-ios-group-footer">${t("条目 comment 包含任一关键词时自动取消勾选；不检查条目正文。每行一个关键词。")}</p>
+
+        <h2 class="phone-ios-group-header">${t("条目范围")}</h2>
+        <label class="phone-ios-search-row">
+            <input type="search" id="phone-worldbook-reading-search" class="phone-ios-field" value="${escapeHtmlAttr(query)}" aria-label="${t`搜索条目`}" placeholder="${t`输入条目名、书名或 UID`}" autocomplete="off">
+        </label>
+        <section class="phone-ios-group">
+            <div class="phone-ios-row phone-worldbook-reading-summary">
+                <span id="phone-worldbook-reading-status" class="phone-ios-row-label" aria-live="polite">${statusText}</span>
+                <div class="phone-ios-row-actions">
+                    <button type="button" class="phone-ios-mini-btn" id="phone-worldbook-reading-select-all">${t`全选`}</button>
+                    <button type="button" class="phone-ios-mini-btn" id="phone-worldbook-reading-deselect-all">${t`取消全选`}</button>
+                </div>
             </div>
-            <div id="phone-worldbook-reading-status" class="phone-worldbook-status">${statusText}</div>
-            <div id="phone-worldbook-reading-entries" class="phone-worldbook-entries">${entriesHtml}</div>
-        `,
-    });
+        </section>
+        <section class="phone-ios-group is-scrollable" id="phone-worldbook-reading-entries" aria-label="${t`世界书条目`}">${entriesHtml}</section>
+        <p class="phone-ios-group-footer">${t("默认读取当前角色主世界书和附加世界书中的所有未禁用条目。")}</p>
+    `;
     return buildSettingsPageFrame({
         title: t("读取世界书"),
-        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open',
+        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-ios-grouped-page',
         rightActionHtml: `<button type="button" class="phone-settings-btn phone-settings-btn-ghost phone-settings-nav-action" id="phone-worldbook-reading-refresh">${t("刷新")}</button>`,
-        bodyHtml: `${blockedKeywordsSectionHtml}${sectionHtml}`,
+        bodyHtml,
     });
 }
 
@@ -237,7 +247,7 @@ function bindWorldbookReadingPage(ctx, session) {
         entryDisposers = [];
     };
     const bindEntries = () => {
-        ctx.container.querySelectorAll('.phone-worldbook-entry-checkbox').forEach((checkbox) => {
+        ctx.container.querySelectorAll('.phone-worldbook-reading-entry-checkbox').forEach((checkbox) => {
             addListener(checkbox, 'change', (event) => {
                 const target = event.currentTarget;
                 void session.setSelected([{

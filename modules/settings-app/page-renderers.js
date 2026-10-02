@@ -118,6 +118,8 @@ function validateSettingsRendererDeps(deps = {}) {
         'importPrepared',
         'exportPreset',
         'deletePreset',
+        'applyPreset',
+        'setQQActive',
         'setActive',
         'clearActive',
         'clearAllActive',

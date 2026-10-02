@@ -2,6 +2,7 @@ import { t } from '../../i18n/index.js';
 import { normalizeTableContentReplacementSettings } from '../../table-content-replacement/config.js';
 import { buildTableContentReplacementPageHtml } from '../layout/frame.js';
 import { showConfirmDialog } from '../ui/confirm-dialog.js';
+import { bindSettingsGroupedControls } from '../ui/settings-controls.js';
 
 function asText(value) {
     return String(value ?? '');
@@ -376,6 +377,10 @@ export function createTableContentReplacementPage(ctx) {
     const handleChange = (event) => {
         const target = event?.target;
         if (!target || typeof target.closest !== 'function') return;
+        if (target.id === 'phone-table-content-replacement-table-select') {
+            const button = ctx.container.querySelector('[data-action="add-table"]');
+            if (button) button.disabled = state.busy || !target.value;
+        }
         const action = asId(target.dataset?.action);
         if (action === 'toggle-global') toggleArea('global', '', target.checked === true);
         if (action === 'toggle-table') toggleArea('table', asId(target.dataset?.mappingId), target.checked === true);
@@ -396,6 +401,7 @@ export function createTableContentReplacementPage(ctx) {
         add(ctx.container, 'click', handleClick);
         add(ctx.container, 'input', handleInput);
         add(ctx.container, 'change', handleChange);
+        cleanups.push(bindSettingsGroupedControls(ctx.container, ctx.pageRuntime, () => isActive() && !state.busy));
         detachEvents = () => {
             while (cleanups.length > 0) cleanups.pop()?.();
         };

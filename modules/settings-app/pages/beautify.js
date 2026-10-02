@@ -4,6 +4,7 @@ import { downloadTextFile } from '../services/media-upload/download.js';
 import { showConfirmDialog } from '../ui/confirm-dialog.js';
 import { createScrollPreserver } from '../ui/settings-scroll-binding.js';
 import { createBeautifyPageBehavior } from './beautify-behavior.js';
+import { bindSettingsGroupedControls } from '../ui/settings-controls.js';
 
 function loadingViewModel() {
     return Object.freeze({ status: 'loading', error: null, presets: [], tables: [] });
@@ -40,7 +41,12 @@ export function createBeautifyTemplatePage(ctx) {
             showConfirmDialog,
             showToast,
         });
-        detachInteractions = behavior.attachPageInteractions();
+        const detachBehavior = behavior.attachPageInteractions();
+        const detachGroupedControls = bindSettingsGroupedControls(container, pageRuntime, behavior.canInteract);
+        detachInteractions = () => {
+            detachGroupedControls();
+            detachBehavior();
+        };
     };
     const renderKeepScroll = createRerenderWithScroll('beautifyScrollTop', render);
 

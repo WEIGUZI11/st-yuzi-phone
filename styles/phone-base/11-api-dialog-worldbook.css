@@ -261,6 +261,56 @@
     gap: 12px;
 }
 
+.phone-ai-instruction-presets-page .phone-ai-preset-segment-card {
+    margin: 0;
+    border-radius: var(--yuzi-settings-group-radius);
+    background: var(--yuzi-settings-group-card);
+}
+
+.phone-ai-instruction-presets-page .phone-ai-preset-segment-card .phone-ios-row {
+    margin-inline: 0;
+}
+
+.phone-ai-instruction-presets-page .phone-ai-preset-segment-card .phone-ios-row-actions {
+    margin-left: auto;
+}
+
+.phone-ai-preset-placeholder-row code {
+    width: fit-content;
+    max-width: 100%;
+    padding: 2px 5px;
+    border-radius: 3px;
+    color: var(--yuzi-settings-accent-strong, #4B6648);
+    background: var(--yuzi-settings-accent-soft, rgba(91, 122, 106, 0.1));
+    overflow-wrap: anywhere;
+}
+
+.phone-ai-preset-placeholder-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.phone-ai-preset-placeholder-grid > .phone-ai-preset-placeholder-row {
+    min-width: 0;
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+}
+
+.phone-ai-preset-placeholder-grid > .phone-ai-preset-placeholder-row:nth-child(odd)::before {
+    right: var(--yuzi-settings-row-padding-inline);
+}
+
+.phone-ai-preset-placeholder-grid > .phone-ai-preset-placeholder-row:nth-child(even)::before {
+    left: 0;
+}
+
+.phone-ai-preset-placeholder-grid :is(code, .phone-ios-row-sub) {
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+}
+
 .phone-ai-preset-segment-toolbar {
     display: flex;
     align-items: flex-start;

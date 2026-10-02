@@ -1,76 +1,187 @@
-/* 生图设置页专属视觉层。所有规则限定在页面根下，避免扩大宿主覆盖范围。 */
-.phone-image-generation-page .phone-image-generation-translation-section .phone-settings-section-body {
-    gap: 11px;
+/* 生图设置页只补充业务内容的排版，外壳与控件复用 phone-ios grouped tokens。 */
+.phone-image-generation-page .phone-image-generation-input-row {
+    align-items: baseline;
 }
 
-.phone-image-generation-translation-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.phone-image-generation-translation-toggle {
-    margin: 0;
-}
-
-.phone-image-generation-preset-field {
-    gap: 6px;
-}
-
-.phone-image-generation-preset-field > span {
-    color: var(--yuzi-settings-text-secondary, #7A7772);
-    font-size: 11px;
-    line-height: 1.4;
-}
-
-.phone-image-generation-preset-field .phone-settings-select {
-    width: 100%;
+#yuzi-phone-standalone .yuzi-phone-shell .phone-image-generation-page input.phone-ios-inline-input,
+.phone-image-generation-page input.phone-ios-inline-input {
     min-width: 0;
+    color: var(--yuzi-settings-text-secondary);
+    -webkit-text-fill-color: var(--yuzi-settings-text-secondary);
+    background: transparent;
 }
 
-.phone-image-generation-preset-status {
-    padding: 7px 9px;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--yuzi-settings-accent, #5B7A6A) 8%, transparent);
-    color: var(--yuzi-settings-text-secondary, #7A7772);
-    font-size: 11px;
-    line-height: 1.5;
+#yuzi-phone-standalone .yuzi-phone-shell .phone-image-generation-page input.phone-ios-inline-input::placeholder,
+.phone-image-generation-page input.phone-ios-inline-input::placeholder {
+    color: var(--yuzi-settings-text-faint);
+    -webkit-text-fill-color: var(--yuzi-settings-text-faint);
+}
+
+.phone-image-generation-page .phone-image-generation-prompt-preview-row {
+    gap: var(--yuzi-settings-group-header-gap);
+}
+
+.phone-image-generation-page .phone-image-generation-prompt-preview-label {
+    margin-bottom: 0;
+}
+
+.phone-image-generation-page .phone-prompt-preview-content {
+    min-height: 2.6em;
+    white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
 
-.phone-image-generation-preset-status.is-empty {
-    background: color-mix(in srgb, var(--yuzi-settings-danger, #8B5E5E) 7%, transparent);
+.phone-image-generation-page .phone-image-generation-prompt-preview-row[data-empty="true"] .phone-prompt-preview-content {
+    color: var(--yuzi-settings-text-faint);
+    -webkit-text-fill-color: var(--yuzi-settings-text-faint);
 }
 
-.phone-image-generation-preset-actions {
+.phone-image-generation-page .phone-image-generation-ai-output-row .phone-prompt-preview-content {
+    border-color: color-mix(in srgb, var(--yuzi-settings-accent) 24%, transparent);
+    background: color-mix(in srgb, var(--yuzi-settings-accent) 7%, transparent);
+}
+
+.phone-image-generation-page .phone-image-generation-preset-status {
+    margin: 0;
+    padding: var(--yuzi-settings-seg-padding) var(--yuzi-settings-seg-item-padding-inline);
+    border-radius: var(--yuzi-settings-seg-item-radius);
+    background: color-mix(in srgb, var(--yuzi-settings-accent) 8%, transparent);
+    color: var(--yuzi-settings-text-secondary);
+    font-size: var(--yuzi-settings-group-footer-size);
+    line-height: var(--yuzi-settings-group-footer-line-height);
+    overflow-wrap: anywhere;
+}
+
+.phone-image-generation-page .phone-image-generation-preset-status.is-empty {
+    background: color-mix(in srgb, var(--yuzi-settings-danger) 7%, transparent);
+}
+
+.phone-image-generation-page .phone-image-generation-actions-row,
+.phone-image-generation-page .phone-image-generation-test-action-row {
     align-items: flex-start;
 }
 
-.phone-image-generation-prompt-preview-row {
+.phone-image-generation-page .phone-image-generation-preset-actions,
+.phone-image-generation-page .phone-image-generation-test-action-row {
+    flex-wrap: wrap;
+}
+
+.phone-image-generation-page .phone-image-generation-test-action-row {
+    gap: var(--yuzi-settings-group-header-gap);
+}
+
+.phone-image-generation-page .phone-image-generation-test-generate {
+    width: auto;
+    min-width: 7em;
+    padding-inline: var(--yuzi-settings-seg-item-padding-inline);
+}
+
+.phone-image-generation-page .phone-image-generation-test-status {
+    flex: 1 1 12em;
+    align-self: center;
+    min-width: 0;
+    color: var(--yuzi-settings-text-faint);
+    font-size: var(--yuzi-settings-group-footer-size);
+    line-height: var(--yuzi-settings-group-footer-line-height);
+    overflow-wrap: anywhere;
+}
+
+.phone-image-generation-page .phone-image-generation-test-preview {
+    min-height: 0;
+    padding: var(--yuzi-settings-row-padding-inline);
+}
+
+.phone-image-generation-page .phone-image-generation-test-preview:empty {
+    display: none;
+}
+
+.phone-image-generation-page .phone-image-generation-test-preview-button {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    padding: 0;
+    border: 0;
+    border-radius: var(--yuzi-phone-radius-md);
+    background: var(--yuzi-settings-group-fill);
+    cursor: zoom-in;
+    overflow: hidden;
+}
+
+.phone-image-generation-page .phone-image-generation-test-preview-button:focus-visible {
+    outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-accent);
+    outline-offset: calc(var(--yuzi-phone-form-focus-ring-offset) * -1);
+}
+
+.phone-image-generation-page .phone-image-generation-test-preview-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.phone-image-generation-page .phone-image-generation-mapping-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    min-width: 0;
+    gap: var(--yuzi-settings-group-stack-gap);
+    padding: var(--yuzi-settings-group-stack-gap);
+    background: var(--yuzi-settings-group-page);
 }
 
-.phone-image-generation-prompt-preview-row[data-empty="true"] .phone-prompt-preview-content {
-    color: var(--yuzi-settings-text-secondary, #7A7772);
+.phone-image-generation-page .phone-image-generation-mapping-card {
+    margin: 0;
 }
 
-.phone-image-generation-prompt-preview-label {
-    color: var(--yuzi-settings-text-secondary, #7A7772);
-    font-size: 11px;
-    line-height: 1.4;
+.phone-image-generation-page .phone-image-generation-mapping-head {
+    align-items: flex-start;
 }
 
-.phone-image-generation-ai-output-row .phone-prompt-preview-content {
-    border-color: color-mix(in srgb, var(--yuzi-settings-accent, #5B7A6A) 24%, transparent);
-    background: color-mix(in srgb, var(--yuzi-settings-accent, #5B7A6A) 7%, transparent);
+.phone-image-generation-page .phone-image-generation-mapping-head .phone-ios-row-label {
+    padding-top: var(--yuzi-settings-seg-padding);
+    font-weight: 600;
+}
+
+.phone-image-generation-page .phone-image-generation-mapping-head .phone-ios-row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.phone-image-generation-page .phone-image-generation-prompt-columns-row {
+    align-items: stretch;
+}
+
+.phone-image-generation-page .phone-image-generation-prompt-columns {
+    overflow: hidden;
+    border-radius: var(--yuzi-phone-radius-md);
+    background: var(--yuzi-settings-group-fill);
+}
+
+.phone-image-generation-page .phone-image-generation-prompt-columns .phone-ios-row {
+    min-height: var(--yuzi-settings-row-min-height);
+}
+
+.phone-image-generation-page .phone-image-generation-prompt-columns .phone-ios-row:first-child::before {
+    display: none;
+}
+
+.phone-image-generation-page .phone-image-generation-mapping-card .phone-ios-row.is-disabled {
+    color: var(--yuzi-settings-text-faint);
+}
+
+.phone-image-generation-page .phone-image-generation-mapping-card .phone-ios-row.is-disabled .phone-ios-row-label {
+    color: var(--yuzi-settings-text-faint);
 }
 
 @media (max-width: 380px) {
-    .phone-image-generation-preset-actions .phone-settings-btn {
+    .phone-image-generation-page .phone-image-generation-preset-actions .phone-ios-mini-btn {
         flex: 1 1 100%;
-        width: 100%;
+    }
+
+    .phone-image-generation-page .phone-image-generation-mapping-head {
+        display: block;
+    }
+
+    .phone-image-generation-page .phone-image-generation-mapping-head .phone-ios-row-actions {
+        justify-content: flex-start;
+        margin-top: var(--yuzi-settings-group-header-gap);
     }
 }

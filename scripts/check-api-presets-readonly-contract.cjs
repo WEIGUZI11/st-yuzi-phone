@@ -17,6 +17,9 @@ async function main() {
     const { createApiPresetsPage } = await importModule('modules/settings-app/pages/api-presets.js');
     const container = {
         innerHTML: '',
+        querySelectorAll() { return []; },
+        addEventListener() {},
+        removeEventListener() {},
         querySelector() {
             return { value: '', addEventListener() {} };
         },

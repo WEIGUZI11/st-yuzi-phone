@@ -6,6 +6,8 @@ import { STORAGE_BUDGETS } from '../constants.js';
 import { buildButtonStylePageHtml } from '../layout/frame.js';
 import { pickImageFile, estimateBase64Bytes } from '../services/media-upload.js';
 import { PHONE_ICONS } from '../../phone-home/icons.js';
+import { bindSettingsGroupedControls } from '../ui/settings-controls.js';
+import { showConfirmDialog } from '../ui/confirm-dialog.js';
 
 function buildToggleCoverPreviewHtml(shape, coverDataUrl, sizePx = 40) {
     const safeShape = String(shape || 'circle') === 'rounded' ? 'rounded' : 'circle';
@@ -105,14 +107,8 @@ export function renderButtonStylePage(ctx) {
     };
     const isPageActive = () => !isPageDisposed();
 
-    const getCurrentShape = () => {
-        const checked = shapeRadios.find((radio) => radio instanceof HTMLInputElement && radio.checked);
-        return checked?.value === 'circle' ? 'circle' : 'rounded';
-    };
-    const getCurrentSize = () => {
-        const raw = sizeInput instanceof HTMLInputElement ? Number(sizeInput.value) : Number(sizeRange?.value);
-        return clampNumber(raw, 32, 72, currentSize);
-    };
+    const getCurrentShape = () => shapeSelect?.value === 'circle' ? 'circle' : 'rounded';
+    const getCurrentSize = () => clampNumber(Number(sizeRange?.value), 32, 72, currentSize);
     const renderCoverPreview = (shape, coverDataUrl, sizePx = getCurrentSize()) => {
         if (preview) preview.innerHTML = buildToggleCoverPreviewHtml(shape, coverDataUrl, sizePx);
     };
@@ -124,8 +120,8 @@ export function renderButtonStylePage(ctx) {
     });
 
     const sizeRange = container.querySelector('#phone-toggle-style-size-range');
-    const sizeInput = container.querySelector('#phone-toggle-style-size-input');
-    const shapeRadios = Array.from(container.querySelectorAll('input[name="phone-toggle-shape"]'));
+    const sizeValue = container.querySelector('#phone-toggle-style-size-value');
+    const shapeSelect = container.querySelector('#phone-toggle-style-shape');
     const uploadBtn = container.querySelector('#phone-toggle-cover-upload-btn');
     const clearBtn = container.querySelector('#phone-toggle-cover-clear-btn');
     const preview = container.querySelector('#phone-toggle-cover-preview');
@@ -148,7 +144,7 @@ export function renderButtonStylePage(ctx) {
     const setSizeValue = (raw, withToast = false, immediate = false) => {
         const next = clampNumber(raw, 32, 72, 40);
         if (sizeRange) sizeRange.value = String(next);
-        if (sizeInput) sizeInput.value = String(next);
+        if (sizeValue) sizeValue.textContent = `${next}px`;
 
         if (immediate) {
             saveToggleSizeDebounced.cancel?.();
@@ -170,25 +166,19 @@ export function renderButtonStylePage(ctx) {
         setSizeValue(sizeRange.value, false, false);
     });
 
-    addListener(sizeInput, 'input', () => {
-        setSizeValue(sizeInput.value, false, false);
+    addListener(sizeRange, 'change', () => {
+        setSizeValue(sizeRange.value, true, true);
     });
 
-    addListener(sizeInput, 'change', () => {
-        setSizeValue(sizeInput.value, true, true);
-    });
-
-    shapeRadios.forEach((radio) => {
-        addListener(radio, 'change', () => {
-            const nextShape = radio.checked && radio.value === 'circle' ? 'circle' : 'rounded';
-            const latestCover = typeof getPhoneSettings().phoneToggleCoverImage === 'string'
-                ? getPhoneSettings().phoneToggleCoverImage.trim()
-                : '';
-            renderCoverPreview(nextShape, latestCover, getCurrentSize());
-            savePhoneSetting('phoneToggleStyleShape', nextShape);
-            emitToggleStyleUpdated();
-            showToast(container, nextShape === 'circle' ? t("按钮已切换为圆形（文字已隐藏）") : t("按钮已切换为长方形"));
-        });
+    addListener(shapeSelect, 'change', () => {
+        const nextShape = getCurrentShape();
+        const latestCover = typeof getPhoneSettings().phoneToggleCoverImage === 'string'
+            ? getPhoneSettings().phoneToggleCoverImage.trim()
+            : '';
+        renderCoverPreview(nextShape, latestCover, getCurrentSize());
+        savePhoneSetting('phoneToggleStyleShape', nextShape);
+        emitToggleStyleUpdated();
+        showToast(container, nextShape === 'circle' ? t("按钮已切换为圆形（文字已隐藏）") : t("按钮已切换为长方形"));
     });
 
     addListener(floatingToggleCheckbox, 'change', () => {
@@ -240,13 +230,17 @@ export function renderButtonStylePage(ctx) {
     });
 
     addListener(clearBtn, 'click', () => {
-        savePhoneSetting('phoneToggleCoverImage', null);
-        emitToggleStyleUpdated();
-        renderCoverPreview(getCurrentShape(), null);
-        if (clearBtn instanceof HTMLButtonElement) {
-            clearBtn.disabled = true;
-        }
-        showToast(container, t("按钮封面已清除"));
+        showConfirmDialog(container, t("清除按钮封面？"), t("清除后恢复毛玻璃按钮。"), () => {
+            if (!isPageActive()) return;
+            savePhoneSetting('phoneToggleCoverImage', null);
+            emitToggleStyleUpdated();
+            renderCoverPreview(getCurrentShape(), null);
+            if (clearBtn instanceof HTMLButtonElement) {
+                clearBtn.disabled = true;
+            }
+            showToast(container, t("按钮封面已清除"));
+        }, t("清除"), t("取消"), runtime);
     });
 
+    addCleanup(bindSettingsGroupedControls(container, runtime));
 }

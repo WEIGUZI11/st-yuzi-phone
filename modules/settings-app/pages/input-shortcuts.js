@@ -3,51 +3,63 @@ import { generateUniqueId } from '../../utils/object.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { formatShortcut, shortcutFromEvent } from '../../input-shortcuts/config.js';
 import { createScrollPreserver } from '../ui/settings-scroll-binding.js';
-import { buildSettingsPageFrame, buildSettingsSectionHtml } from '../layout/primitives.js';
+import { buildSettingsPageFrame } from '../layout/primitives.js';
+import { bindSettingsGroupedControls } from '../ui/settings-controls.js';
 
-function buildTextField(field, label, value, rows = 2) {
-    return `<label class="yuzi-input-shortcut-field"><span>${label}</span>
-        <textarea class="phone-settings-textarea" data-field="${field}" rows="${rows}" spellcheck="false">${escapeHtml(value || '')}</textarea></label>`;
+function buildTextField(field, label, value, action, rows = 2) {
+    const visible = field === 'text' ? action === 'insert' : action === 'wrap';
+    return `<label class="phone-ios-row is-block"${visible ? '' : ' hidden'}>
+        <span class="phone-ios-field-label">${label}</span>
+        <textarea class="phone-settings-textarea phone-ios-field" data-field="${field}" rows="${rows}" spellcheck="false">
+${escapeHtml(value || '')}</textarea></label>`;
 }
 
 export function buildInputShortcutsPageHtml({ enabled, rules, recordingId = '', dirtyIds = [] }) {
-    const intro = buildSettingsSectionHtml({
-        title: t("输入快捷键"),
-        desc: t("在酒馆输入框中，用按键插入文字或包裹选区。"),
-        actionsHtml: `<label class="yuzi-input-shortcut-toggle"><span>${t`启用`}</span>
-            <input type="checkbox" class="phone-settings-switch" data-field="enabled" aria-label="${t`启用输入快捷键`}"${enabled ? ' checked' : ''}></label>`,
-        bodyHtml: `<div class="yuzi-input-shortcut-toolbar"><span>${t`${rules.length} 条规则 · 修改后点击保存`}</span>
-            <button type="button" class="phone-settings-btn" data-action="add">${t`新增规则`}</button></div>`,
-    });
-    const cards = rules.map((rule, index) => `<div data-rule-id="${escapeHtmlAttr(rule.id)}">${buildSettingsSectionHtml({
-        title: t`规则 ${index + 1}`,
-        desc: '',
-        actionsHtml: `<label class="yuzi-input-shortcut-toggle"><span>${t`启用`}</span>
-            <input type="checkbox" class="phone-settings-switch" data-field="rule-enabled" aria-label="${t`启用规则 ${index + 1}`}"${rule.enabled ? ' checked' : ''}></label>`,
-        bodyHtml: `<div class="yuzi-input-shortcut-fields">
-            <div class="yuzi-input-shortcut-binding">
-                <label class="yuzi-input-shortcut-field"><span>${t`快捷键`}</span>
-                    <button type="button" class="phone-settings-btn yuzi-input-shortcut-key" data-action="record" aria-pressed="${recordingId === rule.id}">${recordingId === rule.id ? t("请按键…") : escapeHtml(formatShortcut(rule.shortcut))}</button></label>
-                <label class="yuzi-input-shortcut-field"><span>${t`动作`}</span>
-                    <select class="phone-settings-select" data-field="action">
-                        <option value="insert"${rule.action === 'insert' ? ' selected' : ''}>${t`插入文本`}</option>
-                        <option value="wrap"${rule.action === 'wrap' ? ' selected' : ''}>${t`成对包裹`}</option>
-                    </select></label>
-            </div>
-            ${rule.action === 'wrap'
-        ? `<div class="yuzi-input-shortcut-pair">${buildTextField('left', t("左侧内容"), rule.left)}${buildTextField('right', t("右侧内容"), rule.right)}</div>`
-        : buildTextField('text', t("插入内容"), rule.text, 3)}
-            <div class="yuzi-input-shortcut-actions">
-                <span data-rule-status role="status">${dirtyIds.includes(rule.id) ? t("未保存") : ''}</span>
-                <button type="button" class="phone-settings-btn" data-action="delete">${t`删除`}</button>
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="save">${t`保存`}</button>
-            </div>
-        </div>`,
-    })}</div>`).join('');
+    const intro = `<section class="phone-ios-group yuzi-input-shortcut-intro">
+        <label class="phone-ios-row"><span class="phone-ios-row-label">${t`启用`}</span>
+            <span class="phone-ios-switch"><input type="checkbox" role="switch" data-field="enabled" aria-label="${t`启用输入快捷键`}"${enabled ? ' checked' : ''}><span class="phone-ios-switch-track"></span></span></label>
+        </section>
+        <p class="phone-ios-group-footer">${t("在酒馆输入框中，用按键插入文字或包裹选区。")}</p>
+        <section class="phone-ios-group yuzi-input-shortcut-toolbar">
+            <div class="phone-ios-row"><span class="phone-ios-row-sub">${t`${rules.length} 条规则 · 修改后点击保存`}</span></div>
+            <button type="button" class="phone-ios-row is-action" data-action="add">${t`新增规则`}</button>
+        </section>`;
+    const cards = rules.map((rule, index) => {
+        const id = escapeHtmlAttr(rule.id);
+        const selectId = `shortcut-action-${id}`;
+        return `<div data-rule-id="${id}">
+            <h2 class="phone-ios-group-header" id="shortcut-title-${id}">${t`规则 ${index + 1}`}</h2>
+            <section class="phone-ios-group" aria-labelledby="shortcut-title-${id}">
+                <label class="phone-ios-row"><span class="phone-ios-row-label">${t`启用`}</span>
+                    <span class="phone-ios-switch"><input type="checkbox" role="switch" data-field="rule-enabled" aria-label="${t`启用规则 ${index + 1}`}"${rule.enabled ? ' checked' : ''}><span class="phone-ios-switch-track"></span></span></label>
+                <div class="phone-ios-row"><span class="phone-ios-row-label">${t`快捷键`}</span>
+                    <button type="button" class="phone-ios-mini-btn yuzi-input-shortcut-key${rule.shortcut ? '' : ' is-empty'}" data-action="record" aria-label="${t`录制规则 ${index + 1} 的快捷键`}" aria-pressed="${recordingId === rule.id}">${recordingId === rule.id ? t("请按键…") : escapeHtml(formatShortcut(rule.shortcut))}</button></div>
+                <div class="phone-ios-row"><span class="phone-ios-row-label">${t`动作`}</span>
+                    <div class="phone-ios-seg" data-settings-seg="${selectId}" role="group" aria-label="${t`规则 ${index + 1} 动作`}">
+                        <button type="button" class="phone-ios-seg-item" data-value="insert" aria-pressed="${rule.action === 'insert'}">${t`插入文本`}</button>
+                        <button type="button" class="phone-ios-seg-item" data-value="wrap" aria-pressed="${rule.action === 'wrap'}">${t`成对包裹`}</button>
+                    </div></div>
+                ${buildTextField('text', t("插入内容"), rule.text, rule.action, 3)}
+                ${buildTextField('left', t("左侧内容"), rule.left, rule.action)}
+                ${buildTextField('right', t("右侧内容"), rule.right, rule.action)}
+                <div class="phone-ios-row">
+                    <span class="phone-ios-row-label" data-rule-status role="status">${dirtyIds.includes(rule.id) ? t("未保存") : ''}</span>
+                    <span class="phone-ios-row-actions">
+                        <button type="button" class="phone-ios-mini-btn is-danger" data-action="delete">${t`删除`}</button>
+                        <button type="button" class="phone-ios-mini-btn" data-action="save">${t`保存`}</button>
+                    </span>
+                </div>
+                <select id="${selectId}" class="phone-settings-select" data-field="action" hidden>
+                    <option value="insert"${rule.action === 'insert' ? ' selected' : ''}>${t`插入文本`}</option>
+                    <option value="wrap"${rule.action === 'wrap' ? ' selected' : ''}>${t`成对包裹`}</option>
+                </select>
+            </section>
+        </div>`;
+    }).join('');
     return buildSettingsPageFrame({
         title: t("输入快捷键"),
-        bodyClass: 'phone-app-body phone-settings-scroll yuzi-input-shortcuts',
-        bodyHtml: intro + (cards || `<p class="yuzi-input-shortcut-empty">${t("还没有规则，点击「新增规则」开始。")}</p>`),
+        bodyClass: 'phone-app-body phone-settings-scroll phone-ios-grouped-page yuzi-input-shortcuts',
+        bodyHtml: intro + (cards || `<section class="phone-ios-group"><p class="phone-ios-row phone-ios-row-empty">${t("还没有规则，点击「新增规则」开始。")}</p></section>`),
     });
 }
 
@@ -57,6 +69,7 @@ export function createInputShortcutsPage(ctx) {
     let rules = service.readConfig().rules;
     const dirtyIds = new Set();
     let recording = null;
+    let unbindGrouped = () => {};
 
     function markDirty(id, card) {
         dirtyIds.add(id);
@@ -72,6 +85,7 @@ export function createInputShortcutsPage(ctx) {
             markDirty(rule.id, button.closest('[data-rule-id]'));
         }
         button.textContent = formatShortcut(rule.shortcut);
+        button.classList.toggle('is-empty', !rule.shortcut);
         button.setAttribute('aria-pressed', 'false');
     }
     function draw() {
@@ -114,6 +128,7 @@ export function createInputShortcutsPage(ctx) {
             if (wasRecording) return;
             recording = { button, rule, candidate: null };
             button.textContent = t("请按键…");
+            button.classList.remove('is-empty');
             button.setAttribute('aria-pressed', 'true');
             button.focus({ preventScroll: true });
         } else if (action === 'save') {
@@ -167,6 +182,7 @@ export function createInputShortcutsPage(ctx) {
     return {
         mount() {
             draw();
+            unbindGrouped = bindSettingsGroupedControls(container, pageRuntime);
             scroll.restoreScroll('inputShortcutsScrollTop');
             pageRuntime.addEventListener(container, 'click', handleClick);
             pageRuntime.addEventListener(container, 'change', handleChange);
@@ -186,6 +202,7 @@ export function createInputShortcutsPage(ctx) {
         },
         dispose() {
             stopRecording();
+            unbindGrouped();
             scroll.captureScroll('inputShortcutsScrollTop');
         },
     };

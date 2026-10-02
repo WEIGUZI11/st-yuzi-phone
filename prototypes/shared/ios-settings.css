@@ -411,9 +411,9 @@ details.row-details[open] .chev { transform: rotate(90deg); }
 .crop-stage-wrap {
     height: 300px; flex-shrink: 1; min-height: 180px;
     margin: 0 14px; border-radius: 12px; background: #1A1B1A;
-    display: grid; place-items: center; padding: 12px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; padding: 12px; overflow: hidden;
 }
-.crop-stage { position: relative; height: 100%; max-width: 100%; touch-action: none; }
+.crop-stage { position: relative; flex-shrink: 0; touch-action: none; }
 .crop-box {
     position: absolute; cursor: move; touch-action: none;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);

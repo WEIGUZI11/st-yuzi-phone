@@ -8,12 +8,14 @@ import {
     fileToDataUrl,
     pickImageFiles,
 } from '../../settings-app/services/media-upload.js';
+import { bindSettingsGroupedControls } from '../../settings-app/ui/settings-controls.js';
 import { openAvatarFrameCalibrationDialog } from './avatar-frame-calibration.js';
 import { createPhoneNavIconElement } from '../../phone-core/navigation-ui.js';
 import { isScrollContainerNearBottom } from '../../phone-core/stable-scroll-anchor.js';
 import { createPhoneViewScrollState } from '../../phone-core/view-scroll-state.js';
 import { getPhoneSettings } from '../../settings.js';
 import { createLazyLoader } from '../../utils/observers.js';
+import { showSettingsSheet } from '../../settings-app/ui/settings-layer.js';
 import { createEmojiPanelTemporaryLayerController } from './emoji-panel.js';
 import { createStickerUploadDialog } from './sticker-upload-dialog.js';
 import {
@@ -3356,51 +3358,297 @@ export function createQQApp({
         return field;
     };
 
-    const settingTimeWindow = (timeWindow = {}) => {
-        const source = asObject(timeWindow);
-        const field = createElement(
-            'div',
-            'yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-time-window-field is-control-stacked',
-        );
-        const labelText = createElement('span', 'yuzi-qq-field-label');
-        labelText.textContent = t("时间范围");
-        const controls = createElement('div', 'yuzi-qq-time-window-controls');
-        const mode = createElement('select', 'yuzi-qq-field-control yuzi-qq-field-select');
-        mode.name = 'timeWindowMode';
-        mode.setAttribute('aria-label', t("时间范围模式"));
-        [['relative', t("最近一段时间")], ['all', t("全部消息")]].forEach(([value, label]) => {
-            const option = createElement('option');
-            option.value = value;
-            option.textContent = label;
-            option.selected = value === (source.mode === 'all' ? 'all' : 'relative');
-            mode.append(option);
+    const qqSettingsControlId = (name) => `yuzi-qq-settings-${String(name).replace(/[^a-zA-Z0-9_-]/gu, '-')}`;
+
+    const qqSettingsGroupHeader = (label) => {
+        const heading = createElement('h2', 'phone-ios-group-header yuzi-qq-settings-group-header');
+        heading.textContent = label;
+        return heading;
+    };
+
+    const qqSettingsCard = (...children) => {
+        const group = createElement('section', 'phone-ios-group yuzi-qq-settings-group');
+        group.append(...children.filter(Boolean));
+        return group;
+    };
+
+    const qqSettingsNativeControl = (tagName, name, type = '', value = '') => {
+        const control = createElement(tagName, 'yuzi-qq-settings-native-control');
+        control.id = qqSettingsControlId(name);
+        control.name = name;
+        if (type) control.type = type;
+        if (value !== undefined && value !== null) control.value = value;
+        control.tabIndex = -1;
+        control.setAttribute('aria-hidden', 'true');
+        return control;
+    };
+
+    const bindQQSettingsRowKeyboard = (row) => {
+        row.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            row.click();
         });
-        const amount = createElement('input', 'yuzi-qq-field-control yuzi-qq-field-input');
-        amount.type = 'number';
-        amount.name = 'timeWindowValue';
-        amount.value = source.value ?? 1;
-        amount.min = '1';
-        amount.setAttribute('aria-label', t("时间范围数值"));
-        const unit = createElement('select', 'yuzi-qq-field-control yuzi-qq-field-select');
-        unit.name = 'timeWindowUnit';
-        unit.setAttribute('aria-label', t("时间范围单位"));
-        [['hour', t("小时")], ['day', t("天")], ['month', t("月")], ['year', t("年")]].forEach(([value, label]) => {
+    };
+
+    const qqSettingsSelect = (label, name, value, options, {
+        footer = '',
+        onChange = null,
+    } = {}) => {
+        const id = qqSettingsControlId(name);
+        const row = createElement('div', 'phone-ios-row is-tappable yuzi-qq-settings-row yuzi-qq-settings-select-row');
+        row.setAttribute('role', 'button');
+        row.setAttribute('tabindex', '0');
+        row.setAttribute('aria-haspopup', 'dialog');
+        row.dataset.settingsSelect = id;
+        row.dataset.sheetTitle = label;
+        row.dataset.settingsLayerClass = 'yuzi-qq-settings-layer';
+        if (footer) row.dataset.sheetFooter = footer;
+
+        const labelEl = createElement('span', 'phone-ios-row-label');
+        labelEl.textContent = label;
+        const valueEl = createElement('span', 'phone-ios-row-value');
+        const valueText = createElement('span', 'phone-ios-row-value-text');
+        const chevron = createElement('span', 'phone-ios-row-chevron');
+        chevron.textContent = '›';
+        valueEl.append(valueText, chevron);
+
+        const select = qqSettingsNativeControl('select', name);
+        asArray(options).forEach(([optionValue, optionLabel]) => {
             const option = createElement('option');
-            option.value = value;
-            option.textContent = label;
-            option.selected = value === (QQ_WORLDBOOK_TIME_UNITS.has(source.unit) ? source.unit : 'month');
-            unit.append(option);
+            option.value = optionValue;
+            option.textContent = optionLabel;
+            option.selected = optionValue === value;
+            select.append(option);
         });
-        const syncDisabledState = () => {
-            const disabled = mode.value === 'all';
-            amount.disabled = disabled;
-            unit.disabled = disabled;
+
+        row.append(labelEl, valueEl, select);
+        bindQQSettingsRowKeyboard(row);
+        const syncValue = () => {
+            const selected = select.selectedOptions?.[0];
+            valueText.textContent = selected?.textContent?.trim() || '';
         };
-        mode.addEventListener('change', syncDisabledState);
-        controls.append(mode, amount, unit);
-        field.append(labelText, controls);
-        syncDisabledState();
+        select.addEventListener('change', () => {
+            syncValue();
+            onChange?.(select);
+        });
+        syncValue();
+        return row;
+    };
+
+    const qqSettingsSwitch = (label, name, checked) => {
+        const row = createElement('label', 'phone-ios-row yuzi-qq-settings-row yuzi-qq-settings-switch-row');
+        const labelEl = createElement('span', 'phone-ios-row-label');
+        labelEl.textContent = label;
+        const switchEl = createElement('span', 'phone-ios-switch yuzi-qq-settings-switch');
+        const input = qqSettingsNativeControl('input', name, 'checkbox');
+        input.tabIndex = 0;
+        input.removeAttribute('aria-hidden');
+        input.checked = checked === true;
+        input.setAttribute('aria-label', label);
+        const track = createElement('span', 'phone-ios-switch-track');
+        track.setAttribute('aria-hidden', 'true');
+        switchEl.append(input, track);
+        row.append(labelEl, switchEl);
+        return row;
+    };
+
+    const qqSettingsNumber = (label, name, value, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) => {
+        const id = qqSettingsControlId(name);
+        const row = createElement('div', 'phone-ios-row yuzi-qq-settings-row yuzi-qq-settings-number-row');
+        const labelEl = createElement('span', 'phone-ios-row-label');
+        labelEl.textContent = label;
+        const stepper = createElement('div', 'phone-ios-stepper yuzi-qq-settings-stepper');
+        stepper.dataset.settingsStepper = id;
+        stepper.dataset.step = '1';
+        stepper.dataset.label = label;
+        const minus = createButton('−', 'phone-ios-stepper-btn', {
+            'aria-label': t`减少${label}`,
+            'data-direction': '-1',
+        });
+        const output = createButton('', 'phone-ios-stepper-value is-editable', {
+            type: 'button',
+            'data-qq-number-editor': id,
+            'aria-label': t`编辑${label}`,
+        });
+        const plus = createButton('+', 'phone-ios-stepper-btn', {
+            'aria-label': t`增加${label}`,
+            'data-direction': '1',
+        });
+        const input = qqSettingsNativeControl('input', name, 'number', value);
+        input.min = String(min);
+        input.max = String(max);
+        stepper.append(minus, output, plus);
+        row.append(labelEl, stepper, input);
+        return row;
+    };
+
+    const qqSettingsText = (label, name, value, {
+        placeholder = '',
+        description = '',
+    } = {}) => {
+        const row = createElement('div', 'phone-ios-row is-block yuzi-qq-settings-row yuzi-qq-settings-text-row');
+        const labelEl = createElement('label', 'phone-ios-field-label');
+        labelEl.textContent = label;
+        const input = createElement('input', 'phone-ios-field yuzi-qq-settings-text-input');
+        input.id = qqSettingsControlId(name);
+        labelEl.htmlFor = input.id;
+        input.name = name;
+        input.type = 'text';
+        input.value = value ?? '';
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        if (placeholder) input.placeholder = placeholder;
+        if (description) {
+            const descriptionEl = createElement('p', 'phone-ios-row-sub yuzi-qq-settings-field-description');
+            descriptionEl.id = `${qqSettingsControlId(name)}-description`;
+            descriptionEl.textContent = description;
+            input.setAttribute('aria-describedby', descriptionEl.id);
+            row.append(labelEl, input, descriptionEl);
+        } else {
+            row.append(labelEl, input);
+        }
+        return row;
+    };
+
+    const qqSettingsRange = (label, name, value, { min = 0, max = 100, onInput = null } = {}) => {
+        const row = createElement('div', 'phone-ios-row is-block yuzi-qq-settings-row yuzi-qq-settings-range-row');
+        const labelEl = createElement('label', 'phone-ios-field-label');
+        labelEl.id = `${qqSettingsControlId(name)}-label`;
+        labelEl.textContent = label;
+        const sliderRow = createElement('div', 'phone-ios-slider-row');
+        const low = createElement('span', 'phone-ios-slider-glyph');
+        low.textContent = '私聊';
+        const input = qqSettingsNativeControl('input', name, 'range', value);
+        input.tabIndex = 0;
+        input.removeAttribute('aria-hidden');
+        input.min = String(min);
+        input.max = String(max);
+        input.step = '1';
+        input.setAttribute('aria-labelledby', labelEl.id);
+        const high = createElement('span', 'phone-ios-slider-glyph');
+        high.textContent = '群聊';
+        sliderRow.append(low, input, high);
+        row.append(labelEl, sliderRow);
+        input.addEventListener('input', () => onInput?.(input, labelEl));
+        return row;
+    };
+
+    const qqSettingsSegment = (label, name, value, options, { onChange = null } = {}) => {
+        const row = createElement('div', 'phone-ios-row is-block yuzi-qq-settings-row yuzi-qq-settings-segment-row');
+        const labelEl = createElement('span', 'phone-ios-field-label');
+        labelEl.textContent = label;
+        const select = qqSettingsNativeControl('select', name);
+        asArray(options).forEach(([optionValue, optionLabel]) => {
+            const option = createElement('option');
+            option.value = optionValue;
+            option.textContent = optionLabel;
+            option.selected = optionValue === value;
+            select.append(option);
+        });
+        const segment = createElement('div', 'phone-ios-seg');
+        segment.dataset.settingsSeg = select.id;
+        segment.setAttribute('role', 'group');
+        segment.setAttribute('aria-label', label);
+        asArray(options).forEach(([optionValue, optionLabel]) => {
+            const button = createButton(optionLabel, 'phone-ios-seg-item', {
+                'data-value': optionValue,
+                'aria-pressed': String(optionValue === value),
+            });
+            segment.append(button);
+        });
+        row.append(labelEl, segment, select);
+        select.addEventListener('change', () => onChange?.(select));
+        return row;
+    };
+
+    const qqSettingsTimeWindow = (timeWindow = {}) => {
+        const source = asObject(timeWindow);
+        const mode = source.mode === 'all' ? 'all' : 'relative';
+        const value = Number.isInteger(Number(source.value)) ? Number(source.value) : 1;
+        const unit = ['hour', 'day', 'month', 'year'].includes(source.unit) ? source.unit : 'month';
+        const modeRow = qqSettingsSegment(t("模式"), 'timeWindowMode', mode, [
+            ['relative', t("最近一段时间")],
+            ['all', t("全部消息")],
+        ]);
+        const valueRow = qqSettingsNumber(t("时间范围"), 'timeWindowValue', value, { min: 1 });
+        const unitRow = qqSettingsSegment(t("单位"), 'timeWindowUnit', unit, [
+            ['hour', t("小时")],
+            ['day', t("天")],
+            ['month', t("月")],
+            ['year', t("年")],
+        ]);
+        const syncDisabled = () => {
+            const disabled = modeRow.querySelector('select')?.value === 'all';
+            const input = valueRow.querySelector('input[type="number"]');
+            if (input) input.disabled = disabled;
+            valueRow.querySelectorAll('button').forEach((button) => {
+                button.disabled = disabled;
+            });
+            const unitSelect = unitRow.querySelector('select');
+            if (unitSelect) unitSelect.disabled = disabled;
+            unitRow.querySelectorAll('.phone-ios-seg-item').forEach((button) => {
+                button.disabled = disabled;
+            });
+            valueRow.classList.toggle('is-disabled', disabled);
+            unitRow.classList.toggle('is-disabled', disabled);
+        };
+        modeRow.querySelector('select')?.addEventListener('change', syncDisabled);
+        syncDisabled();
+        const field = createElement('div', 'yuzi-qq-settings-time-window');
+        field.append(modeRow, valueRow, unitRow);
         return field;
+    };
+
+    const settingTimeWindow = qqSettingsTimeWindow;
+
+    const bindQQSettingsNumberEditors = (form) => {
+        const onClick = (event) => {
+            const button = event.target?.closest?.('[data-qq-number-editor]');
+            if (!button || !form.contains(button)) return;
+            const input = form.querySelector(`#${CSS.escape(button.dataset.qqNumberEditor || '')}`);
+            if (!input) return;
+            const sheet = showSettingsSheet({
+                title: button.getAttribute('aria-label') || t("编辑数值"),
+                doneText: t("确定"),
+                bodyHtml: `
+                    <div class="yuzi-qq-number-editor-form">
+                        <input class="yuzi-qq-field-control" type="number" inputmode="numeric" step="1" aria-label="">
+                        <p class="yuzi-qq-form-error" role="alert"></p>
+                    </div>
+                `,
+                className: 'yuzi-qq-settings-layer yuzi-qq-number-editor-sheet',
+                onDone: (overlay) => {
+                    const editor = overlay.querySelector('input');
+                    const status = overlay.querySelector('.yuzi-qq-form-error');
+                    const next = Number(editor?.value);
+                    const min = Number(input.min);
+                    const max = Number(input.max);
+                    if (!Number.isInteger(next) || next < min || next > max) {
+                        if (status) status.textContent = t("请输入有效的整数");
+                        editor?.focus();
+                        return false;
+                    }
+                    input.value = String(next);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                    return true;
+                },
+            });
+            if (!sheet) return;
+            const editor = sheet.overlay.querySelector('input');
+            if (editor) {
+                editor.value = input.value;
+                editor.min = input.min;
+                editor.max = input.max;
+                editor.step = '1';
+                editor.setAttribute('aria-label', button.getAttribute('aria-label') || '');
+                requestAnimationFrame(() => editor.focus({ preventScroll: true }));
+            }
+            event.preventDefault();
+        };
+        form.addEventListener('click', onClick);
+        return () => form.removeEventListener('click', onClick);
     };
 
     const renderImageLibrary = async (token) => {
@@ -3472,17 +3720,38 @@ export function createQQApp({
         [...selectedStickerIds].forEach((stickerId) => {
             if (!availableStickerIds.has(stickerId)) selectedStickerIds.delete(stickerId);
         });
+        const selectionBar = createElement('div', 'yuzi-qq-image-library-selection-bar');
+        const selectionCount = createElement('span', 'yuzi-qq-image-library-selection-count');
+        selectionCount.setAttribute('aria-live', 'polite');
+        const selectionDone = createButton(t("完成"), 'yuzi-qq-image-library-selection-done');
+        selectionBar.append(selectionCount, selectionDone);
+        content.prepend(selectionBar);
         const syncSelection = () => {
             main.classList.toggle('is-selection-mode', imageLibrarySelectionMode);
-            deleteAction.disabled = imageLibrarySelectionMode && selectedImageAssetIds.size + selectedStickerIds.size === 0;
+            const selectedCount = selectedImageAssetIds.size + selectedStickerIds.size;
+            selectionBar.hidden = !imageLibrarySelectionMode;
+            selectionCount.textContent = t`已选择 ${selectedCount} 项`;
+            deleteAction.disabled = imageLibrarySelectionMode && selectedCount === 0;
             deleteAction.setAttribute('aria-label', imageLibrarySelectionMode ? t("删除已选资源") : t("进入删除模式"));
             main.querySelectorAll('[data-qq-image-library-item]').forEach((item) => {
                 item.classList.toggle('is-selected', selectedImageAssetIds.has(item.dataset.qqImageLibraryItem));
+                item.querySelector('.yuzi-qq-image-library-tick')?.setAttribute(
+                    'aria-hidden',
+                    String(!selectedImageAssetIds.has(item.dataset.qqImageLibraryItem)),
+                );
             });
             main.querySelectorAll('[data-qq-sticker-library-item]').forEach((item) => {
                 item.classList.toggle('is-selected', selectedStickerIds.has(item.dataset.qqStickerLibraryItem));
+                item.querySelector('.yuzi-qq-image-library-tick')?.setAttribute(
+                    'aria-hidden',
+                    String(!selectedStickerIds.has(item.dataset.qqStickerLibraryItem)),
+                );
             });
         };
+        selectionDone.addEventListener('click', () => {
+            clearImageLibrarySelection();
+            syncSelection();
+        });
         deleteAction.addEventListener('click', (event) => {
             event.stopPropagation();
             if (imageLibrarySelectionMode) {
@@ -3506,6 +3775,10 @@ export function createQQApp({
                     'aria-label': sticker ? t("选择表情") : t("选择图片"),
                     [sticker ? 'data-qq-sticker-library-item' : 'data-qq-image-library-item']: resourceId,
                 });
+                const tick = createElement('span', 'yuzi-qq-image-library-tick');
+                tick.textContent = '✓';
+                tick.setAttribute('aria-hidden', 'true');
+                item.append(tick);
                 let longPressed = false;
                 let longPressTimer = null;
                 const clearLongPress = () => {
@@ -3577,11 +3850,20 @@ export function createQQApp({
             const upload = createButton('', 'yuzi-qq-image-library-item yuzi-qq-image-library-upload-action', sticker
                 ? { 'aria-label': t("上传表情"), title: t("上传表情"), 'data-qq-sticker-upload': '1' }
                 : { 'aria-label': t("上传图片"), title: t("上传图片"), 'data-qq-image-library-upload': library });
-            upload.append(createIcon('arrow-up-from-bracket'));
+            const uploadContent = createElement('span', 'yuzi-qq-image-library-upload-content');
+            const uploadMark = createElement('strong', 'yuzi-qq-image-library-upload-mark');
+            uploadMark.textContent = '＋';
+            const uploadLabel = createElement('span', 'yuzi-qq-image-library-upload-label');
+            uploadLabel.textContent = sticker ? t("上传表情") : t("上传图片");
+            uploadContent.append(uploadMark, uploadLabel);
+            upload.append(uploadContent);
             grid.append(upload);
-            card.append(heading, grid);
-            content.append(card);
+            card.append(grid);
+            content.append(heading, card);
         });
+        const footer = createElement('p', 'phone-ios-group-footer yuzi-qq-image-library-footer');
+        footer.textContent = t("单张图片不超过 8 MB。");
+        content.append(footer);
         syncSelection();
         return main;
     };
@@ -3693,101 +3975,104 @@ export function createQQApp({
             const promptOptions = asArray(resources.promptPresets).map((preset) => [
                 asText(preset.presetId), asText(preset.name) || asText(preset.presetId),
             ]);
-            const proactiveToggle = settingField(t("启用主动消息"), 'enabled', settings.proactive.enabled, 'checkbox');
+            const promptPickerOptions = promptOptions.length ? promptOptions : [['', t("无可用预设")]];
+            const proactiveToggle = qqSettingsSwitch(t("启用主动消息"), 'enabled', settings.proactive.enabled);
             const proactiveFields = createElement('div', 'yuzi-qq-settings-proactive-fields');
             proactiveFields.setAttribute('data-qq-settings-proactive-fields', '1');
-            const everyTurns = settingField(t("每隔多少轮"), 'everyTurns', settings.proactive.everyTurns, 'number');
-            everyTurns.querySelector('input')?.setAttribute('min', '1');
             proactiveFields.append(
-                everyTurns,
-                settingSelect(t("私聊主动预设"), 'privateProactivePresetId', settings.privateProactivePresetId, promptOptions),
-                settingSelect(t("群聊主动预设"), 'groupProactivePresetId', settings.groupProactivePresetId, promptOptions),
+                qqSettingsNumber(t("每隔多少轮"), 'everyTurns', settings.proactive.everyTurns, { min: 1 }),
+                qqSettingsSelect(t("私聊主动预设"), 'privateProactivePresetId', settings.privateProactivePresetId, promptPickerOptions),
+                qqSettingsSelect(t("群聊主动预设"), 'groupProactivePresetId', settings.groupProactivePresetId, promptPickerOptions),
+                qqSettingsRange(
+                    t`主动类型占比：私聊 ${settings.proactive.privateWeight}% / 群聊 ${100 - settings.proactive.privateWeight}%`,
+                    'privateWeight',
+                    settings.proactive.privateWeight,
+                    {
+                        onInput: (input, label) => {
+                            const value = Math.max(0, Math.min(100, asInteger(input.value, 50)));
+                            label.textContent = t`主动类型占比：私聊 ${value}% / 群聊 ${100 - value}%`;
+                        },
+                    },
+                ),
             );
-            const privateWeight = settingField(
-                t`主动类型占比：私聊 ${settings.proactive.privateWeight}% / 群聊 ${100 - settings.proactive.privateWeight}%`,
-                'privateWeight',
-                settings.proactive.privateWeight,
-                'range',
-            );
-            const privateWeightInput = privateWeight.querySelector('input');
-            privateWeightInput?.setAttribute('min', '0');
-            privateWeightInput?.setAttribute('max', '100');
-            privateWeightInput?.setAttribute('step', '1');
-            privateWeightInput?.addEventListener('input', () => {
-                const value = Math.max(0, Math.min(100, asInteger(privateWeightInput.value, 50)));
-                const label = privateWeight.querySelector('.yuzi-qq-field-label');
-                if (label) label.textContent = t`主动类型占比：私聊 ${value}% / 群聊 ${100 - value}%`;
-            });
-            proactiveFields.append(privateWeight);
             const syncProactiveFields = () => {
                 proactiveFields.hidden = proactiveToggle.querySelector('input')?.checked !== true;
             };
             proactiveToggle.querySelector('input')?.addEventListener('change', syncProactiveFields);
             syncProactiveFields();
             form.append(
-                settingSelect(t("API 预设"), 'activeApiPresetId', settings.activeApiPresetId, apiOptions),
-                settingSelect(t("陪聊提示词预设"), 'assistantReplyPresetId', settings.assistantReplyPresetId, promptOptions),
-                settingSelect(t("私聊回复预设"), 'privateReplyPresetId', settings.privateReplyPresetId, promptOptions),
-                settingSelect(t("群聊回复预设"), 'groupReplyPresetId', settings.groupReplyPresetId, promptOptions),
-                proactiveToggle,
-                proactiveFields,
+                qqSettingsGroupHeader(t("预设")),
+                qqSettingsCard(
+                    qqSettingsSelect(t("API 预设"), 'activeApiPresetId', settings.activeApiPresetId, apiOptions),
+                    qqSettingsSelect(t("陪聊提示词预设"), 'assistantReplyPresetId', settings.assistantReplyPresetId, promptPickerOptions),
+                    qqSettingsSelect(t("私聊回复预设"), 'privateReplyPresetId', settings.privateReplyPresetId, promptPickerOptions),
+                    qqSettingsSelect(t("群聊回复预设"), 'groupReplyPresetId', settings.groupReplyPresetId, promptPickerOptions),
+                ),
+                qqSettingsGroupHeader(t("主动消息")),
+                qqSettingsCard(proactiveToggle, proactiveFields),
             );
         } else if (kind === 'context') {
-            const hostContext = settingField(t("宿主上下文条数"), 'hostContextTurns', settings.hostContextTurns, 'number');
-            const extractTag = settingField(t("标签提取"), 'hostContextExtractTag', settings.hostContextExtractTag, 'text');
-            const excludeTags = settingField(
+            const hostContext = qqSettingsNumber(t("宿主上下文条数"), 'hostContextTurns', settings.hostContextTurns, { min: 0 });
+            const extractTag = qqSettingsText(t("标签提取"), 'hostContextExtractTag', settings.hostContextExtractTag, {
+                placeholder: 'content',
+                description: t("输入标签名、不需要尖括号"),
+            });
+            const excludeTags = qqSettingsText(
                 t("标签排除"),
                 'hostContextExcludeTags',
                 settings.hostContextExcludeTags.join('\u3001'),
-                'text',
+                {
+                    placeholder: t("例如：status、table"),
+                    description: t("多个标签可用顿号、逗号或空格分隔、不需要尖括号"),
+                },
             );
-            const privateHistory = settingField(t("聊天历史条数"), 'conversationHistoryLimit', settings.conversationHistoryLimit, 'number');
-            hostContext.querySelector('input')?.setAttribute('min', '0');
-            privateHistory.querySelector('input')?.setAttribute('min', '0');
-            extractTag.querySelector('input')?.setAttribute('placeholder', 'content');
-            extractTag.querySelector('input')?.setAttribute('title', t("输入标签名、不需要尖括号"));
-            excludeTags.querySelector('input')?.setAttribute('placeholder', t("例如：status、table"));
-            excludeTags.querySelector('input')?.setAttribute('title', t("多个标签可用顿号、逗号或空格分隔、不需要尖括号"));
-            form.append(hostContext, extractTag, excludeTags, privateHistory);
+            const privateHistory = qqSettingsNumber(t("聊天历史条数"), 'conversationHistoryLimit', settings.conversationHistoryLimit, { min: 0 });
+            form.append(
+                qqSettingsGroupHeader(t("酒馆上下文")),
+                qqSettingsCard(hostContext, extractTag, excludeTags),
+                qqSettingsGroupHeader(t("QQ 聊天")),
+                qqSettingsCard(privateHistory),
+            );
         } else if (kind === 'worldbook') {
             const timeWindow = settings.worldbook.timeWindow;
             const worldbookOptions = [['', t("未选择")]].concat(asArray(worldbooksResult?.worldbooks).map((worldbook) => [
                 asText(worldbook.bookName), asText(worldbook.bookName),
             ]));
-            const lightField = settingSelect(t("灯色"), 'light', settings.worldbook.light, [
+            const lightField = qqSettingsSegment(t("灯色"), 'light', settings.worldbook.light, [
                 ['blue', t("蓝灯")],
                 ['green', t("绿灯")],
             ]);
-            const keywordField = settingField(t("关键词"), 'keywords', settings.worldbook.keywords.join('\u3001'));
+            const keywordField = qqSettingsText(t("关键词"), 'keywords', settings.worldbook.keywords.join('\u3001'));
             keywordField.setAttribute('data-qq-worldbook-keywords', '1');
-            const injectionCount = settingField(
-                t("注入条数"),
-                'injectionCount',
-                settings.worldbook.injectionCount,
-                'number',
-            );
-            injectionCount.querySelector('input')?.setAttribute('min', '0');
+            const injectionCount = qqSettingsNumber(t("注入条数"), 'injectionCount', settings.worldbook.injectionCount, { min: 0 });
             const syncWorldbookKeywords = () => {
                 const light = asText(lightField.querySelector('select')?.value);
-                const keywordsVisible = light === 'green';
-                keywordField.hidden = !keywordsVisible;
+                keywordField.hidden = light !== 'green';
             };
             lightField.querySelector('select')?.addEventListener('change', syncWorldbookKeywords);
             syncWorldbookKeywords();
             form.append(
-                settingField(t("启用世界书注入"), 'enabled', settings.worldbook.enabled, 'checkbox'),
-                settingSelect(t("注入世界书"), 'bookName', settings.worldbook.bookName, worldbookOptions),
-                settingTimeWindow(timeWindow),
-                injectionCount,
-                lightField,
-                settingField(t("深度"), 'depth', settings.worldbook.depth, 'number'),
-                keywordField,
+                qqSettingsGroupHeader(t("注入")),
+                qqSettingsCard(
+                    qqSettingsSwitch(t("启用世界书注入"), 'enabled', settings.worldbook.enabled),
+                    qqSettingsSelect(t("注入世界书"), 'bookName', settings.worldbook.bookName, worldbookOptions),
+                ),
+                qqSettingsGroupHeader(t("范围")),
+                qqSettingsCard(settingTimeWindow(timeWindow), injectionCount),
+                qqSettingsGroupHeader(t("触发")),
+                qqSettingsCard(
+                    lightField,
+                    qqSettingsNumber(t("深度"), 'depth', settings.worldbook.depth, { min: 0 }),
+                    keywordField,
+                ),
             );
         }
         const status = createElement('p', 'yuzi-qq-settings-status');
         status.dataset.qqSettingsStatus = kind;
         form.append(status);
         content.append(form);
+        bindSettingsGroupedControls(form);
+        bindQQSettingsNumberEditors(form);
         return main;
     };
 

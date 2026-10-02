@@ -22,6 +22,7 @@ import {
     listPresetRecords,
     replacePresetRecord,
     setPageActiveBinding,
+    setPresetActiveBindings,
     setPopupActiveBindings,
     setPopupActiveBinding,
     setBottomActiveBinding,
@@ -52,6 +53,7 @@ const DEFAULT_WORKSHOP_DEPS = Object.freeze({
     replacePresetRecord,
     serializeContentPreset,
     setPageActiveBinding,
+    setPresetActiveBindings,
     setPopupActiveBindings,
     setPopupActiveBinding,
     subscribeContentPresetIndex,
@@ -93,6 +95,7 @@ export function createUnavailableContentPresetWorkshopService() {
         getSnapshot: () => snapshot, subscribe: () => () => {}, getViewModel: async () => viewModel,
         prepareImport: unavailable, importPrepared: unavailable, exportPreset: unavailable, deletePreset: unavailable,
         setQQActive: unavailable,
+        applyPreset: unavailable,
         setBottomActive: unavailable, clearBottomActive: unavailable, clearAllBottomActive: unavailable,
         setPageActive: unavailable, clearPageActive: unavailable, clearAllPageActive: unavailable,
         setPopupActive: unavailable, clearPopupActive: unavailable, clearAllPopupActive: unavailable,
@@ -164,6 +167,66 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
     }, (result, current) => ({ affectedSheetKeys: result.affectedSheetKeys, indexPatch: (() => { const pageByTable = clearAffected(pageBindings(current), result.affectedSheetKeys); return { pageByTable, activeByTable: pageByTable }; })() }), (_result, current) => {
         const previous = pageBindings(current).get(sheetKey);
         if (previous) runtimeDeps.contentPresetScrollRegistry.clearByBinding(previous);
+    });
+    const applyPreset = presetId => withCommittedMutation(runtimeDeps, async () => {
+        const viewModel = await getViewModel();
+        const preset = viewModel.presets.find(record => record.id === String(presetId || '').trim());
+        if (!preset) throw new Error(t`预设不存在：${presetId}`);
+        const plan = { pages: [], popups: [], bottoms: [], qqKinds: ['theme', 'popup'].filter(kind => preset.qq?.[kind]) };
+        const matchedItems = new Set();
+        const matchedDisplays = new Set();
+        const selectCandidate = (candidates, active) => candidates.find(candidate => candidate.itemId === active?.itemId && active?.presetId === preset.id) || candidates[0];
+        for (const table of viewModel.tables) {
+            const candidates = (table.pageCandidates || table.candidates || []).filter(candidate => candidate.presetId === preset.id);
+            candidates.forEach(candidate => matchedItems.add(candidate.itemId));
+            if (candidates.length) {
+                plan.pages.push({ sheetKey: table.sheetKey, itemId: selectCandidate(candidates, table.pageActive).itemId });
+                plan.bottoms.push({ sheetKey: table.sheetKey, itemId: selectCandidate(candidates, table.bottomActive).itemId });
+            }
+            const popup = (table.popupCandidates || []).find(candidate => candidate.presetId === preset.id);
+            if (popup) {
+                const displays = popup.displays.map(candidate => candidate.display || candidate.item || candidate);
+                displays.forEach(display => matchedDisplays.add(display.id));
+                plan.popups.push({ sheetKey: table.sheetKey, displays });
+            }
+        }
+        const skippedCount = (preset.items || []).filter(item => !matchedItems.has(item.id)).length
+            + (preset.displays || []).filter(display => !matchedDisplays.has(display.id)).length;
+        if (!plan.pages.length && !plan.popups.length && !plan.qqKinds.length) {
+            throw new Error(skippedCount
+                ? t`该预设当前没有可应用的美化；${skippedCount} 项未匹配或不可用`
+                : t("该预设当前没有可应用的美化"));
+        }
+        const stored = await runtimeDeps.setPresetActiveBindings(preset.id, plan);
+        const popups = stored.popups.map(record => Object.freeze({
+            ...record,
+            displays: Object.freeze(plan.popups.find(binding => binding.sheetKey === record.sheetKey).displays),
+        }));
+        return {
+            presetId: preset.id,
+            ...stored,
+            popups,
+            pageCount: stored.pages.length,
+            popupCount: stored.popups.length,
+            bottomCount: stored.bottoms.length,
+            qqCount: stored.qq.length,
+            skippedCount,
+            affectedSheetKeys: [...new Set([...stored.pages, ...stored.popups, ...stored.qq].map(binding => binding.sheetKey))],
+        };
+    }, (result, current) => {
+        const pageByTable = pageBindings(current);
+        const popupByTable = popupBindings(current);
+        const bottomByTable = new Map(current.bottomByTable);
+        result.pages.forEach(record => pageByTable.set(record.sheetKey, record));
+        result.popups.forEach(record => popupByTable.set(record.sheetKey, record));
+        result.bottoms.forEach(record => bottomByTable.set(record.sheetKey, record));
+        return { affectedSheetKeys: result.affectedSheetKeys, indexPatch: { pageByTable, activeByTable: pageByTable, popupByTable, bottomByTable } };
+    }, (result, current) => {
+        const previous = pageBindings(current);
+        result.pages.forEach(record => {
+            const binding = previous.get(record.sheetKey);
+            if (binding) runtimeDeps.contentPresetScrollRegistry.clearByBinding(binding);
+        });
     });
     const planPopupApplication = async (sheetKey, presetId) => {
         const viewModel = await getViewModel();
@@ -240,6 +303,7 @@ function createContentPresetWorkshopServiceWithDeps(options = {}, overrides = {}
     }, (result, current) => ({ affectedSheetKeys: result.affectedSheetKeys, indexPatch: { popupByTable: clearAffected(popupBindings(current), result.affectedSheetKeys) } }));
 
     return Object.freeze({
+        applyPreset,
         setQQActive: (kind, presetId) => withCommittedMutation(runtimeDeps, async () => {
             await runtimeDeps.setQQBinding(kind, presetId);
             return { affectedSheetKeys: ['qq:' + kind] };

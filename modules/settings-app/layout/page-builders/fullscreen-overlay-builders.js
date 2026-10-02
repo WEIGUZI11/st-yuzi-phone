@@ -1,9 +1,6 @@
 import { t } from '../../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../../utils/dom-escape.js';
-import {
-    buildSettingsPageFrame,
-    buildSettingsSectionHtml,
-} from '../primitives.js';
+import { buildSettingsPageFrame } from '../primitives.js';
 import {
     MAX_FULLSCREEN_OVERLAY_PALETTE_SIZE,
     buildFullscreenOverlayColorRowsHtml,
@@ -64,9 +61,19 @@ function buildSourceRowHtml(table, index, tableCount) {
     const selectedModelId = String(table?.modelId || modelIds[0] || '');
     const modelControl = isAvailable && modelIds.length > 0
         ? `
-            <select class="phone-settings-select phone-fullscreen-overlay-source-model-select"
+            <button type="button"
+                class="phone-fullscreen-overlay-source-model"
+                data-settings-select="phone-fullscreen-overlay-source-model-${escapeHtmlAttr(sheetKey)}"
+                data-sheet-title="${escapeHtmlAttr(t`播放模型`)}"
+                data-sheet-subtitle="${escapeHtmlAttr(tableName)}"
+                aria-haspopup="dialog"${disabled(modelIds.length <= 1)}>
+                <span class="phone-ios-row-value-text phone-fullscreen-overlay-source-model-label">${escapeHtml(modelLabel(selectedModelId, table?.modelLabels))}</span>
+                ${modelIds.length > 1 ? '<span aria-hidden="true">›</span>' : ''}
+            </button>
+            <select id="phone-fullscreen-overlay-source-model-${escapeHtmlAttr(sheetKey)}"
+                class="phone-settings-select phone-fullscreen-overlay-source-model-select"
                 data-fullscreen-overlay-source-model="${escapeHtmlAttr(sheetKey)}"
-                aria-label="${t`${escapeHtmlAttr(tableName)}播放模型`}"${disabled(modelIds.length <= 1)}>
+                aria-label="${t`${escapeHtmlAttr(tableName)}播放模型`}"${disabled(modelIds.length <= 1)} hidden>
                 ${modelOptionsHtml(modelIds, selectedModelId, table?.modelLabels)}
             </select>
         `
@@ -76,26 +83,29 @@ function buildSourceRowHtml(table, index, tableCount) {
             </span>
         `;
     return `
-        <article class="phone-fullscreen-overlay-source-row${isAvailable ? ' is-available' : ' is-disabled'}"
+        <article class="phone-ios-row phone-fullscreen-overlay-source-row${isAvailable ? ' is-available' : ' is-disabled'}"
             data-fullscreen-overlay-source-row="${escapeHtmlAttr(sheetKey)}">
-            <label class="phone-fullscreen-overlay-source-toggle">
-                <input type="checkbox"
-                    class="phone-settings-switch"
-                    data-fullscreen-overlay-source="${escapeHtmlAttr(sheetKey)}"${disabled(!isAvailable)}${checked(table?.enabled)}>
+            <div class="phone-fullscreen-overlay-source-toggle">
+                <label class="phone-ios-switch">
+                    <input type="checkbox"
+                        class="phone-settings-switch"
+                        data-fullscreen-overlay-source="${escapeHtmlAttr(sheetKey)}"${disabled(!isAvailable)}${checked(table?.enabled)}>
+                    <span class="phone-ios-switch-track" aria-hidden="true"></span>
+                </label>
                 <span class="phone-fullscreen-overlay-source-copy">
                     <span class="phone-fullscreen-overlay-source-name">${escapeHtml(tableName)}</span>
+                    <span class="phone-fullscreen-overlay-source-meta">${modelControl}</span>
                 </span>
-            </label>
+            </div>
             <div class="phone-fullscreen-overlay-source-side">
-                ${modelControl}
                 <span class="phone-fullscreen-overlay-order-actions">
                     <button type="button"
-                        class="phone-settings-btn phone-fullscreen-overlay-icon-btn"
+                        class="phone-ios-mini-btn phone-fullscreen-overlay-icon-btn"
                         data-fullscreen-overlay-move="up"
                         data-sheet-key="${escapeHtmlAttr(sheetKey)}"
                         aria-label="${t`上移 ${escapeHtmlAttr(tableName)}`}"${disabled(index <= 0)}>↑</button>
                     <button type="button"
-                        class="phone-settings-btn phone-fullscreen-overlay-icon-btn"
+                        class="phone-ios-mini-btn phone-fullscreen-overlay-icon-btn"
                         data-fullscreen-overlay-move="down"
                         data-sheet-key="${escapeHtmlAttr(sheetKey)}"
                         aria-label="${t`下移 ${escapeHtmlAttr(tableName)}`}"${disabled(index >= tableCount - 1)}>↓</button>
@@ -116,40 +126,86 @@ function buildParameterField({
     description,
     isDisabled = false,
 }) {
+    const precision = String(step).includes('.') ? String(step).split('.')[1].length : 0;
+    const displayValue = Number.isFinite(Number(value)) ? Number(value).toFixed(precision) : value;
     return `
-        <label class="phone-fullscreen-overlay-parameter-row"
-            for="${escapeHtmlAttr(id)}"
+        <div class="phone-ios-row phone-fullscreen-overlay-parameter-row"
             title="${escapeHtmlAttr(description)}">
             <span class="phone-fullscreen-overlay-parameter-label">${escapeHtml(label)}</span>
             <span class="phone-fullscreen-overlay-parameter-control">
-                <input type="number"
+                <span class="phone-ios-stepper"
+                    data-settings-stepper="${escapeHtmlAttr(id)}"
+                    data-step="${valueAttr(step)}"
+                    data-unit="">
+                    <button type="button" class="phone-ios-stepper-btn" data-direction="-1"
+                        aria-label="${escapeHtmlAttr(t`减少${label}`)}"${disabled(isDisabled)}>−</button>
+                    <button type="button" class="phone-ios-stepper-value is-editable"
+                        data-fullscreen-overlay-precise="${escapeHtmlAttr(id)}"
+                        aria-label="${escapeHtmlAttr(t`${label}，点按输入精确值`)}"
+                        aria-haspopup="dialog"${disabled(isDisabled)}>${escapeHtml(String(displayValue))}</button>
+                    <button type="button" class="phone-ios-stepper-btn" data-direction="1"
+                        aria-label="${escapeHtmlAttr(t`增加${label}`)}"${disabled(isDisabled)}>+</button>
+                </span>
+                ${suffix ? `<span class="phone-fullscreen-overlay-parameter-unit">${escapeHtml(suffix)}</span>` : ''}
+            </span>
+            <input type="number"
                     id="${escapeHtmlAttr(id)}"
-                    class="phone-settings-input phone-fullscreen-overlay-parameter-input"
+                    class="phone-fullscreen-overlay-parameter-input"
                     value="${valueAttr(value)}"
                     min="${valueAttr(min)}"
                     max="${valueAttr(max)}"
                     step="${valueAttr(step)}"${disabled(isDisabled)}>
-                ${suffix ? `<span class="phone-fullscreen-overlay-parameter-unit">${escapeHtml(suffix)}</span>` : ''}
-            </span>
-        </label>
+        </div>
     `;
 }
 
 function buildSelectParameterField({ id, label, value, options, description }) {
     return `
-        <label class="phone-fullscreen-overlay-parameter-row"
-            for="${escapeHtmlAttr(id)}"
-            title="${escapeHtmlAttr(description)}">
-            <span class="phone-fullscreen-overlay-parameter-label">${escapeHtml(label)}</span>
-            <select id="${escapeHtmlAttr(id)}"
-                class="phone-settings-select phone-fullscreen-overlay-parameter-select">
+        <div class="phone-ios-row phone-fullscreen-overlay-inline-segment-row"
+            title="${escapeHtml(description)}">
+            <span class="phone-ios-row-label">${escapeHtml(label)}</span>
+            <div class="phone-ios-seg" data-settings-seg="${escapeHtmlAttr(id)}" role="group" aria-label="${escapeHtmlAttr(label)}">
+                ${options.map(option => `
+                    <button type="button" class="phone-ios-seg-item"
+                        data-value="${escapeHtmlAttr(option.value)}"
+                        aria-pressed="${value === option.value ? 'true' : 'false'}">
+                        ${escapeHtml(option.label)}
+                    </button>
+                `).join('')}
+            </div>
+            <select id="${escapeHtmlAttr(id)}" class="phone-settings-select" hidden>
                 ${options.map(option => `
                     <option value="${escapeHtmlAttr(option.value)}"${selected(value === option.value)}>
                         ${escapeHtml(option.label)}
                     </option>
                 `).join('')}
             </select>
-        </label>
+        </div>
+    `;
+}
+
+function buildVerticalSegmentField({ id, label, value, options, description = '' }) {
+    return `
+        <div class="phone-ios-row is-block phone-fullscreen-overlay-segment-row"
+            title="${escapeHtml(description)}">
+            <span class="phone-ios-field-label">${escapeHtml(label)}</span>
+            <div class="phone-ios-seg" data-settings-seg="${escapeHtmlAttr(id)}" role="group" aria-label="${escapeHtmlAttr(label)}">
+                ${options.map(option => `
+                    <button type="button" class="phone-ios-seg-item"
+                        data-value="${escapeHtmlAttr(option.value)}"
+                        aria-pressed="${String(value) === String(option.value) ? 'true' : 'false'}">
+                        ${escapeHtml(option.label)}
+                    </button>
+                `).join('')}
+            </div>
+            <select id="${escapeHtmlAttr(id)}" class="phone-settings-select" hidden>
+                ${options.map(option => `
+                    <option value="${escapeHtmlAttr(option.value)}"${selected(String(value) === String(option.value))}>
+                        ${escapeHtml(option.label)}
+                    </option>
+                `).join('')}
+            </select>
+        </div>
     `;
 }
 
@@ -158,23 +214,28 @@ function buildBarrageModelHtml(barrage) {
         ? Number(barrage.areaPercent)
         : 75;
     return `
-        <label class="phone-settings-field-inline" for="phone-fullscreen-overlay-area">
-            <span>${t`弹幕区域`}</span>
-            <select id="phone-fullscreen-overlay-area" class="phone-settings-select">
-                <option value="25"${selected(areaPercent === 25)}>${t`上方 25%`}</option>
-                <option value="50"${selected(areaPercent === 50)}>${t`上方 50%`}</option>
-                <option value="75"${selected(areaPercent === 75)}>${t`上方 75%`}</option>
-                <option value="100"${selected(areaPercent === 100)}>${t`全屏`}</option>
-            </select>
-        </label>
-        <label class="phone-fullscreen-overlay-master-switch" for="phone-fullscreen-overlay-eternal">
+        ${buildVerticalSegmentField({
+            id: 'phone-fullscreen-overlay-area',
+            label: t("弹幕区域"),
+            value: areaPercent,
+            options: [
+                { value: '25', label: t("上方 25%") },
+                { value: '50', label: t("上方 50%") },
+                { value: '75', label: t("上方 75%") },
+                { value: '100', label: t("全屏") },
+            ],
+        })}
+        <label class="phone-ios-row phone-fullscreen-overlay-master-switch" for="phone-fullscreen-overlay-eternal">
             <span>
                 <strong>${t`永恒弹幕`}</strong>
                 <small>${t`循环播放，新内容到达后替换。`}</small>
             </span>
-            <input type="checkbox"
-                id="phone-fullscreen-overlay-eternal"
-                class="phone-settings-switch"${checked(barrage.eternalEnabled)}>
+            <span class="phone-ios-switch">
+                <input type="checkbox"
+                    id="phone-fullscreen-overlay-eternal"
+                    class="phone-settings-switch"${checked(barrage.eternalEnabled)}>
+                <span class="phone-ios-switch-track" aria-hidden="true"></span>
+            </span>
         </label>
         <div class="phone-fullscreen-overlay-parameter-list">
             ${buildParameterField({
@@ -239,22 +300,26 @@ function buildPopupModelHtml(popup, inline = false) {
     const centered = placementMode === 'center';
     return `
         ${inline ? '' : `
-        <label class="phone-settings-field-inline" for="phone-fullscreen-overlay-popup-placement">
-            <span>${t`弹窗位置`}</span>
-            <select id="phone-fullscreen-overlay-popup-placement" class="phone-settings-select">
-                <option value="random"${selected(placementMode === 'random')}>${t`随机`}</option>
-                <option value="center"${selected(centered)}>${t`居中`}</option>
-            </select>
-        </label>
-        <label class="phone-settings-field-inline" for="phone-fullscreen-overlay-popup-area">
-            <span>${t`弹窗区域`}</span>
-            <select id="phone-fullscreen-overlay-popup-area" class="phone-settings-select">
-                <option value="25"${selected(areaPercent === 25)}>${t`上方 25%`}</option>
-                <option value="50"${selected(areaPercent === 50)}>${t`上方 50%`}</option>
-                <option value="75"${selected(areaPercent === 75)}>${t`上方 75%`}</option>
-                <option value="100"${selected(areaPercent === 100)}>${t`全屏`}</option>
-            </select>
-        </label>
+        ${buildSelectParameterField({
+            id: 'phone-fullscreen-overlay-popup-placement',
+            label: t("弹窗位置"),
+            value: placementMode,
+            options: [
+                { value: 'random', label: t("随机") },
+                { value: 'center', label: t("居中") },
+            ],
+        })}
+        ${buildVerticalSegmentField({
+            id: 'phone-fullscreen-overlay-popup-area',
+            label: t("弹窗区域"),
+            value: areaPercent,
+            options: [
+                { value: '25', label: t("上方 25%") },
+                { value: '50', label: t("上方 50%") },
+                { value: '75', label: t("上方 75%") },
+                { value: '100', label: t("全屏") },
+            ],
+        })}
         `}
         <div class="phone-fullscreen-overlay-parameter-list">
             ${inline ? '' : `
@@ -339,19 +404,23 @@ function buildPopupModelHtml(popup, inline = false) {
 }
 
 function buildLoadingBody() {
-    return buildSettingsSectionHtml({
-        title: t("正在读取表格"),
-        desc: t("正在通过共享表格目录识别可用内容源。"),
-        bodyHtml: `<div class="phone-settings-note">${t("请稍候……")}</div>`,
-    });
+    return `
+        <h2 class="phone-ios-group-header">${t("正在读取表格")}</h2>
+        <section class="phone-ios-group">
+            <div class="phone-ios-row phone-ios-row-empty">${t("请稍候……")}</div>
+        </section>
+        <p class="phone-ios-group-footer">${t("正在通过共享表格目录识别可用内容源。")}</p>
+    `;
 }
 
 function buildErrorBody(viewModel) {
-    return buildSettingsSectionHtml({
-        title: t("暂时无法读取表格"),
-        desc: String(viewModel?.error?.message || t("当前表格目录不可用，请稍后重试。")),
-        bodyHtml: `<div class="phone-settings-inline-status is-danger"><span class="phone-settings-inline-status-dot"></span><span class="phone-settings-inline-status-text">${t("弹幕设置没有修改任何现有配置。")}</span></div>`,
-    });
+    return `
+        <h2 class="phone-ios-group-header">${t("暂时无法读取表格")}</h2>
+        <section class="phone-ios-group">
+            <div class="phone-ios-row phone-ios-row-empty is-danger">${t("弹幕设置没有修改任何现有配置。")}</div>
+        </section>
+        <p class="phone-ios-group-footer">${escapeHtml(String(viewModel?.error?.message || t("当前表格目录不可用，请稍后重试。")))}</p>
+    `;
 }
 
 export function buildFullscreenOverlayPageHtml(viewModel = {}) {
@@ -368,6 +437,11 @@ export function buildFullscreenOverlayPageHtml(viewModel = {}) {
     const editingPopup = selectedModelId !== SCROLLING_BARRAGE_MODEL_ID;
     const popup = config.models?.[selectedModelId] || {};
 
+    const group = (title, body, desc = '') => `
+        <h2 class="phone-ios-group-header">${escapeHtml(title)}</h2>
+        <section class="phone-ios-group">${body}</section>
+        ${desc ? `<p class="phone-ios-group-footer">${escapeHtml(desc)}</p>` : ''}
+    `;
     let bodyHtml = '';
     if (viewModel.status === 'loading') {
         bodyHtml = buildLoadingBody();
@@ -376,98 +450,70 @@ export function buildFullscreenOverlayPageHtml(viewModel = {}) {
     } else {
         const sourceRows = tables.length > 0
             ? tables.map((table, index) => buildSourceRowHtml(table, index, tables.length)).join('')
-            : `<div class="phone-settings-note">${t("当前数据库没有可显示的物理表格。")}</div>`;
+            : `<div class="phone-ios-row phone-ios-row-empty">${t("当前数据库没有可显示的物理表格。")}</div>`;
         bodyHtml = `
-            ${buildSettingsSectionHtml({
-                title: t("播放开关"),
-                desc: t("关闭后停止播放与测试；关闭手机不会停止播放。"),
-                bodyHtml: `
-                    <label class="phone-fullscreen-overlay-master-switch" for="phone-fullscreen-overlay-enabled">
-                        <span>
-                            <strong>${t`启用弹幕与卡片`}</strong>
-                            <small>${t`自动播放已勾选来源的更新内容。`}</small>
-                        </span>
-                        <input type="checkbox"
-                            id="phone-fullscreen-overlay-enabled"
+            ${group(t("播放开关"), `
+                <label class="phone-ios-row phone-fullscreen-overlay-master-switch" for="phone-fullscreen-overlay-enabled">
+                    <span>
+                        <strong>${t`启用弹幕与卡片`}</strong>
+                        <small>${t`自动播放已勾选来源的更新内容。`}</small>
+                    </span>
+                    <span class="phone-ios-switch">
+                        <input type="checkbox" id="phone-fullscreen-overlay-enabled"
                             class="phone-settings-switch"${checked(config.enabled)}>
-                    </label>
-                `,
-            })}
+                        <span class="phone-ios-switch-track" aria-hidden="true"></span>
+                    </span>
+                </label>
+            `, t("关闭后停止播放与测试；关闭手机不会停止播放。"))}
 
-            ${buildSettingsSectionHtml({
-                title: t("播放来源"),
-                desc: t("选择播放方式，按列表顺序播放。"),
-                bodyHtml: `<div class="phone-fullscreen-overlay-source-list">${sourceRows}</div>`,
-            })}
+            ${group(t("播放来源"), sourceRows, t("选择播放方式，按列表顺序播放。"))}
 
-            ${buildSettingsSectionHtml({
-                title: t("播放参数"),
-                desc: t("仅切换参数编辑，来源的播放方式在上方选择。"),
-                bodyHtml: `
-                    <label class="phone-settings-field-inline" for="phone-fullscreen-overlay-playback-model">
-                        <span>${t`编辑类型`}</span>
-                        <select id="phone-fullscreen-overlay-playback-model" class="phone-settings-select">
-                            <option value="${SCROLLING_BARRAGE_MODEL_ID}"${selected(selectedModelId === SCROLLING_BARRAGE_MODEL_ID)}>${t`横向滚动弹幕`}</option>
-                            <option value="${TABLE_POPUP_MODEL_ID}"${selected(selectedModelId === TABLE_POPUP_MODEL_ID)}>${t`普通表格浮窗`}</option>
-                            <option value="${INLINE_TABLE_POPUP_MODEL_ID}"${selected(selectedModelId === INLINE_TABLE_POPUP_MODEL_ID)}>${t`插入正文`}</option>
-                        </select>
-                    </label>
-                    ${editingPopup
-                        ? buildPopupModelHtml(popup, selectedModelId === INLINE_TABLE_POPUP_MODEL_ID)
-                        : buildBarrageModelHtml(barrage)}
-                `,
-            })}
+            ${group(t("播放参数"), `
+                ${buildSelectParameterField({
+                    id: 'phone-fullscreen-overlay-playback-model',
+                    label: t("编辑类型"),
+                    value: selectedModelId,
+                    options: [
+                        { value: SCROLLING_BARRAGE_MODEL_ID, label: t("弹幕") },
+                        { value: TABLE_POPUP_MODEL_ID, label: t("浮窗") },
+                        { value: INLINE_TABLE_POPUP_MODEL_ID, label: t("正文") },
+                    ],
+                    description: t("仅切换参数编辑，来源的播放方式在上方选择。"),
+                })}
+                ${editingPopup
+                    ? buildPopupModelHtml(popup, selectedModelId === INLINE_TABLE_POPUP_MODEL_ID)
+                    : buildBarrageModelHtml(barrage)}
+            `, t("仅切换参数编辑，来源的播放方式在上方选择。"))}
 
             ${editingPopup
-                ? buildSettingsSectionHtml({
-                    title: t("弹窗背景色"),
-                    desc: t("文字颜色自动适配。"),
-                    bodyHtml: `
-                        <div class="phone-fullscreen-overlay-color-list">
-                            ${buildFullscreenOverlaySingleColorHtml(
-                                popup.backgroundColor,
-                                { eyeDropperSupported },
-                            )}
-                        </div>
-                        ${eyeDropperSupported ? '' : `<p class="phone-settings-desc">${t("不支持吸管，可用选色器或 HEX。")}</p>`}
-                    `,
-                })
-                : buildSettingsSectionHtml({
-                    title: t("弹幕调色板"),
-                    desc: t`随机取色，最多 ${MAX_FULLSCREEN_OVERLAY_PALETTE_SIZE} 种。`,
-                    actionsHtml: `
-                        <div class="phone-settings-action phone-settings-action-wrap">
-                            <button type="button" class="phone-settings-btn" id="phone-fullscreen-overlay-add-color"
-                                ${disabled(palette.length >= MAX_FULLSCREEN_OVERLAY_PALETTE_SIZE)}>${t`添加颜色`}</button>
-                            <button type="button" class="phone-settings-btn" id="phone-fullscreen-overlay-reset-palette">${t`恢复默认`}</button>
-                        </div>
-                    `,
-                    bodyHtml: `
-                        <div class="phone-fullscreen-overlay-color-list">
-                            ${buildFullscreenOverlayColorRowsHtml(palette, { eyeDropperSupported })}
-                        </div>
-                        ${eyeDropperSupported ? '' : `<p class="phone-settings-desc">${t("不支持吸管，可用选色器或 HEX。")}</p>`}
-                    `,
-                })}
-
-            ${buildSettingsSectionHtml({
-                title: t("测试与清空"),
-                desc: t("测试已勾选来源：弹幕播放完整内容，弹窗每表取首条。需先开启播放。"),
-                bodyHtml: `
-                    <div class="phone-fullscreen-overlay-action-grid">
-                        <button type="button" class="phone-settings-btn phone-fullscreen-overlay-primary-action"
-                            id="phone-fullscreen-overlay-test"${disabled(config.enabled !== true)}>${t`测试已勾选来源`}</button>
-                        <button type="button" class="phone-settings-btn phone-settings-btn-danger"
-                            id="phone-fullscreen-overlay-clear">${t`清空当前内容`}</button>
+                ? group(t("弹窗背景色"), `
+                    <div class="phone-fullscreen-overlay-color-list">
+                        ${buildFullscreenOverlaySingleColorHtml(popup.backgroundColor, { eyeDropperSupported })}
                     </div>
-                `,
-            })}
+                `, `${t("文字颜色自动适配。")}${eyeDropperSupported ? '' : ` ${t("不支持吸管，可用选色器或 HEX。")}`}`)
+                : group(t("弹幕调色板"), `
+                    <div class="phone-fullscreen-overlay-color-list">
+                        ${buildFullscreenOverlayColorRowsHtml(palette, { eyeDropperSupported })}
+                    </div>
+                    <div class="phone-fullscreen-overlay-palette-actions">
+                        <button type="button" class="phone-ios-row is-action" id="phone-fullscreen-overlay-add-color"
+                            ${disabled(palette.length >= MAX_FULLSCREEN_OVERLAY_PALETTE_SIZE)}>${t`添加颜色`}</button>
+                        <button type="button" class="phone-ios-row is-action" id="phone-fullscreen-overlay-reset-palette">${t`恢复默认`}</button>
+                    </div>
+                `, `${t`随机取色，最多 ${MAX_FULLSCREEN_OVERLAY_PALETTE_SIZE} 种。`}${eyeDropperSupported ? '' : ` ${t("不支持吸管，可用选色器或 HEX。")}`}`)}
+
+            ${group(t("测试与清空"), `
+                <button type="button" class="phone-ios-row is-action" id="phone-fullscreen-overlay-test"
+                    ${disabled(config.enabled !== true)}>${t`测试已勾选来源`}</button>
+                <button type="button" class="phone-ios-row is-action is-danger"
+                    id="phone-fullscreen-overlay-clear">${t`清空当前内容`}</button>
+            `, t("测试已勾选来源：弹幕播放完整内容，弹窗每表取首条。需先开启播放。"))}
         `;
     }
 
     return buildSettingsPageFrame({
         title: t("弹幕设置"),
-        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-fullscreen-overlay-settings-page',
+        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-ios-grouped-page phone-fullscreen-overlay-settings-page',
         bodyHtml,
     });
 }

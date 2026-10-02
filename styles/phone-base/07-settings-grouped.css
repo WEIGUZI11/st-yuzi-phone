@@ -8,6 +8,10 @@
     background: var(--yuzi-settings-group-page);
 }
 
+.phone-ios-grouped-page [hidden] {
+    display: none !important;
+}
+
 .phone-ios-grouped-page .phone-settings-page-stack {
     gap: 0;
     padding-bottom: var(--yuzi-settings-group-block-gap);
@@ -25,6 +29,11 @@
     overflow: hidden;
     border-radius: var(--yuzi-settings-group-radius);
     background: var(--yuzi-settings-group-card);
+}
+
+.phone-ios-group.is-scrollable {
+    max-height: var(--yuzi-settings-group-scroll-max-height);
+    overflow-y: auto;
 }
 
 .phone-ios-group + .phone-ios-group {
@@ -71,6 +80,113 @@
     flex: 1;
     min-width: 0;
     overflow-wrap: anywhere;
+}
+
+.phone-ios-row-title {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.phone-ios-row.is-disabled .phone-ios-row-title {
+    color: var(--yuzi-settings-text-faint);
+}
+
+.phone-ios-row.is-block {
+    display: block;
+}
+
+.phone-ios-field-label {
+    display: block;
+    margin-bottom: var(--yuzi-settings-group-header-gap);
+    font-size: var(--yuzi-settings-group-header-size);
+    color: var(--yuzi-settings-text-secondary);
+}
+
+#yuzi-phone-standalone .yuzi-phone-shell .phone-ios-field,
+.phone-ios-field {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: var(--yuzi-settings-row-padding-block) var(--yuzi-settings-seg-item-padding-inline);
+    border: 0;
+    border-radius: var(--yuzi-phone-radius-md);
+    background: var(--yuzi-settings-group-fill);
+    color: var(--yuzi-settings-text-primary);
+    -webkit-text-fill-color: var(--yuzi-settings-text-primary);
+    caret-color: var(--yuzi-settings-text-primary);
+    font: inherit;
+    font-size: var(--yuzi-settings-row-value-size);
+    line-height: var(--yuzi-settings-group-footer-line-height);
+    box-shadow: none;
+}
+
+#yuzi-phone-standalone .yuzi-phone-shell .phone-ios-field::placeholder,
+.phone-ios-field::placeholder {
+    color: var(--yuzi-settings-text-faint);
+    -webkit-text-fill-color: var(--yuzi-settings-text-faint);
+}
+
+textarea.phone-ios-field {
+    resize: vertical;
+}
+
+#yuzi-phone-standalone .yuzi-phone-shell .phone-ios-field[aria-invalid="true"],
+.phone-ios-field[aria-invalid="true"] {
+    box-shadow: inset 0 0 0 var(--yuzi-settings-row-divider-width) var(--yuzi-settings-group-danger);
+}
+
+.phone-ios-search-row {
+    display: block;
+    margin-bottom: var(--yuzi-settings-row-padding-block);
+}
+
+.phone-ios-row-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--yuzi-settings-group-header-gap);
+}
+
+.phone-ios-mini-btn {
+    padding: var(--yuzi-settings-group-header-gap) var(--yuzi-settings-seg-item-padding-inline);
+    border: 0;
+    border-radius: var(--yuzi-settings-seg-item-radius);
+    background: var(--yuzi-settings-group-fill);
+    color: var(--yuzi-settings-accent);
+    font: inherit;
+    font-size: var(--yuzi-settings-seg-item-size);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.phone-ios-mini-btn:active {
+    background: var(--yuzi-settings-group-fill-strong);
+}
+
+.phone-ios-mini-btn.is-danger {
+    color: var(--yuzi-settings-group-danger);
+}
+
+.phone-ios-mini-btn:disabled {
+    opacity: var(--yuzi-phone-nav-disabled-opacity);
+    cursor: default;
+}
+
+.phone-ios-mini-btn:focus-visible {
+    outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-accent);
+    outline-offset: var(--yuzi-phone-form-focus-ring-offset);
+}
+
+.phone-worldbook-reading-summary {
+    flex-wrap: wrap;
+}
+
+.phone-worldbook-reading-summary > .phone-ios-row-label {
+    font-size: var(--yuzi-settings-row-value-size);
+    color: var(--yuzi-settings-text-secondary);
 }
 
 .phone-ios-row-sub {
@@ -132,7 +248,8 @@
 }
 
 .phone-ios-row.is-action:disabled,
-.phone-ios-row.is-action[aria-disabled="true"] {
+.phone-ios-row.is-action[aria-disabled="true"],
+.phone-ios-row.is-tappable:disabled {
     color: var(--yuzi-settings-text-faint);
     cursor: default;
     background: transparent;
@@ -225,6 +342,25 @@
     color: var(--yuzi-settings-text-secondary);
 }
 
+.phone-ios-stepper-value.is-editable {
+    padding: var(--yuzi-settings-seg-item-padding-block);
+    border: 0;
+    border-radius: var(--yuzi-settings-seg-item-radius);
+    background: transparent;
+    font: inherit;
+    font-size: var(--yuzi-settings-row-value-size);
+    cursor: pointer;
+}
+
+.phone-ios-stepper-value.is-editable:focus-visible {
+    outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-accent);
+}
+
+.phone-ios-stepper-value.is-editable:disabled {
+    color: var(--yuzi-settings-text-faint);
+    cursor: default;
+}
+
 .phone-ios-stepper-btn {
     width: var(--yuzi-settings-stepper-button-width);
     height: var(--yuzi-settings-stepper-button-height);
@@ -263,6 +399,15 @@
     flex: 1;
     min-width: 0;
     accent-color: var(--yuzi-settings-accent);
+}
+
+.phone-ios-slider-value {
+    flex-shrink: 0;
+    min-width: var(--yuzi-settings-slider-value-width);
+    text-align: right;
+    font-size: var(--yuzi-settings-row-value-size);
+    font-variant-numeric: tabular-nums;
+    color: var(--yuzi-settings-text-secondary);
 }
 
 .phone-ios-slider-glyph {
@@ -375,9 +520,17 @@
     text-overflow: ellipsis;
 }
 
-.phone-ios-row-empty {
+.phone-ios-grouped-page .phone-ios-row-empty {
     justify-content: center;
+    padding: var(--yuzi-settings-row-padding-block) var(--yuzi-settings-row-padding-inline);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: var(--yuzi-settings-text-faint);
+}
+
+.phone-ios-grouped-page .phone-ios-row-empty.is-danger {
+    color: var(--yuzi-settings-group-danger);
 }
 
 .phone-ios-row-del {
@@ -394,6 +547,14 @@
 .phone-ios-row-del:focus-visible {
     outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-group-danger);
     border-radius: var(--yuzi-settings-seg-item-radius);
+}
+
+.phone-ios-row-issues {
+    margin: var(--yuzi-settings-group-header-gap) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--yuzi-settings-row-sub-size);
+    color: var(--yuzi-settings-group-danger);
 }
 
 /* 开关：原生 checkbox 透明覆盖在自绘轨道上，保留键盘与读屏语义 */
@@ -450,6 +611,14 @@
     outline-offset: var(--yuzi-phone-form-focus-ring-offset);
 }
 
+.phone-ios-switch > input:disabled {
+    cursor: not-allowed;
+}
+
+.phone-ios-switch > input:disabled + .phone-ios-switch-track {
+    opacity: var(--yuzi-phone-form-disabled-opacity);
+}
+
 /* 字体预览块 */
 .phone-ios-font-preview {
     display: flex;
@@ -472,6 +641,22 @@
 }
 
 /* 折叠区与行内输入 */
+.phone-ios-details {
+    position: relative;
+}
+
+.phone-ios-row + .phone-ios-details::before,
+.phone-ios-details + .phone-ios-details::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: var(--yuzi-settings-row-padding-inline);
+    right: 0;
+    height: var(--yuzi-settings-row-divider-width);
+    background: var(--yuzi-settings-group-separator);
+    pointer-events: none;
+}
+
 .phone-ios-details > summary {
     list-style: none;
 }

@@ -22,6 +22,7 @@ function readOption(option) {
         sub: option.dataset.sub || '',
         badge: option.dataset.badge || '',
         selected: option.selected,
+        disabled: option.disabled || option.parentElement?.disabled === true,
     };
 }
 
@@ -65,15 +66,15 @@ function syncStepper(stepper, inputEl) {
     if (output) output.textContent = formatStepperValue(inputEl.value, stepper.dataset.unit);
     const value = Number(inputEl.value);
     const [minus, plus] = stepper.querySelectorAll('.phone-ios-stepper-btn');
-    if (minus) minus.disabled = value <= Number(inputEl.min);
-    if (plus) plus.disabled = value >= Number(inputEl.max);
+    if (minus) minus.disabled = inputEl.disabled || value <= Number(inputEl.min);
+    if (plus) plus.disabled = inputEl.disabled || value >= Number(inputEl.max);
 }
 
 /**
  * 在容器上用事件委托绑定分组列表控件；动态渲染的行同样生效。
  * @returns {Function} cleanup
  */
-export function bindSettingsGroupedControls(container, runtime = null) {
+export function bindSettingsGroupedControls(container, runtime = null, canInteract = () => true) {
     if (!container || typeof container.addEventListener !== 'function') return () => {};
 
     container.querySelectorAll('.phone-ios-seg[data-settings-seg]').forEach((seg) => {
@@ -86,6 +87,7 @@ export function bindSettingsGroupedControls(container, runtime = null) {
     });
 
     const onClick = (event) => {
+        if (!canInteract()) return;
         const selectRow = event.target?.closest?.('[data-settings-select]');
         if (selectRow && container.contains(selectRow)) {
             const selectEl = findById(container, selectRow.dataset.settingsSelect);
@@ -94,11 +96,13 @@ export function bindSettingsGroupedControls(container, runtime = null) {
                 title: selectRow.dataset.sheetTitle || selectRow.querySelector('.phone-ios-row-label')?.textContent?.trim() || '',
                 subtitle: selectRow.dataset.sheetSubtitle || '',
                 footer: selectRow.dataset.sheetFooter || '',
+                className: selectRow.dataset.settingsLayerClass || '',
                 groups: collectOptionGroups(selectEl),
                 runtime,
                 onSelect: (value) => {
+                    if (selectEl.value === value || !canInteract()) return;
                     selectEl.value = value;
-                    syncSelectRow(selectRow, selectEl);
+                    if (!selectRow.hasAttribute('data-settings-defer-sync')) syncSelectRow(selectRow, selectEl);
                     dispatch(selectEl, 'change');
                 },
             });
@@ -120,7 +124,7 @@ export function bindSettingsGroupedControls(container, runtime = null) {
         if (stepButton && container.contains(stepButton) && !stepButton.disabled) {
             const stepper = stepButton.closest('.phone-ios-stepper');
             const inputEl = findById(container, stepper.dataset.settingsStepper);
-            if (!inputEl) return;
+            if (!inputEl || inputEl.disabled) return;
             const step = Number(stepper.dataset.step) || 1;
             const direction = Number(stepButton.dataset.direction) || 0;
             const next = Math.min(Number(inputEl.max), Math.max(Number(inputEl.min), (Number(inputEl.value) || 0) + direction * step));
@@ -130,6 +134,17 @@ export function bindSettingsGroupedControls(container, runtime = null) {
         }
     };
 
+    const onInput = (event) => {
+        if (!event.target?.id) return;
+        const stepper = container.querySelector(`.phone-ios-stepper[data-settings-stepper="${CSS.escape(event.target.id)}"]`);
+        if (stepper) syncStepper(stepper, event.target);
+    };
     container.addEventListener('click', onClick);
-    return () => container.removeEventListener('click', onClick);
+    container.addEventListener('input', onInput);
+    container.addEventListener('change', onInput);
+    return () => {
+        container.removeEventListener('click', onClick);
+        container.removeEventListener('input', onInput);
+        container.removeEventListener('change', onInput);
+    };
 }

@@ -7,6 +7,8 @@ const load = file => import(`${pathToFileURL(path.resolve(file)).href}?t=${Date.
 async function main() {
     const { buildBeautifyTemplatePageContext } = await load('modules/settings-app/page-renderers/page-context-builders.js');
     const pageMethods = {
+        applyPreset() {},
+        setQQActive() {},
         setPageActive() {},
         clearPageActive() {},
         clearAllPageActive() {},

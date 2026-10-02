@@ -2,8 +2,9 @@ import { t } from '../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { showImageViewerDialog } from '../services/image-viewer-dialog.js';
 import { downloadTextFile } from '../services/media-upload/download.js';
-import { buildSettingsPageFrame, buildSettingsSectionHtml } from '../layout/primitives.js';
+import { buildSettingsPageFrame } from '../layout/primitives.js';
 import { showAlertDialog, showConfirmDialog } from '../ui/confirm-dialog.js';
+import { bindSettingsGroupedControls } from '../ui/settings-controls.js';
 import { normalizeImagePromptOutputFilterSettings } from '../../image-generation/prompt-output-filter.js';
 
 function asArray(value) {
@@ -269,12 +270,16 @@ function buildPromptColumnOptions(viewModel, mapping, mappingIndex, resolvedMapp
                 column => isSelectedColumnAvailable(column, header),
             );
             return `
-                <label class="phone-appearance-check-item">
-                    <span class="phone-appearance-check-main">${escapeHtml(header.displayName)}</span>
-                    <input type="checkbox" class="phone-settings-switch phone-image-generation-prompt-column"
-                        data-mapping-index="${mappingIndex}" data-column-state="available"
-                        data-header-snapshot="${escapeHtmlAttr(header.rawName)}"
-                        value="${header.columnIndex}" ${checked ? 'checked' : ''}>
+                <label class="phone-ios-row" for="phone-image-generation-prompt-column-${mappingIndex}-${header.columnIndex}">
+                    <span class="phone-ios-row-label">${escapeHtml(header.displayName)}</span>
+                    <span class="phone-ios-switch">
+                        <input id="phone-image-generation-prompt-column-${mappingIndex}-${header.columnIndex}"
+                            type="checkbox" class="phone-image-generation-prompt-column"
+                            data-mapping-index="${mappingIndex}" data-column-state="available"
+                            data-header-snapshot="${escapeHtmlAttr(header.rawName)}"
+                            value="${header.columnIndex}" ${checked ? 'checked' : ''}>
+                        <span class="phone-ios-switch-track" aria-hidden="true"></span>
+                    </span>
                 </label>
             `;
         }).join('');
@@ -285,12 +290,16 @@ function buildPromptColumnOptions(viewModel, mapping, mappingIndex, resolvedMapp
             return !isSelectedColumnAvailable(column, header);
         })
         .map(column => `
-            <label class="phone-appearance-check-item is-disabled">
-                <span class="phone-appearance-check-main">${escapeHtml(t`${column.headerSnapshot || t`列${column.columnIndex + 1}`}（当前不可用）`)}</span>
-                <input type="checkbox" class="phone-settings-switch phone-image-generation-prompt-column"
-                    data-mapping-index="${mappingIndex}" data-column-state="missing"
-                    data-header-snapshot="${escapeHtmlAttr(column.headerSnapshot)}"
-                    value="${column.columnIndex}" checked disabled>
+            <label class="phone-ios-row is-disabled" for="phone-image-generation-prompt-column-${mappingIndex}-${column.columnIndex}-missing">
+                <span class="phone-ios-row-label">${escapeHtml(t`${column.headerSnapshot || t`列${column.columnIndex + 1}`}（当前不可用）`)}</span>
+                <span class="phone-ios-switch">
+                    <input id="phone-image-generation-prompt-column-${mappingIndex}-${column.columnIndex}-missing"
+                        type="checkbox" class="phone-image-generation-prompt-column"
+                        data-mapping-index="${mappingIndex}" data-column-state="missing"
+                        data-header-snapshot="${escapeHtmlAttr(column.headerSnapshot)}"
+                        value="${column.columnIndex}" checked disabled>
+                    <span class="phone-ios-switch-track" aria-hidden="true"></span>
+                </span>
             </label>
         `).join('');
     return availableHtml || missingHtml
@@ -302,34 +311,43 @@ function buildMappingCardHtml(viewModel, mapping, index, total) {
     const mappingId = asText(mapping?.mappingId) || `mapping-${index + 1}`;
     const resolvedMapping = getResolvedMapping(viewModel, mapping, index);
     const unavailable = isMappingCurrentlyUnavailable(viewModel, mapping, resolvedMapping);
+    const tableSelectId = `phone-image-generation-table-${index}`;
+    const nameSelectId = `phone-image-generation-name-column-${index}`;
     return `
-        <article class="phone-settings-card phone-image-generation-mapping-card"
+        <article class="phone-ios-group phone-image-generation-mapping-card"
             data-image-generation-mapping-id="${escapeHtmlAttr(mappingId)}" data-mapping-index="${index}">
-            <div class="phone-settings-card-title">
-                <span>${t`映射 ${index + 1}${unavailable ? t(" · 当前不可用") : ''}`}</span>
-                <div class="phone-settings-action phone-settings-action-wrap">
-                    <button type="button" class="phone-settings-btn phone-image-generation-mapping-up"
+            <div class="phone-ios-row phone-image-generation-mapping-head">
+                <span class="phone-ios-row-label">${t`映射 ${index + 1}${unavailable ? t(" · 当前不可用") : ''}`}</span>
+                <div class="phone-ios-row-actions">
+                    <button type="button" class="phone-ios-mini-btn phone-image-generation-mapping-up"
                         data-mapping-index="${index}" ${index === 0 ? 'disabled' : ''}>${t`上移`}</button>
-                    <button type="button" class="phone-settings-btn phone-image-generation-mapping-down"
+                    <button type="button" class="phone-ios-mini-btn phone-image-generation-mapping-down"
                         data-mapping-index="${index}" ${index === total - 1 ? 'disabled' : ''}>${t`下移`}</button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-danger phone-image-generation-mapping-delete"
+                    <button type="button" class="phone-ios-mini-btn is-danger phone-image-generation-mapping-delete"
                         data-mapping-index="${index}">${t`删除`}</button>
                 </div>
             </div>
-            <label class="phone-settings-field-inline">
-                <span>${t`人物资料表`}</span>
-                <select class="phone-settings-select phone-image-generation-table" data-mapping-index="${index}">
-                    ${buildTableOptions(viewModel, mapping)}
-                </select>
-            </label>
-            <label class="phone-settings-field-inline">
-                <span>${t`名字匹配字段`}</span>
-                <select class="phone-settings-select phone-image-generation-name-column" data-mapping-index="${index}">
-                    ${buildNameColumnOptions(viewModel, mapping, resolvedMapping)}
-                </select>
-            </label>
-            <div class="phone-settings-field-inline">
-                <span>${t`写入提示词的字段`}</span>
+            ${buildImageGenerationSelectRow({
+                label: t`人物资料表`,
+                selectId: tableSelectId,
+                optionsHtml: buildTableOptions(viewModel, mapping),
+                selectedLabel: getSelectedTableLabel(viewModel, mapping),
+                className: 'phone-image-generation-table-row',
+                selectClass: 'phone-image-generation-table',
+                selectData: `data-mapping-index="${index}"`,
+            })}
+            ${buildImageGenerationSelectRow({
+                label: t`名字匹配字段`,
+                selectId: nameSelectId,
+                optionsHtml: buildNameColumnOptions(viewModel, mapping, resolvedMapping),
+                selectedLabel: getSelectedNameColumnLabel(viewModel, mapping, resolvedMapping),
+                disabled: !getTable(viewModel, mapping?.sheetKey),
+                className: 'phone-image-generation-name-column-row',
+                selectClass: 'phone-image-generation-name-column',
+                selectData: `data-mapping-index="${index}"`,
+            })}
+            <div class="phone-ios-row is-block phone-image-generation-prompt-columns-row">
+                <span class="phone-ios-field-label">${t`写入提示词的字段`}</span>
                 <div class="phone-image-generation-prompt-columns">
                     ${buildPromptColumnOptions(viewModel, mapping, index, resolvedMapping)}
                 </div>
@@ -401,11 +419,65 @@ function buildPromptPreviewRowHtml({ id, label, value, placeholder = '', extraCl
     const resolvedValue = String(value ?? '');
     const className = `phone-image-generation-prompt-preview-row${extraClass ? ` ${escapeHtmlAttr(extraClass)}` : ''}`;
     return `
-        <div class="${className}" ${resolvedValue ? '' : 'data-empty="true"'}>
-            <span class="phone-image-generation-prompt-preview-label">${escapeHtml(label)}</span>
-            <div id="${escapeHtmlAttr(id)}" class="phone-prompt-preview-content">${escapeHtml(resolvedValue || placeholder)}</div>
+        <div class="phone-ios-row is-block ${className}" ${resolvedValue ? '' : 'data-empty="true"'}>
+            <span class="phone-ios-field-label phone-image-generation-prompt-preview-label">${escapeHtml(label)}</span>
+            <div id="${escapeHtmlAttr(id)}" class="phone-ios-field phone-prompt-preview-content">${escapeHtml(resolvedValue || placeholder)}</div>
         </div>
     `;
+}
+
+function buildImageGenerationGroupHtml({ title, desc = '', bodyHtml = '', extraClass = '' }) {
+    return `
+        <h2 class="phone-ios-group-header">${escapeHtml(title)}</h2>
+        <section class="phone-ios-group${extraClass ? ` ${escapeHtmlAttr(extraClass)}` : ''}">
+            ${bodyHtml}
+        </section>
+        ${desc ? `<p class="phone-ios-group-footer">${escapeHtml(desc)}</p>` : ''}
+    `;
+}
+
+function buildImageGenerationSelectRow({
+    label,
+    selectId,
+    optionsHtml,
+    selectedLabel,
+    disabled = false,
+    className = '',
+    selectClass = '',
+    selectData = '',
+}) {
+    return `
+        <button type="button" class="phone-ios-row is-tappable${className ? ` ${escapeHtmlAttr(className)}` : ''}"
+            data-settings-select="${escapeHtmlAttr(selectId)}"
+            ${disabled ? 'disabled' : ''}>
+            <span class="phone-ios-row-label">${escapeHtml(label)}</span>
+            <span class="phone-ios-row-value">
+                <span class="phone-ios-row-value-text">${escapeHtml(selectedLabel || t("请选择"))}</span>
+                <span class="phone-ios-row-chevron" aria-hidden="true">›</span>
+            </span>
+        </button>
+        <select id="${escapeHtmlAttr(selectId)}" class="${escapeHtmlAttr(selectClass)}"
+            ${selectData} hidden ${disabled ? 'disabled' : ''}>${optionsHtml}</select>
+    `;
+}
+
+function getSelectedTableLabel(viewModel, mapping) {
+    const sheetKey = asText(mapping?.sheetKey);
+    if (!sheetKey) return t("请选择表格");
+    const table = getTable(viewModel, sheetKey);
+    if (table) return asText(table.tableName) || sheetKey;
+    return `${asText(mapping?.tableNameSnapshot) || sheetKey}${t("（当前不可用）")}`;
+}
+
+function getSelectedNameColumnLabel(viewModel, mapping, resolvedMapping) {
+    const selected = asColumnRef(mapping?.nameColumn);
+    if (!selected) return t("请选择名字字段");
+    const header = getMappingHeaders(viewModel, mapping)
+        .find(item => item.columnIndex === selected.columnIndex);
+    if (isResolvedColumnAvailable(resolvedMapping?.nameColumn, selected, header)) {
+        return header?.displayName || selected.headerSnapshot || t`列${selected.columnIndex + 1}`;
+    }
+    return `${selected.headerSnapshot || t`列${selected.columnIndex + 1}`}${t("（当前不可用）")}`;
 }
 
 function getTestInput(viewModel = {}) {
@@ -450,117 +522,139 @@ export function buildImageGenerationPageHtml(viewModel = {}) {
     const resourceStatus = sharedResources.status === 'ready'
         ? (hasUsableImagePreset ? '' : t("尚未导入有效的生图预设"))
         : sharedResources.error || (presetServiceAvailable ? t("生图预设读取中或暂不可用") : t("生图预设接口尚未接入"));
-    const engineSection = buildSettingsSectionHtml({
+    const switchRow = ({ id, label, checked, className = '', data = '' }) => `
+        <label class="phone-ios-row${className ? ` ${escapeHtmlAttr(className)}` : ''}" for="${escapeHtmlAttr(id)}">
+            <span class="phone-ios-row-label">${escapeHtml(label)}</span>
+            <span class="phone-ios-switch">
+                <input id="${escapeHtmlAttr(id)}" type="checkbox" ${checked ? 'checked' : ''} ${data}>
+                <span class="phone-ios-switch-track" aria-hidden="true"></span>
+            </span>
+        </label>
+    `;
+    const selectedApiPreset = apiPresets.find(
+        (preset) => presetIdOf(preset) === config.promptTranslationApiPresetId,
+    ) || null;
+    const selectedImagePresetLabel = selectedImagePreset
+        ? `${presetNameOf(selectedImagePreset)}${selectedImagePreset.readOnly === true ? t("（只读）") : ''}`
+        : config.promptTranslationPresetId ? t("当前预设不可用") : t("请选择生图预设");
+    const selectedApiPresetLabel = selectedApiPreset
+        ? `${presetNameOf(selectedApiPreset)}${selectedApiPreset.readOnly === true ? t("（只读）") : ''}`
+        : config.promptTranslationApiPresetId ? t("当前转换 API 预设不可用") : t("请选择转换 API 预设");
+    const engineSection = buildImageGenerationGroupHtml({
         title: t("生图接口"),
         desc: t("接口配置跟随对应插件；最多选择一个，都不勾选则关闭生图。图片保存到：user/images/yuzi-phone-generated/"),
-        bodyHtml: `
-            <label class="phone-appearance-check-item">
-                <span class="phone-appearance-check-main">${t`智慧姬`}</span>
-                <input id="phone-image-generation-enabled" type="checkbox" class="phone-settings-switch" ${config.enabled && config.provider === 'chatu8' ? 'checked' : ''}>
-            </label>
-            <label class="phone-appearance-check-item">
-                <span class="phone-appearance-check-main">${t`柏宝绘`}</span>
-                <input id="phone-image-generation-baibai-enabled" type="checkbox" class="phone-settings-switch" ${config.enabled && config.provider === 'baibai' ? 'checked' : ''}>
-            </label>
-        `,
+        bodyHtml: [
+            switchRow({ id: 'phone-image-generation-enabled', label: t`智慧姬`, checked: config.enabled && config.provider === 'chatu8' }),
+            switchRow({ id: 'phone-image-generation-baibai-enabled', label: t`柏宝绘`, checked: config.enabled && config.provider === 'baibai' }),
+        ].join(''),
     });
-    const builtinSourceControls = Object.entries({square:'广场', forum:'论坛', live:'直播'}).map(([id, label]) => `<label class="phone-appearance-check-item"><span class="phone-appearance-check-main">${t`${label}生图按钮`}</span><input type="checkbox" class="phone-settings-switch phone-image-generation-theater-enabled" data-scene-id="${id}" ${config.theaterEnabled[id] ? 'checked' : ''}></label>`).join('');
-    const builtinSection = buildSettingsSectionHtml({title:t("生图按钮显示位置"), desc:t("表格按钮默认关闭；取消勾选不隐藏已生成图片。"), bodyHtml: `<label class="phone-appearance-check-item"><span class="phone-appearance-check-main">${t`QQ 生图按钮`}</span><input id="phone-image-generation-qq-enabled" type="checkbox" class="phone-settings-switch" ${config.qqEnabled ? 'checked' : ''}></label>${builtinSourceControls}`});
+    const builtinSourceControls = Object.entries({ square: '广场', forum: '论坛', live: '直播' })
+        .map(([id, label]) => switchRow({
+            id: `phone-image-generation-${id}-enabled`,
+            label: t`${label}生图按钮`,
+            checked: config.theaterEnabled[id],
+            className: 'phone-image-generation-theater-row',
+            data: `class="phone-image-generation-theater-enabled" data-scene-id="${escapeHtmlAttr(id)}"`,
+        }))
+        .join('');
+    const builtinSection = buildImageGenerationGroupHtml({
+        title: t("生图按钮显示位置"),
+        desc: t("表格按钮默认关闭；取消勾选不隐藏已生成图片。"),
+        bodyHtml: [
+            switchRow({ id: 'phone-image-generation-qq-enabled', label: t`QQ 生图按钮`, checked: config.qqEnabled }),
+            builtinSourceControls,
+        ].join(''),
+    });
     const tableDisplaySection = tableDisplaySources.length
-        ? buildSettingsSectionHtml({
+        ? buildImageGenerationGroupHtml({
             title: t("表格美化生图"),
             desc: t("控制各表格的生图按钮是否显示。"),
-            bodyHtml: tableDisplaySources.map((source) => `
-                <label class="phone-appearance-check-item">
-                    <span class="phone-appearance-check-main">${escapeHtml(source.tableName)}</span>
-                    <input type="checkbox"
-                        class="phone-settings-switch phone-image-generation-table-display-enabled"
-                        data-sheet-key="${escapeHtmlAttr(source.sheetKey)}"
-                        ${source.enabled ? 'checked' : ''}>
-                </label>
-            `).join(''),
+            bodyHtml: tableDisplaySources.map((source) => switchRow({
+                id: `phone-image-generation-table-${source.sheetKey}`,
+                label: source.tableName,
+                checked: source.enabled,
+                className: 'phone-image-generation-table-display-row',
+                data: `class="phone-image-generation-table-display-enabled" data-sheet-key="${escapeHtmlAttr(source.sheetKey)}"`,
+            })).join(''),
         })
         : '';
-    const translationSection = buildSettingsSectionHtml({
+    const translationSection = buildImageGenerationGroupHtml({
         title: t("中文提示词转换"),
         desc: t("使用所选 API 和生图预设转换提示词，再交给所选生图接口。"),
         extraClass: 'phone-image-generation-translation-section',
         bodyHtml: `
-            <div class="phone-image-generation-translation-controls">
-                <label class="phone-appearance-check-item phone-image-generation-translation-toggle">
-                    <span class="phone-appearance-check-main">${t`启用中文 → Tag 转换`}</span>
-                    <input id="phone-image-generation-prompt-translation-enabled" type="checkbox"
-                        class="phone-settings-switch"
-                        ${config.promptTranslationEnabled ? 'checked' : ''}
-                        ${canUseTranslation && !!selectedImagePreset && isUsableImageGenerationPreset(selectedImagePreset) ? '' : 'disabled'}>
-                </label>
-                <label class="phone-settings-field-inline phone-image-generation-preset-field">
-                    <span>${t`生图预设`}</span>
-                    <select id="phone-image-generation-preset-select" class="phone-settings-select"
-                        ${presetServiceAvailable && !presetBusy ? '' : 'disabled'}>
-                        ${buildImageGenerationPresetOptions(
-                            imageGenerationPresets,
-                            config.promptTranslationPresetId,
-                        )}
-                    </select>
-                </label>
-                <label class="phone-settings-field-inline phone-image-generation-preset-field">
-                    <span>${t`转换 API 预设`}</span>
-                    <select id="phone-image-generation-api-preset-select" class="phone-settings-select"
-                        ${presetServiceAvailable && !presetBusy ? '' : 'disabled'}>
-                        ${buildApiPresetOptions(apiPresets, config.promptTranslationApiPresetId)}
-                    </select>
-                </label>
-                <label class="phone-settings-field-inline phone-image-generation-preset-field">
-                    <span>${t`标签提取`}</span>
-                    <input id="phone-image-generation-prompt-translation-extract-tag"
-                        class="phone-settings-input"
-                        value="${escapeHtmlAttr(config.promptTranslationExtractTag)}"
-                        placeholder="${t`例如：content`}"
-                        title="${t`输入要提取的标签名，可不带尖括号。留空则保留 AI 全部输出。`}">
-                </label>
-                <label class="phone-settings-field-inline phone-image-generation-preset-field">
-                    <span>${t`标签排除`}</span>
-                    <input id="phone-image-generation-prompt-translation-exclude-tags"
-                        class="phone-settings-input"
-                        value="${escapeHtmlAttr(config.promptTranslationExcludeTags.join('、'))}"
-                        placeholder="${t`例如：analysis、meta`}"
-                        title="${t`多个标签可用顿号、逗号、分号或空格分隔，可不带尖括号。`}">
-                </label>
+            ${switchRow({
+                id: 'phone-image-generation-prompt-translation-enabled',
+                label: t`启用中文 → Tag 转换`,
+                checked: config.promptTranslationEnabled,
+                className: 'phone-image-generation-translation-toggle',
+                data: `${canUseTranslation && !!selectedImagePreset && isUsableImageGenerationPreset(selectedImagePreset) ? '' : 'disabled'}`,
+            })}
+            ${buildImageGenerationSelectRow({
+                label: t`生图预设`,
+                selectId: 'phone-image-generation-preset-select',
+                optionsHtml: buildImageGenerationPresetOptions(imageGenerationPresets, config.promptTranslationPresetId),
+                selectedLabel: selectedImagePresetLabel,
+                disabled: !presetServiceAvailable || presetBusy,
+            })}
+            ${buildImageGenerationSelectRow({
+                label: t`转换 API 预设`,
+                selectId: 'phone-image-generation-api-preset-select',
+                optionsHtml: buildApiPresetOptions(apiPresets, config.promptTranslationApiPresetId),
+                selectedLabel: selectedApiPresetLabel,
+                disabled: !presetServiceAvailable || presetBusy,
+            })}
+            <label class="phone-ios-row phone-image-generation-input-row" for="phone-image-generation-prompt-translation-extract-tag">
+                <span class="phone-ios-row-label">${t`标签提取`}</span>
+                <input id="phone-image-generation-prompt-translation-extract-tag" class="phone-ios-inline-input"
+                    value="${escapeHtmlAttr(config.promptTranslationExtractTag)}"
+                    placeholder="${t`例如：content`}"
+                    title="${t`输入要提取的标签名，可不带尖括号。留空则保留 AI 全部输出。`}">
+            </label>
+            <label class="phone-ios-row phone-image-generation-input-row" for="phone-image-generation-prompt-translation-exclude-tags">
+                <span class="phone-ios-row-label">${t`标签排除`}</span>
+                <input id="phone-image-generation-prompt-translation-exclude-tags" class="phone-ios-inline-input"
+                    value="${escapeHtmlAttr(config.promptTranslationExcludeTags.join('、'))}"
+                    placeholder="${t`例如：analysis、meta`}"
+                    title="${t`多个标签可用顿号、逗号、分号或空格分隔，可不带尖括号。`}">
+            </label>
+            <div class="phone-ios-row is-block phone-image-generation-status-row">
+                <p class="phone-image-generation-preset-status${resourceStatus ? '' : ' is-empty'}">
+                    ${escapeHtml(resourceStatus || t("已选择生图预设后，转换接口才会参与生图请求。"))}
+                </p>
             </div>
-            <div class="phone-image-generation-preset-status ${resourceStatus ? '' : 'is-empty'}">
-                ${escapeHtml(resourceStatus || t("已选择生图预设后，转换接口才会参与生图请求。"))}
-            </div>
-            <div class="phone-settings-action phone-settings-action-wrap phone-image-generation-preset-actions">
-                <button type="button" class="phone-settings-btn"
-                    id="phone-image-generation-preset-import-btn"
-                    ${presetServiceAvailable && !presetBusy ? '' : 'disabled'}>${t`导入生图预设`}</button>
-                <button type="button" class="phone-settings-btn"
-                    id="phone-image-generation-preset-export-btn"
-                    ${selectedImagePreset && presetServiceAvailable && !presetBusy ? '' : 'disabled'}>${t`导出当前`}</button>
-                <button type="button" class="phone-settings-btn phone-settings-btn-danger"
-                    id="phone-image-generation-preset-delete-btn"
-                    ${selectedImagePreset && presetServiceAvailable && !presetBusy ? '' : 'disabled'}>${t`删除当前`}</button>
-                <input type="file" id="phone-image-generation-preset-import-file"
-                    accept="application/json,.json" hidden
-                    ${presetServiceAvailable && !presetBusy ? '' : 'disabled'}>
+            <div class="phone-ios-row phone-image-generation-actions-row">
+                <div class="phone-ios-row-actions phone-image-generation-preset-actions">
+                    <button type="button" class="phone-ios-mini-btn"
+                        id="phone-image-generation-preset-import-btn"
+                        ${presetServiceAvailable && !presetBusy ? '' : 'disabled'}>${t`导入生图预设`}</button>
+                    <button type="button" class="phone-ios-mini-btn"
+                        id="phone-image-generation-preset-export-btn"
+                        ${selectedImagePreset && presetServiceAvailable && !presetBusy ? '' : 'disabled'}>${t`导出当前`}</button>
+                    <button type="button" class="phone-ios-mini-btn is-danger"
+                        id="phone-image-generation-preset-delete-btn"
+                        ${selectedImagePreset && presetServiceAvailable && !presetBusy ? '' : 'disabled'}>${t`删除当前`}</button>
+                    <input type="file" id="phone-image-generation-preset-import-file"
+                        accept="application/json,.json" hidden
+                        ${presetServiceAvailable && !presetBusy ? '' : 'disabled'}>
+                </div>
             </div>
         `,
     });
-    const testSection = buildSettingsSectionHtml({
+    const testSection = buildImageGenerationGroupHtml({
         title: t("测试生图"),
         desc: t("多个人名用分号分隔（; 或；）。"),
         bodyHtml: `
-            <label class="phone-settings-field-inline">
-                <span>${t`人物名字`}</span>
-                <input id="phone-image-generation-test-names" class="phone-settings-input"
+            <label class="phone-ios-row phone-image-generation-input-row" for="phone-image-generation-test-names">
+                <span class="phone-ios-row-label">${t`人物名字`}</span>
+                <input id="phone-image-generation-test-names" class="phone-ios-inline-input"
                     value="${escapeHtmlAttr(testInput.names)}" placeholder="${t`例如：星野铃；木下`}">
             </label>
-            <label class="phone-settings-field-inline">
-                <span>${t`图片描述`}</span>
-                <textarea id="phone-image-generation-test-description" class="phone-settings-textarea"
+            <div class="phone-ios-row is-block">
+                <label class="phone-ios-field-label" for="phone-image-generation-test-description">${t`图片描述`}</label>
+                <textarea id="phone-image-generation-test-description" class="phone-ios-field"
                     rows="4" placeholder="${t`输入图片里发生的事情`}">${escapeHtml(testInput.description)}</textarea>
-            </label>
+            </div>
             ${buildPromptPreviewRowHtml({
                 id: 'phone-image-generation-prompt-preview',
                 label: t("中文提示词"),
@@ -575,46 +669,50 @@ export function buildImageGenerationPageHtml(viewModel = {}) {
                     extraClass: 'phone-image-generation-ai-output-row',
                 })
                 : ''}
-            <div class="phone-settings-action phone-settings-action-wrap">
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary"
+            <div class="phone-ios-row phone-image-generation-test-action-row">
+                <button type="button" class="phone-ios-mini-btn phone-image-generation-test-generate"
                     id="phone-image-generation-test-generate" ${testInput.generating ? 'disabled' : ''}>${testInput.generating ? t("生成中…") : t("测试生成")}</button>
-                <span id="phone-image-generation-test-status" class="phone-settings-desc">${escapeHtml(testInput.statusText)}</span>
+                <span id="phone-image-generation-test-status" class="phone-image-generation-test-status">${escapeHtml(testInput.statusText)}</span>
             </div>
-            <div id="phone-image-generation-test-preview" class="phone-settings-preview">
+            <div id="phone-image-generation-test-preview" class="phone-ios-row is-block phone-image-generation-test-preview"
+                ${testInput.imagePath ? '' : 'hidden'}>
                 ${buildTestImagePreviewHtml(testInput.imagePath)}
             </div>
         `,
     });
-    const mappingsSection = buildSettingsSectionHtml({
+    const mappingsSection = buildImageGenerationGroupHtml({
         title: t("角色资料映射"),
         desc: t("按映射顺序匹配，命中即停；字段按表格列顺序拼接。"),
-        actionsHtml: `<button type="button" class="phone-settings-btn" id="phone-image-generation-add-mapping">${t("添加映射")}</button>`,
         bodyHtml: `
-            <div id="phone-image-generation-mappings">
+            <button type="button" class="phone-ios-row is-action" id="phone-image-generation-add-mapping">${t("添加映射")}</button>
+            <div id="phone-image-generation-mappings" class="phone-image-generation-mapping-list">
                 ${mappings.length
                     ? mappings.map((mapping, index) => buildMappingCardHtml(viewModel, mapping, index, mappings.length)).join('')
-                    : `<div class="phone-empty-msg">${t("未配置映射，也可用人名和描述生图。")}</div>`}
+                    : `<div class="phone-ios-row phone-ios-row-empty">${t("未配置映射，也可用人名和描述生图。")}</div>`}
             </div>
-            <div class="phone-settings-action phone-settings-action-wrap">
-                <button type="button" class="phone-settings-btn phone-settings-btn-danger"
-                    id="phone-image-generation-clear-mappings" ${mappings.length ? '' : 'disabled'}>${t`清空映射`}</button>
-            </div>
+            <button type="button" class="phone-ios-row is-action is-danger" id="phone-image-generation-clear-mappings"
+                ${mappings.length ? '' : 'disabled'}>${t`清空映射`}</button>
         `,
     });
-    const requestSection = buildSettingsSectionHtml({
+    const requestSection = buildImageGenerationGroupHtml({
         title: t("请求设置"),
         desc: t("智慧姬超时仅停止等待；柏宝绘超时会请求取消。"),
         bodyHtml: `
-            <label class="phone-settings-field-inline">
-                <span>${t`等待超时（秒）`}</span>
+            <div class="phone-ios-row">
+                <span class="phone-ios-row-label">${t`等待超时（秒）`}</span>
+                <div class="phone-ios-stepper" data-settings-stepper="phone-image-generation-timeout" data-step="30" data-unit="">
+                    <button type="button" class="phone-ios-stepper-btn" data-direction="-1" aria-label="${t`减少等待超时`}">−</button>
+                    <output class="phone-ios-stepper-value">${escapeHtml(Math.round(config.timeoutMs / 1000))}</output>
+                    <button type="button" class="phone-ios-stepper-btn" data-direction="1" aria-label="${t`增加等待超时`}">+</button>
+                </div>
                 <input id="phone-image-generation-timeout" type="number" min="30" max="1800" step="30"
-                    class="phone-settings-input" value="${escapeHtmlAttr(Math.round(config.timeoutMs / 1000))}">
-            </label>
+                    value="${escapeHtmlAttr(Math.round(config.timeoutMs / 1000))}" hidden>
+            </div>
         `,
     });
     return buildSettingsPageFrame({
         title: t("生图设置"),
-        bodyClass: 'phone-app-body phone-settings-scroll phone-image-generation-page',
+        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-ios-grouped-page phone-image-generation-page',
         bodyHtml: `${engineSection}${builtinSection}${tableDisplaySection}${translationSection}${testSection}${mappingsSection}${requestSection}`,
     });
 }
@@ -989,8 +1087,11 @@ function createImageGenerationPageSession(ctx) {
         state.testInput.finalPrompt = String(prompt ?? '');
         const target = ctx.container.querySelector('#phone-image-generation-prompt-preview');
         if (target) {
-            target.textContent = state.testInput.finalPrompt
-                || t("输入人名或描述后预览。");
+            const hasPrompt = Boolean(state.testInput.finalPrompt);
+            target.textContent = hasPrompt
+                ? state.testInput.finalPrompt
+                : t("输入人名或描述后预览。");
+            target.closest('.phone-image-generation-prompt-preview-row')?.toggleAttribute('data-empty', !hasPrompt);
         }
     };
     const setAiOutput = (output) => {
@@ -1005,13 +1106,13 @@ function createImageGenerationPageSession(ctx) {
         const previewRow = previewAnchor?.closest('.phone-image-generation-prompt-preview-row');
         if (!previewRow) return;
         const row = document.createElement('div');
-        row.className = 'phone-image-generation-prompt-preview-row phone-image-generation-ai-output-row';
+        row.className = 'phone-ios-row is-block phone-image-generation-prompt-preview-row phone-image-generation-ai-output-row';
         const label = document.createElement('span');
-        label.className = 'phone-image-generation-prompt-preview-label';
+        label.className = 'phone-ios-field-label phone-image-generation-prompt-preview-label';
         label.textContent = t("AI 输出");
         const value = document.createElement('div');
         value.id = 'phone-image-generation-ai-output';
-        value.className = 'phone-prompt-preview-content';
+        value.className = 'phone-ios-field phone-prompt-preview-content';
         value.textContent = state.testInput.aiOutput;
         row.append(label, value);
         previewRow.insertAdjacentElement('afterend', row);
@@ -1032,6 +1133,7 @@ function createImageGenerationPageSession(ctx) {
         const preview = ctx.container.querySelector('#phone-image-generation-test-preview');
         if (preview && imagePath !== undefined) {
             preview.innerHTML = buildTestImagePreviewHtml(state.testInput.imagePath);
+            preview.hidden = !state.testInput.imagePath;
         }
     };
     const refreshPreview = async () => {
@@ -1331,6 +1433,7 @@ function createImageGenerationPageSession(ctx) {
     };
     const bind = () => {
         clearBindings();
+        state.cleanups.push(bindSettingsGroupedControls(ctx.container, ctx.pageRuntime));
         addListener(ctx.container.querySelector('.phone-nav-back'), 'click', () => {
             ctx.state.mode = 'home';
             ctx.render();
@@ -1448,6 +1551,7 @@ function createImageGenerationPageSession(ctx) {
                 imagePath,
                 altText: t("测试生成图片"),
                 runtime: ctx.pageRuntime,
+                frameless: true,
             });
         });
         addListener(ctx.container.querySelector('#phone-image-generation-timeout'), 'change', () => {
@@ -1471,20 +1575,47 @@ function createImageGenerationPageSession(ctx) {
         });
         addListener(ctx.container.querySelector('#phone-image-generation-clear-mappings'), 'click', () => {
             const config = readConfigFromDom();
-            void saveConfig({ ...config, roleMappings: [] }, { rerender: true, refreshPreviewAfter: false });
+            if (!config.roleMappings.length) return;
+            showConfirmDialog(
+                ctx.container,
+                t("清空映射？"),
+                t("将删除全部角色资料映射，删除后无法恢复。"),
+                () => {
+                    void saveConfig({ ...config, roleMappings: [] }, { rerender: true, refreshPreviewAfter: false });
+                },
+                t("清空"),
+                t("取消"),
+                ctx.pageRuntime,
+            );
         });
         Array.from(ctx.container.querySelectorAll('.phone-image-generation-table') || []).forEach((select) => {
             addListener(select, 'change', () => {
                 const config = readConfigFromDom();
                 const index = Number(select?.dataset?.mappingIndex);
-                if (Number.isInteger(index) && config.roleMappings[index]) {
+                if (!Number.isInteger(index) || !config.roleMappings[index]) return;
+                const previous = getConfig(state.viewModel).roleMappings[index] || {};
+                const apply = () => {
                     config.roleMappings[index] = {
                         ...config.roleMappings[index],
                         nameColumn: null,
                         promptColumns: [],
                     };
+                    void saveConfig(config, { rerender: true, refreshPreviewAfter: false });
+                };
+                if (!previous.nameColumn && !asArray(previous.promptColumns).length) {
+                    apply();
+                    return;
                 }
-                void saveConfig(config, { rerender: true, refreshPreviewAfter: false });
+                showConfirmDialog(
+                    ctx.container,
+                    t("切换人物资料表？"),
+                    t("切换后会清空已选的名字字段与提示词字段。"),
+                    apply,
+                    t("切换"),
+                    t("取消"),
+                    ctx.pageRuntime,
+                    { onCancel: repaintKeepScroll },
+                );
             });
         });
         Array.from(ctx.container.querySelectorAll('.phone-image-generation-name-column') || []).forEach((select) => {
@@ -1527,8 +1658,18 @@ function createImageGenerationPageSession(ctx) {
                 const config = readConfigFromDom();
                 const index = Number(button?.dataset?.mappingIndex);
                 if (!Number.isInteger(index) || index < 0 || index >= config.roleMappings.length) return;
-                config.roleMappings.splice(index, 1);
-                void saveConfig(config, { rerender: true, refreshPreviewAfter: false });
+                showConfirmDialog(
+                    ctx.container,
+                    t`删除映射 ${index + 1}？`,
+                    t("删除后无法恢复。"),
+                    () => {
+                        config.roleMappings.splice(index, 1);
+                        void saveConfig(config, { rerender: true, refreshPreviewAfter: false });
+                    },
+                    t("删除"),
+                    t("取消"),
+                    ctx.pageRuntime,
+                );
             });
         });
     };
@@ -1552,7 +1693,6 @@ function createImageGenerationPageSession(ctx) {
                 if (isActive()) void load();
             });
             if (typeof cleanup === 'function') state.contentPresetIndexCleanup = cleanup;
-            paint();
             void load();
         },
         update() {

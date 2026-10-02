@@ -280,6 +280,42 @@ export function setPopupActiveBindings(bindings) {
 export function setPopupActiveBinding(sheetKey, presetId) {
     return setPopupActiveBindings([{ sheetKey, presetId }]).then(records => records[0]);
 }
+
+export async function setPresetActiveBindings(presetId, plan) {
+    const id = text(presetId);
+    const records = {
+        pages: plan.pages.map(binding => toBinding(binding.sheetKey, id, binding.itemId, 'itemId')),
+        popups: plan.popups.map(binding => toPopupSourceBinding(binding.sheetKey, id)),
+        bottoms: plan.bottoms.map(binding => toBinding(binding.sheetKey, id, binding.itemId, 'itemId')),
+        qq: plan.qqKinds.map(kind => {
+            if (!['theme', 'popup'].includes(kind)) throw new Error(t("QQ 应用类型无效"));
+            return toPopupSourceBinding(`qq:${kind}`, id);
+        }),
+    };
+    if (!Object.values(records).some(bindings => bindings.length)) throw new Error(t("该预设当前没有可应用的美化"));
+    const db = await openContentPresetRepository();
+    return runTransaction(db, [
+        CONTENT_PRESET_STORES.presets,
+        CONTENT_PRESET_STORES.activeByTable,
+        CONTENT_PRESET_STORES.popupByTable,
+        CONTENT_PRESET_STORES.bottomByTable,
+        CONTENT_PRESET_STORES.appBindings,
+    ], 'readwrite', async tx => {
+        const preset = await requestResult(tx.objectStore(CONTENT_PRESET_STORES.presets).get(id));
+        if (!isTrustedContentPresetRecord(preset)) throw new Error(t("绑定引用的预设不符合玉子美化 Runtime API 合同"));
+        if (records.popups.length && !(preset.displays || []).some(hasPopupCapability)) throw new Error(t("绑定引用的预设不提供弹窗美化能力"));
+        if (plan.qqKinds.some(kind => !preset.qq?.[kind])) throw new Error(t("预设不提供对应 QQ 美化能力"));
+        await Promise.all([
+            ...records.pages.map(record => writeValidatedBinding(tx, record, CONTENT_PRESET_STORES.activeByTable, value => value.items, hasPageCapability, 'itemId', '表格美化页面')),
+            ...records.bottoms.map(record => writeValidatedBinding(tx, record, CONTENT_PRESET_STORES.bottomByTable, value => value.items, hasPageCapability, 'itemId', '底部美化')),
+        ]);
+        records.popups.forEach(record => tx.objectStore(CONTENT_PRESET_STORES.popupByTable).put(record));
+        records.qq.forEach(record => tx.objectStore(CONTENT_PRESET_STORES.appBindings).put(record));
+        return Object.freeze(Object.fromEntries(Object.entries(records)
+            .map(([kind, bindings]) => [kind, Object.freeze(bindings.map(record => Object.freeze(record)))])));
+    });
+}
+
 export function clearPopupActiveBinding(sheetKey) { return clearBinding(sheetKey, CONTENT_PRESET_STORES.popupByTable); }
 export function clearAllPopupActiveBindings() { return clearAllBindings(CONTENT_PRESET_STORES.popupByTable); }
 // v2 API 别名，不能把旧页面绑定迁移成弹窗绑定。

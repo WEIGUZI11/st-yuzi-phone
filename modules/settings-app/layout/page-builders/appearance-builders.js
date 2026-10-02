@@ -1,8 +1,5 @@
 import { t, getPhoneLanguage } from '../../../i18n/index.js';
-import {
-    buildSettingsPageFrame,
-    buildSettingsSectionHtml,
-} from '../primitives.js';
+import { buildSettingsPageFrame } from '../primitives.js';
 import { PHONE_ICONS } from '../../../phone-home/icons.js';
 import { escapeHtml, escapeHtmlAttr } from '../../../utils/dom-escape.js';
 
@@ -212,7 +209,7 @@ function buildDisplaySectionHtml(hideTableCountBadge) {
         <section class="phone-ios-group" id="phone-hidden-table-apps"></section>
         <p class="phone-ios-group-footer">${t("关闭后该 App 不在首页显示，数据不受影响。")}</p>
         <h2 class="phone-ios-group-header">${t("自定义图标")}</h2>
-        <div id="phone-icon-upload-list" class="phone-icon-upload-list"></div>
+        <div id="phone-icon-upload-list"></div>
     `;
 }
 
@@ -272,58 +269,60 @@ export function buildButtonStylePageHtml({ currentSize, currentShape, currentCov
     const previewHtml = buildToggleCoverPreviewHtml(currentShape, currentCover, currentSize);
 
     const bodyHtml = `
-        ${buildSettingsSectionHtml({
-            title: t("悬浮入口"),
-            actionsHtml: `<div class="phone-settings-action phone-settings-action-wrap"><button type="button" class="phone-settings-btn" id="phone-toggle-position-reset-btn">${t`重置位置`}</button></div>`,
-            bodyHtml: `<label class="phone-toggle-shape-item" for="phone-floating-toggle-enabled"><span class="phone-toggle-shape-name">${t`显示悬浮按钮`}</span><input type="checkbox" id="phone-floating-toggle-enabled" ${floatingToggleEnabled ? 'checked' : ''}></label><p class="phone-settings-desc">${t`隐藏按钮不影响已打开的手机。`}</p>`,
-        })}
+        <h2 class="phone-ios-group-header">${t("预览")}</h2>
+        <section class="phone-ios-group">
+            <div class="phone-ios-row">
+                <div id="phone-toggle-cover-preview" class="phone-toggle-cover-preview">${previewHtml}</div>
+            </div>
+        </section>
 
-        ${buildSettingsSectionHtml({
-            title: t("按钮大小"),
-            bodyHtml: `
-                <div class="phone-settings-toggle-size-row">
-                    <input type="range" min="32" max="72" step="1" id="phone-toggle-style-size-range" value="${escapeHtmlAttr(currentSize)}">
-                    <input type="number" min="32" max="72" step="1" id="phone-toggle-style-size-input" class="phone-settings-input" value="${escapeHtmlAttr(currentSize)}">
-                </div>
-                <p class="phone-settings-desc">${t`32–72 px，默认 40。`}</p>
-            `,
-        })}
+        <h2 class="phone-ios-group-header">${t("悬浮入口")}</h2>
+        <section class="phone-ios-group">
+            <label class="phone-ios-row" for="phone-floating-toggle-enabled">
+                <span class="phone-ios-row-label">${t`显示悬浮按钮`}</span>
+                <span class="phone-ios-switch">
+                    <input type="checkbox" id="phone-floating-toggle-enabled" ${floatingToggleEnabled ? 'checked' : ''}>
+                    <span class="phone-ios-switch-track" aria-hidden="true"></span>
+                </span>
+            </label>
+            <button type="button" class="phone-ios-row is-action" id="phone-toggle-position-reset-btn">${t`重置位置`}</button>
+        </section>
+        <p class="phone-ios-group-footer">${t("隐藏按钮不影响已打开的手机。")}</p>
 
-        ${buildSettingsSectionHtml({
-            title: t("按钮形状"),
-            bodyHtml: `
-                <div class="phone-toggle-shape-list" id="phone-toggle-shape-list">
-                    <label class="phone-toggle-shape-item">
-                        <span class="phone-toggle-shape-name">${t`长方形`}</span>
-                        <input type="radio" name="phone-toggle-shape" value="rounded" ${currentShape === 'rounded' ? 'checked' : ''}>
-                    </label>
-                    <label class="phone-toggle-shape-item">
-                        <span class="phone-toggle-shape-name">${t`圆形`}</span>
-                        <input type="radio" name="phone-toggle-shape" value="circle" ${currentShape === 'circle' ? 'checked' : ''}>
-                    </label>
+        <h2 class="phone-ios-group-header">${t("按钮大小")}</h2>
+        <section class="phone-ios-group">
+            <div class="phone-ios-row">
+                <div class="phone-ios-slider-row">
+                    <span class="phone-ios-slider-glyph" aria-hidden="true">○</span>
+                    <input type="range" min="32" max="72" step="1" id="phone-toggle-style-size-range" value="${escapeHtmlAttr(currentSize)}" aria-label="${t`按钮大小`}">
+                    <span class="phone-ios-slider-glyph is-large" aria-hidden="true">○</span>
+                    <output for="phone-toggle-style-size-range" id="phone-toggle-style-size-value" class="phone-ios-slider-value">${escapeHtml(currentSize)}px</output>
                 </div>
-            `,
-        })}
+            </div>
+        </section>
+        <p class="phone-ios-group-footer">${t("32–72 px，默认 40。")}</p>
 
-        ${buildSettingsSectionHtml({
-            title: t("按钮封面"),
-            desc: t("按按钮形状裁剪。"),
-            actionsHtml: `
-                <div class="phone-settings-action">
-                    <button type="button" class="phone-settings-btn" id="phone-toggle-cover-upload-btn">
-                        ${PHONE_ICONS.upload}
-                        <span>${t`上传封面`}</span>
-                    </button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-danger" id="phone-toggle-cover-clear-btn" ${currentCover ? '' : 'disabled'}>${t`清除封面`}</button>
-                </div>
-            `,
-            bodyHtml: `<div id="phone-toggle-cover-preview" class="phone-settings-preview">${previewHtml}</div>`,
-        })}
+        <h2 class="phone-ios-group-header">${t("按钮形状")}</h2>
+        <section class="phone-ios-group">
+            ${buildSegRowHtml({ selectId: 'phone-toggle-style-shape', label: t`形状`, value: currentShape, options: [{ value: 'rounded', label: t`长方形` }, { value: 'circle', label: t`圆形` }] })}
+            <select id="phone-toggle-style-shape" hidden>
+                <option value="rounded" ${currentShape === 'rounded' ? 'selected' : ''}>${t`长方形`}</option>
+                <option value="circle" ${currentShape === 'circle' ? 'selected' : ''}>${t`圆形`}</option>
+            </select>
+        </section>
+        <p class="phone-ios-group-footer">${t("圆形按钮不显示文字。")}</p>
+
+        <h2 class="phone-ios-group-header">${t("按钮封面")}</h2>
+        <section class="phone-ios-group">
+            <button type="button" class="phone-ios-row is-action" id="phone-toggle-cover-upload-btn" aria-haspopup="dialog">${t`上传封面`}</button>
+            <button type="button" class="phone-ios-row is-action is-danger" id="phone-toggle-cover-clear-btn" aria-haspopup="dialog" ${currentCover ? '' : 'disabled'}>${t`清除封面`}</button>
+        </section>
+        <p class="phone-ios-group-footer">${t("按按钮形状裁剪。")}</p>
     `;
 
     return buildSettingsPageFrame({
         title: t("控件与按钮"),
-        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open',
+        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-ios-grouped-page',
         bodyHtml,
     });
 }

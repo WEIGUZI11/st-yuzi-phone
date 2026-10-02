@@ -123,6 +123,12 @@
     background: var(--yuzi-settings-group-fill);
 }
 
+.phone-ios-option:disabled {
+    color: var(--yuzi-settings-text-faint);
+    cursor: default;
+    background: transparent;
+}
+
 .phone-ios-option-check {
     flex-shrink: 0;
     visibility: hidden;

@@ -217,6 +217,7 @@ async function main() {
             set() { renders += 1; body.scrollTop = 0; },
         });
         container.querySelector = selector => selector === '.phone-app-body.phone-settings-scroll' ? body : null;
+        container.querySelectorAll = () => [];
         container.addEventListener = () => {};
         container.removeEventListener = () => {};
 

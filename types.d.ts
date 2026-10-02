@@ -1240,6 +1240,15 @@ export interface ContentPresetWorkshopViewModel {
     tables: readonly any[];
 }
 
+export interface ContentPresetApplyResult {
+    presetId: string;
+    pageCount: number;
+    popupCount: number;
+    bottomCount: number;
+    qqCount: number;
+    skippedCount: number;
+}
+
 export interface SettingsContentPresetWorkshopService {
     getSnapshot: () => any;
     subscribe: (listener: (snapshot: any) => void) => () => void;
@@ -1248,6 +1257,7 @@ export interface SettingsContentPresetWorkshopService {
     importPrepared: (prepared: { record: ContentPresetRecord; replacesExisting: boolean }, allowReplace?: boolean) => Promise<any>;
     exportPreset: (presetId: string) => Promise<{ filename: string; text: string; mimeType: string }>;
     deletePreset: (presetId: string) => Promise<any>;
+    applyPreset: (presetId: string) => Promise<ContentPresetApplyResult>;
     setActive: (sheetKey: string, presetId: string, itemId: string) => Promise<any>;
     clearActive: (sheetKey: string) => Promise<any>;
     clearAllActive: () => Promise<any>;

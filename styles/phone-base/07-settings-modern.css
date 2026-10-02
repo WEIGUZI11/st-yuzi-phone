@@ -605,7 +605,7 @@
     background: transparent;
 }
 
-.phone-appearance-check-item {
+.phone-appearance-check-item:not(.phone-ios-row) {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -615,7 +615,7 @@
     background: transparent;
 }
 
-.phone-appearance-check-item:last-child {
+.phone-appearance-check-item:not(.phone-ios-row):last-child {
     border-bottom: none;
 }
 
@@ -1493,88 +1493,66 @@
     color: var(--yuzi-settings-text-secondary, #7A7772);
 }
 
+.phone-toggle-cover-preview {
+    width: 100%;
+    min-width: 0;
+    border-radius: var(--yuzi-settings-preview-radius);
+    background: var(--yuzi-settings-accent-soft);
+}
+
 .phone-toggle-preview-shell {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 140px;
-    padding: 16px;
+    min-height: var(--yuzi-settings-toggle-preview-min-height);
+    padding: var(--yuzi-settings-row-padding-inline);
 }
 
 .phone-toggle-preview-button {
     --yuzi-phone-toggle-preview-size: 40px;
-    width: calc(var(--yuzi-phone-toggle-preview-size) * 2.1);
-    min-width: calc(var(--yuzi-phone-toggle-preview-size) * 2.1);
+    width: calc(var(--yuzi-phone-toggle-preview-size) * var(--yuzi-settings-toggle-preview-width-ratio));
+    min-width: calc(var(--yuzi-phone-toggle-preview-size) * var(--yuzi-settings-toggle-preview-width-ratio));
     height: var(--yuzi-phone-toggle-preview-size);
     min-height: var(--yuzi-phone-toggle-preview-size);
-    padding: 0 14px;
+    padding: 0 var(--yuzi-settings-seg-item-padding-inline);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    color: #f8fbfd;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.46);
-    background-color: rgba(226, 236, 244, 0.18);
-    background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(226, 236, 244, 0.18));
+    gap: var(--yuzi-settings-group-header-gap);
+    color: var(--yuzi-settings-text-primary);
+    border-radius: var(--yuzi-phone-radius-pill);
+    border: var(--yuzi-settings-row-divider-width) solid var(--yuzi-settings-group-separator);
+    background-color: var(--yuzi-settings-group-fill-strong);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    box-shadow:
-        0 16px 38px rgba(42, 60, 76, 0.24),
-        inset 0 1px 0 rgba(255, 255, 255, 0.62),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.14);
     overflow: hidden;
-    position: relative;
-    backdrop-filter: blur(14px) saturate(1.25);
-    -webkit-backdrop-filter: blur(14px) saturate(1.25);
-}
-
-.phone-toggle-preview-button::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(120deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0.16));
-    pointer-events: none;
-    opacity: 0.74;
+    backdrop-filter: blur(var(--yuzi-settings-toggle-preview-blur)) saturate(var(--yuzi-settings-toggle-preview-saturation));
+    -webkit-backdrop-filter: blur(var(--yuzi-settings-toggle-preview-blur)) saturate(var(--yuzi-settings-toggle-preview-saturation));
 }
 
 .phone-toggle-preview-button.is-circle {
     width: var(--yuzi-phone-toggle-preview-size);
     min-width: var(--yuzi-phone-toggle-preview-size);
     padding: 0;
-    border-radius: 999px;
-}
-
-.phone-toggle-preview-button.is-rounded {
-    width: calc(var(--yuzi-phone-toggle-preview-size) * 2.1);
-    min-width: calc(var(--yuzi-phone-toggle-preview-size) * 2.1);
 }
 
 .phone-toggle-preview-button.has-cover {
     border: 0;
     background-color: transparent;
-    box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
 }
 
-.phone-toggle-preview-button.has-cover::before,
 .phone-toggle-preview-button.has-cover .phone-toggle-preview-icon,
 .phone-toggle-preview-button.has-cover .phone-toggle-preview-text,
 .phone-toggle-preview-button.is-circle .phone-toggle-preview-text {
     display: none;
 }
 
-.phone-toggle-preview-icon,
-.phone-toggle-preview-text {
-    position: relative;
-    z-index: 1;
-}
-
 .phone-toggle-preview-icon {
-    width: 18px;
-    height: 18px;
+    width: var(--yuzi-settings-toggle-preview-icon-size);
+    height: var(--yuzi-settings-toggle-preview-icon-size);
     display: inline-flex;
     flex-shrink: 0;
 }
@@ -1585,16 +1563,9 @@
 }
 
 .phone-toggle-preview-text {
-    font-size: 14px;
+    font-size: var(--yuzi-settings-row-value-size);
     font-weight: 600;
     white-space: nowrap;
-}
-
-.phone-settings-page #phone-toggle-cover-preview.phone-settings-preview {
-    margin-top: 2px;
-    border-radius: 8px;
-    border: 1px solid rgba(58, 55, 49, 0.06);
-    background: linear-gradient(135deg, rgba(223, 232, 238, 0.68), rgba(170, 184, 196, 0.34));
 }
 
 .phone-settings-page .phone-appearance-switch-list,
@@ -1621,7 +1592,7 @@
 }
 
 .phone-settings-page .phone-appearance-switch-item,
-.phone-settings-page .phone-appearance-check-item,
+.phone-settings-page .phone-appearance-check-item:not(.phone-ios-row),
 .phone-settings-page .phone-toggle-shape-item,
 .phone-settings-page .phone-icon-upload-row,
 .phone-settings-page .phone-worldbook-entry {
@@ -1637,7 +1608,7 @@
 }
 
 .phone-settings-page .phone-appearance-switch-item:last-child,
-.phone-settings-page .phone-appearance-check-item:last-child,
+.phone-settings-page .phone-appearance-check-item:not(.phone-ios-row):last-child,
 .phone-settings-page .phone-toggle-shape-item:last-child,
 .phone-settings-page .phone-icon-upload-row:last-child,
 .phone-settings-page .phone-worldbook-entry:last-child {
@@ -1741,7 +1712,7 @@
 
 }
 
-/* 深色主题兼容：强制设置页表单控件保持侘寂米白底炭灰字 */
+/* 宿主主题隔离：设置页普通表单、分组字段与行内输入共用手机主题配色。 */
 .phone-settings-page .phone-settings-home-quick-select,
 .phone-settings-page .phone-settings-input,
 .phone-settings-page .phone-settings-select,
@@ -1749,6 +1720,9 @@
 .phone-settings-page .phone-settings-textarea,
 .phone-settings-page input.phone-settings-input,
 .phone-settings-page input.phone-settings-input-full,
+.phone-settings-page input.phone-ios-inline-input,
+.phone-settings-page input.phone-ios-field,
+.phone-settings-page textarea.phone-ios-field,
 .phone-settings-page select.phone-settings-select,
 .phone-settings-page select.phone-settings-home-quick-select,
 .phone-settings-page textarea.phone-settings-textarea {
@@ -1765,11 +1739,17 @@
 .phone-settings-page .phone-settings-select:hover,
 .phone-settings-page .phone-settings-input-full:hover,
 .phone-settings-page .phone-settings-textarea:hover,
+.phone-settings-page input.phone-ios-inline-input:hover,
+.phone-settings-page input.phone-ios-field:hover,
+.phone-settings-page textarea.phone-ios-field:hover,
 .phone-settings-page .phone-settings-home-quick-select:focus,
 .phone-settings-page .phone-settings-input:focus,
 .phone-settings-page .phone-settings-select:focus,
 .phone-settings-page .phone-settings-input-full:focus,
-.phone-settings-page .phone-settings-textarea:focus {
+.phone-settings-page .phone-settings-textarea:focus,
+.phone-settings-page input.phone-ios-field:focus,
+.phone-settings-page textarea.phone-ios-field:focus,
+.phone-settings-page input.phone-ios-inline-input:focus {
     background: var(--yuzi-settings-surface, rgba(245, 243, 239, 0.96)) !important;
     background-color: var(--yuzi-settings-surface, rgba(245, 243, 239, 0.96)) !important;
     color: var(--yuzi-settings-text-primary, #3A3731) !important;
@@ -1779,7 +1759,10 @@
 .phone-settings-page .phone-settings-home-quick-select::placeholder,
 .phone-settings-page .phone-settings-input::placeholder,
 .phone-settings-page .phone-settings-input-full::placeholder,
-.phone-settings-page .phone-settings-textarea::placeholder {
+.phone-settings-page .phone-settings-textarea::placeholder,
+.phone-settings-page input.phone-ios-field::placeholder,
+.phone-settings-page textarea.phone-ios-field::placeholder,
+.phone-settings-page input.phone-ios-inline-input::placeholder {
     color: var(--yuzi-settings-text-secondary, #7A7772) !important;
     -webkit-text-fill-color: var(--yuzi-settings-text-secondary, #7A7772) !important;
 }
@@ -1788,7 +1771,10 @@
 .phone-settings-page .phone-settings-input:disabled,
 .phone-settings-page .phone-settings-select:disabled,
 .phone-settings-page .phone-settings-input-full:disabled,
-.phone-settings-page .phone-settings-textarea:disabled {
+.phone-settings-page .phone-settings-textarea:disabled,
+.phone-settings-page input.phone-ios-field:disabled,
+.phone-settings-page textarea.phone-ios-field:disabled,
+.phone-settings-page input.phone-ios-inline-input:disabled {
     background: var(--yuzi-settings-surface-muted, rgba(240, 238, 233, 0.98)) !important;
     background-color: var(--yuzi-settings-surface-muted, rgba(240, 238, 233, 0.98)) !important;
     color: var(--yuzi-settings-text-secondary, #7A7772) !important;
@@ -2034,46 +2020,55 @@
 .phone-settings-page .yuzi-failure-logs {
     color: var(--yuzi-settings-text-primary);
 }
+.phone-api-preset-actions {
+    margin-top: var(--yuzi-settings-group-block-gap);
+}
+.phone-api-preset-error {
+    color: var(--yuzi-settings-group-danger);
+}
+.yuzi-failure-logs [data-log-count] {
+    font-variant-numeric: tabular-nums;
+}
 .phone-settings-page .yuzi-failure-log {
     min-width: 0;
-    margin-bottom: 14px;
-    padding: 0 14px;
-    border: 1px solid var(--yuzi-settings-border);
-    border-radius: 16px;
-    background: var(--yuzi-settings-surface);
-    color: var(--yuzi-settings-text-primary);
 }
-.phone-settings-page .yuzi-failure-logs :is(h3, summary) {
-    margin: 10px 0 6px;
-    color: var(--yuzi-settings-text-primary);
-    font: inherit;
-    font-weight: 600;
+.yuzi-failure-log-list,
+.yuzi-failure-log-empty {
+    margin-top: var(--yuzi-settings-group-stack-gap);
 }
-.phone-settings-page .yuzi-failure-logs p {
-    margin: 6px 0 10px;
-    color: var(--yuzi-settings-text-secondary);
-    line-height: 1.65;
-    overflow-wrap: anywhere;
+.yuzi-failure-log-head {
+    align-items: flex-start;
 }
-.phone-settings-page .yuzi-failure-logs pre {
-    margin: 8px 0 12px;
-    padding: 12px;
-    border: 1px solid var(--yuzi-settings-border);
-    border-radius: 10px;
-    background: var(--yuzi-settings-surface-muted);
+.yuzi-failure-log-kind {
+    color: var(--yuzi-settings-group-danger);
+}
+.yuzi-failure-log .phone-ios-row.is-block > :is(p, pre) {
+    margin: 0;
+    padding: var(--yuzi-settings-row-padding-block) var(--yuzi-settings-seg-item-padding-inline);
+    border-radius: var(--yuzi-phone-radius-md);
+    background: var(--yuzi-settings-group-fill);
     color: var(--yuzi-settings-text-primary);
-    font: inherit;
-    line-height: 1.6;
-    white-space: pre-wrap;
+    font-size: var(--yuzi-settings-row-sub-size);
+    line-height: var(--yuzi-settings-group-footer-line-height);
     overflow-wrap: anywhere;
     user-select: text;
 }
-.phone-settings-page .yuzi-failure-logs summary { cursor: pointer; }
-.phone-settings-page .yuzi-failure-logs summary:focus-visible {
-    outline: 2px solid var(--yuzi-settings-accent);
-    outline-offset: 3px;
+.yuzi-failure-log pre {
+    max-height: var(--yuzi-settings-group-scroll-max-height);
+    overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre-wrap;
 }
-.phone-settings-page .yuzi-failure-logs [hidden] { display: none; }
+.yuzi-failure-log summary {
+    cursor: pointer;
+}
+.yuzi-failure-log summary:focus-visible {
+    outline: var(--yuzi-phone-form-focus-ring-width) solid var(--yuzi-settings-accent);
+    outline-offset: calc(-1 * var(--yuzi-phone-form-focus-ring-width));
+}
+@media (prefers-reduced-motion: reduce) {
+    .phone-ios-details > summary .phone-ios-row-chevron { transition: none; }
+}
 
 /* 英文标题和动作允许分行；只作用自有设置控件，不进入内容预设。 */
 #yuzi-phone-standalone[lang="en"] .phone-settings-section-head {

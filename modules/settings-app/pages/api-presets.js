@@ -1,7 +1,9 @@
 import { t } from '../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
-import { buildSettingsPageFrame, buildSettingsSectionHtml } from '../layout/primitives.js';
+import { buildSettingsPageFrame } from '../layout/primitives.js';
 import { showConfirmDialog } from '../ui/confirm-dialog.js';
+import { bindSettingsGroupedControls } from '../ui/settings-controls.js';
+import { showSettingsSheet } from '../ui/settings-layer.js';
 
 function asText(value) {
     return String(value || '').trim();
@@ -70,53 +72,77 @@ function buildApiPresetsPageHtml(pageState) {
     const editorDisabled = pageState.loading || pageState.busy || draft.readOnly ? 'disabled' : '';
     const canEditDraft = !pageState.loading && !pageState.busy && !draft.readOnly;
     const status = pageState.error
-        ? `<div class="phone-settings-inline-status is-danger"><span class="phone-settings-inline-status-text">${escapeHtml(pageState.error)}</span></div>`
+        ? `<p class="phone-ios-group-footer phone-api-preset-error" role="alert">${escapeHtml(pageState.error)}</p>`
         : pageState.loading
-            ? `<div class="phone-settings-note">${t("正在读取 API 预设...")}</div>`
+            ? `<p class="phone-ios-group-footer" role="status">${t("正在读取 API 预设...")}</p>`
             : '';
     const modelStatus = pageState.modelError
-        ? `<div class="phone-settings-inline-status is-danger"><span class="phone-settings-inline-status-text">${escapeHtml(pageState.modelError)}</span></div>`
+        ? `<p class="phone-ios-group-footer phone-api-preset-error" role="alert">${escapeHtml(pageState.modelError)}</p>`
         : pageState.modelLoading
-            ? `<div class="phone-settings-note">${t("正在加载模型...")}</div>`
+            ? `<p class="phone-ios-group-footer" role="status">${t("正在加载模型...")}</p>`
             : pageState.modelsLoaded
-                ? `<div class="phone-settings-note">${models.length ? t`已加载 ${models.length} 个模型` : t("未识别到可用模型")}</div>`
+                ? `<p class="phone-ios-group-footer" role="status">${models.length ? t`已加载 ${models.length} 个模型` : t("未识别到可用模型")}</p>`
                 : '';
-    const presetSection = buildSettingsSectionHtml({
-        title: t("API 预设"),
-        bodyHtml: `
+    const selectRow = (id, label, value, locked = '') => `
+        <button type="button" class="phone-ios-row is-tappable" data-settings-select="${id}" aria-haspopup="dialog" ${locked}>
+            <span class="phone-ios-row-label">${label}</span>
+            <span class="phone-ios-row-value"><span class="phone-ios-row-value-text">${escapeHtml(value)}</span><span class="phone-ios-row-chevron" aria-hidden="true">›</span></span>
+        </button>`;
+    const selected = (pageState.presets || []).find(preset => asText(preset.presetId) === asText(pageState.selectedPresetId));
+    const presetLabel = selected
+        ? `${selected.name || t("未命名预设")}${selected.readOnly ? t("（只读）") : ''}`
+        : t("请选择 API 预设");
+    const presetSection = `
+            <h2 class="phone-ios-group-header">${t("API 预设")}</h2>
+            <section class="phone-ios-group">
+                ${selectRow('phone-api-preset-select', t("选择预设"), presetLabel, disabled)}
+                <button type="button" class="phone-ios-row is-action" id="phone-api-preset-new-btn" ${disabled}>${t`新建 API 预设`}</button>
+                <select id="phone-api-preset-select" class="phone-settings-select" ${disabled} hidden>${buildPresetOptions(pageState.presets, pageState.selectedPresetId)}</select>
+            </section>
             ${status}
-            <label class="phone-ai-preset-segment-field">
-                <span>${t`选择预设`}</span>
-                <select id="phone-api-preset-select" class="phone-settings-select" ${disabled}>${buildPresetOptions(pageState.presets, pageState.selectedPresetId)}</select>
-            </label>
-            <div class="phone-settings-action-row">
-                <button type="button" class="phone-settings-btn" id="phone-api-preset-new-btn" ${disabled}>${t`新建 API 预设`}</button>
+        `;
+    const editorSection = `
+        <h2 class="phone-ios-group-header">${draft.presetId ? t("编辑 API 预设") : t("新建 API 预设")}</h2>
+        <section class="phone-ios-group">
+            <label class="phone-ios-row"><span class="phone-ios-row-field-label">${t`名称`}</span><input id="phone-api-preset-name" class="phone-ios-inline-input" maxlength="120" value="${escapeHtmlAttr(draft.name)}" autocomplete="off" ${editorDisabled}></label>
+            <label class="phone-ios-row"><span class="phone-ios-row-field-label">${t`API 地址`}</span><input id="phone-api-preset-endpoint" class="phone-ios-inline-input" maxlength="2048" value="${escapeHtmlAttr(draft.endpoint)}" placeholder="https://api.example.com/v1" autocomplete="off" ${editorDisabled}></label>
+            <label class="phone-ios-row"><span class="phone-ios-row-field-label">${t`API 密钥`}</span><input id="phone-api-preset-key" type="password" class="phone-ios-inline-input" placeholder="${draft.hasApiKey ? t("留空保持已有密钥") : ''}" autocomplete="off" ${editorDisabled}></label>
+            <label class="phone-ios-row"><span class="phone-ios-row-field-label">${t`手写模型`}</span><input id="phone-api-preset-model" class="phone-ios-inline-input" maxlength="256" value="${escapeHtmlAttr(draft.model)}" autocomplete="off" ${editorDisabled}></label>
+            ${models.length ? selectRow('phone-api-preset-model-list', t("模型列表"), models.includes(draft.model) ? draft.model : t("请选择模型"), editorDisabled) : ''}
+            ${models.length ? `<select id="phone-api-preset-model-list" class="phone-settings-select" ${editorDisabled} hidden>${buildModelOptions(models, draft.model)}</select>` : ''}
+        </section>
+        <p class="phone-ios-group-footer">${draft.hasApiKey ? t("留空保持已有密钥。已保存的密钥不会回显。") : t("API 密钥以密码形式输入，已保存的密钥不会回显。")}</p>
+        ${modelStatus}
+        <h2 class="phone-ios-group-header">${t("生成参数")}</h2>
+        <section class="phone-ios-group">
+            <div class="phone-ios-row">
+                <label class="phone-ios-row-field-label" for="phone-api-preset-temperature">${t`温度`}</label>
+                <div class="phone-ios-slider-row">
+                    <input id="phone-api-preset-temperature" type="range" min="0" max="2" step="0.01" value="${escapeHtmlAttr(draft.temperature)}" ${editorDisabled}>
+                    <output class="phone-ios-slider-value" id="phone-api-preset-temperature-value" for="phone-api-preset-temperature">${Number(draft.temperature).toFixed(2)}</output>
+                </div>
             </div>
-        `,
-    });
-    const editorSection = buildSettingsSectionHtml({
-        title: draft.presetId ? t("编辑 API 预设") : t("新建 API 预设"),
-        bodyHtml: `
-            <div class="phone-ai-preset-toolbar">
-                <label class="phone-ai-preset-segment-field"><span>${t`名称`}</span><input id="phone-api-preset-name" class="phone-settings-input" maxlength="120" value="${escapeHtmlAttr(draft.name)}" ${editorDisabled}></label>
-                <label class="phone-ai-preset-segment-field"><span>${t`API 地址`}</span><input id="phone-api-preset-endpoint" class="phone-settings-input" maxlength="2048" value="${escapeHtmlAttr(draft.endpoint)}" placeholder="https://api.example.com/v1" ${editorDisabled}></label>
-                <label class="phone-ai-preset-segment-field"><span>${t`API 密钥${draft.hasApiKey ? t("（留空保持已有密钥）") : ''}`}</span><input id="phone-api-preset-key" type="password" class="phone-settings-input" autocomplete="off" ${editorDisabled}></label>
-                <label class="phone-ai-preset-segment-field"><span>${t`手写模型`}</span><input id="phone-api-preset-model" class="phone-settings-input" maxlength="256" value="${escapeHtmlAttr(draft.model)}" ${editorDisabled}></label>
-                ${models.length ? `<label class="phone-ai-preset-segment-field"><span>${t`模型列表`}</span><select id="phone-api-preset-model-list" class="phone-settings-select" ${editorDisabled}>${buildModelOptions(models, draft.model)}</select></label>` : ''}
-                ${modelStatus}
-                <label class="phone-ai-preset-segment-field"><span>${t`温度`}</span><input id="phone-api-preset-temperature" type="number" class="phone-settings-input" min="0" max="2" step="0.01" value="${escapeHtmlAttr(draft.temperature)}" ${editorDisabled}></label>
-                <label class="phone-ai-preset-segment-field"><span>${t`最大输出`}</span><input id="phone-api-preset-max-output" type="number" class="phone-settings-input" min="1" step="1" value="${escapeHtmlAttr(draft.maxOutput)}" ${editorDisabled}></label>
+            <div class="phone-ios-row">
+                <span class="phone-ios-row-label">${t`最大输出`}</span>
+                <div class="phone-ios-stepper" data-settings-stepper="phone-api-preset-max-output" data-step="256">
+                    <button type="button" class="phone-ios-stepper-btn" data-direction="-1" aria-label="${t`减少${t("最大输出")}`}" ${editorDisabled}>−</button>
+                    <button type="button" class="phone-ios-stepper-value is-editable" id="phone-api-preset-max-output-edit" aria-label="${t`最大输出，点按输入精确值`}" aria-haspopup="dialog" ${editorDisabled}>${escapeHtml(draft.maxOutput)}</button>
+                    <button type="button" class="phone-ios-stepper-btn" data-direction="1" aria-label="${t`增加${t("最大输出")}`}" ${editorDisabled}>+</button>
+                </div>
             </div>
-            <div class="phone-settings-action-row">
-                <button type="button" class="phone-settings-btn" id="phone-api-preset-load-models-btn" ${editorDisabled}>${t`加载模型`}</button>
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary" id="phone-api-preset-save-btn" ${editorDisabled}>${t`保存预设`}</button>
-                <button type="button" class="phone-settings-btn phone-settings-btn-danger" id="phone-api-preset-delete-btn" ${draft.presetId && canEditDraft ? '' : 'disabled'}>${t`删除预设`}</button>
-            </div>
-        `,
-    });
+            <input id="phone-api-preset-max-output" type="number" min="1" max="131072" step="1" value="${escapeHtmlAttr(draft.maxOutput)}" ${editorDisabled} hidden>
+        </section>
+        <p class="phone-ios-group-footer">${t("温度 0–2，精度 0.01；最大输出 1–131072，± 按 256 步进，点数字可输入精确值。")}</p>
+        <section class="phone-ios-group phone-api-preset-actions">
+            <button type="button" class="phone-ios-row is-action" id="phone-api-preset-load-models-btn" ${editorDisabled}>${t`加载模型`}</button>
+            <button type="button" class="phone-ios-row is-action" id="phone-api-preset-save-btn" ${editorDisabled}>${t`保存预设`}</button>
+        </section>
+        <section class="phone-ios-group">
+            <button type="button" class="phone-ios-row is-action is-danger" id="phone-api-preset-delete-btn" ${draft.presetId && canEditDraft ? '' : 'disabled'}>${t`删除预设`}</button>
+        </section>`;
     return buildSettingsPageFrame({
         title: t("API 预设"),
-        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open',
+        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-ios-grouped-page',
         bodyHtml: `${presetSection}${editorSection}`,
     });
 }
@@ -191,6 +217,7 @@ function createApiPresetSession(ctx) {
         if (!active || state.busy || state.draft.readOnly || draft?.readOnly === true) return false;
         state.busy = true;
         state.draft = { ...state.draft, ...draft };
+        repaint();
         const preset = {
             ...(state.draft.presetId ? { id: state.draft.presetId } : {}),
             name: asText(state.draft.name),
@@ -215,6 +242,7 @@ function createApiPresetSession(ctx) {
     const remove = async () => {
         if (!active || state.busy || state.draft.readOnly || !state.draft.presetId) return false;
         state.busy = true;
+        repaint();
         const result = await ctx.qqV2PresetService.deleteApiPreset({ apiPresetId: state.draft.presetId });
         if (!active) return false;
         state.busy = false;
@@ -302,6 +330,43 @@ function bindApiPresetInteractions(ctx, session) {
     addListener(container.querySelector('#phone-api-preset-key'), 'input', (event) => {
         session.state.draft.apiKey = String(event.currentTarget?.value || '');
     });
+    addListener(container.querySelector('#phone-api-preset-temperature'), 'input', (event) => {
+        const output = container.querySelector('#phone-api-preset-temperature-value');
+        if (output) output.textContent = Number(event.currentTarget.value).toFixed(2);
+    });
+    addListener(container.querySelector('#phone-api-preset-max-output-edit'), 'click', () => {
+        const outputInput = container.querySelector('#phone-api-preset-max-output');
+        if (!outputInput || outputInput.disabled) return;
+        const sheet = showSettingsSheet({
+            title: t("最大输出"),
+            bodyHtml: `<div class="phone-settings-page">
+                <section class="phone-ios-group">
+                    <label class="phone-ios-row is-block"><span class="phone-ios-field-label">${t("最大输出")}</span>
+                        <input class="phone-ios-field" type="number" min="1" max="131072" step="1" inputmode="numeric" value="${escapeHtmlAttr(outputInput.value)}" data-max-output aria-describedby="phone-api-output-error">
+                    </label>
+                </section>
+                <p class="phone-ios-group-footer phone-api-preset-error" id="phone-api-output-error" role="alert" hidden>${t("请输入 1–131072 之间的整数。")}</p>
+            </div>`,
+            runtime: pageRuntime,
+        });
+        if (!sheet) return;
+        const input = sheet.overlay.querySelector('[data-max-output]');
+        sheet.bind(sheet.overlay.querySelector('.phone-ios-sheet-done'), 'click', (event) => {
+            const raw = input.value.trim();
+            const value = Number(raw);
+            if (!/^\d+$/u.test(raw) || !Number.isSafeInteger(value) || value < 1 || value > 131072) {
+                event.stopImmediatePropagation();
+                input.setAttribute('aria-invalid', 'true');
+                sheet.overlay.querySelector('#phone-api-output-error').hidden = false;
+                input.focus();
+                return;
+            }
+            outputInput.value = String(value);
+            container.querySelector('#phone-api-preset-max-output-edit').textContent = String(value);
+            outputInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }, true);
+        requestAnimationFrame(() => { if (input.isConnected) input.focus(); });
+    });
     addListener(container.querySelector('#phone-api-preset-model-list'), 'change', (event) => {
         const model = asText(event.currentTarget?.value);
         if (!model) return;
@@ -317,9 +382,12 @@ function bindApiPresetInteractions(ctx, session) {
 
 export function createApiPresetsPage(ctx) {
     const session = createApiPresetSession(ctx);
+    let unbindGrouped = () => {};
     const paint = () => {
+        unbindGrouped();
         ctx.container.innerHTML = buildApiPresetsPageHtml(session.state);
         bindApiPresetInteractions(ctx, session);
+        unbindGrouped = bindSettingsGroupedControls(ctx.container, ctx.pageRuntime, () => !session.state.loading && !session.state.busy);
     };
     return {
         mount() {
@@ -328,7 +396,10 @@ export function createApiPresetsPage(ctx) {
             void session.load('', false);
         },
         update() { paint(); },
-        dispose() { session.deactivate(); },
+        dispose() {
+            unbindGrouped();
+            session.deactivate();
+        },
     };
 }
 

@@ -165,6 +165,8 @@ function buildBeautifyTemplatePageContextFromServices(services) {
             importPrepared: services.contentPresetWorkshop.importPrepared,
             exportPreset: services.contentPresetWorkshop.exportPreset,
             deletePreset: services.contentPresetWorkshop.deletePreset,
+            applyPreset: services.contentPresetWorkshop.applyPreset,
+            setQQActive: services.contentPresetWorkshop.setQQActive,
             setPageActive: services.contentPresetWorkshop.setPageActive,
             clearPageActive: services.contentPresetWorkshop.clearPageActive,
             clearAllPageActive: services.contentPresetWorkshop.clearAllPageActive,

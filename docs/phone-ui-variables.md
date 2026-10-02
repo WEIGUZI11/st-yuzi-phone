@@ -157,15 +157,28 @@ Dock 仍消费现有四个运行时入口；隐藏可视标签不等于删除名
 | 类型 | 类名 | 用途 |
 | --- | --- | --- |
 | 页面骨架 | `.phone-ios-grouped-page`（加在 body）/ `.phone-ios-group-header` / `.phone-ios-group` / `.phone-ios-group-footer` | 卡片外小标题、圆角卡片、卡片下灰色说明 |
-| 行 | `.phone-ios-row` + `.is-tappable` / `.is-action` / `.is-action.is-danger` / `.has-thumb` | 普通行、可点行（右侧 `.phone-ios-row-value` + `.phone-ios-row-chevron`）、整行操作、红字危险操作、带缩略图行 |
-| 行内元素 | `.phone-ios-row-label` / `.phone-ios-row-sub` / `.phone-ios-badge`（`.is-muted` / `.is-danger`）/ `.phone-ios-thumb` / `.phone-ios-row-del` / `.phone-ios-row-empty` | 标题、副标题、状态小标签、缩略图、行尾红字删除、空状态 |
+| 滚动分组 | `.phone-ios-group.is-scrollable` | 复用圆角卡片，内容超过 `--yuzi-settings-group-scroll-max-height`（默认 320px）时在卡片内纵向滚动；各分组独立滚动，外层不再嵌套旧列表限高 |
+| 行 | `.phone-ios-row` + `.is-tappable` / `.is-action` / `.is-action.is-danger` / `.has-thumb` / `.is-block` / `.is-disabled` | 普通行、可点行（右侧 `.phone-ios-row-value` + `.phone-ios-row-chevron`）、整行操作、红字危险操作、带缩略图行、块状表单行、禁用条目行 |
+| 行内元素 | `.phone-ios-row-label` / `.phone-ios-row-title` / `.phone-ios-row-sub` / `.phone-ios-badge`（`.is-muted` / `.is-danger`）/ `.phone-ios-thumb` / `.phone-ios-row-del` / `.phone-ios-row-empty`（`.is-danger`） | 标题、单行省略标题、副标题、状态小标签、缩略图、行尾红字删除、空状态与错误状态 |
+| 分组表单 | `.phone-ios-field-label` / `.phone-ios-field` / `.phone-ios-search-row` | 字段说明、分组内文本输入与多行输入、分组标题下的搜索框；复用手机表单主题隔离与聚焦反馈 |
+| 字段错误 | `.phone-ios-field[aria-invalid="true"]` | 公共危险色内描边；用 `aria-describedby` 关联对应错误说明，不另配输入框颜色 |
+| 行内操作 | `.phone-ios-row-actions` / `.phone-ios-mini-btn`（`.is-danger`）/ `.phone-ios-row-issues` | 状态行右侧紧凑操作按钮、危险操作与可换行的问题列表；读取世界书的 `.phone-worldbook-reading-summary` 支持窄屏换行 |
 | 控件 | `.phone-ios-seg` / `.phone-ios-switch` / `.phone-ios-stepper` / `.phone-ios-slider-row` / `.phone-ios-inline-input` / `.phone-ios-details` | 分段控件（2~3 项）、开关、−/+ 步进器、滑块、行内输入、折叠区 |
+| 精确数值入口 | `.phone-ios-stepper-value.is-editable` | 使用原生按钮显示数值，点按打开 `showSettingsSheet()` 精确输入；输入范围沿用绑定原生 input 的业务限制 |
+| 滑块读数 | `.phone-ios-slider-value` | 滑块旁的定宽数值；消费 `--yuzi-settings-slider-value-width`，拖动时同步更新 |
 | 组合块 | `.phone-ios-icon-grid` + `.phone-ios-icon-cell`（`.is-custom` / `.is-match`）/ `.phone-ios-pack-head` / `.phone-ios-font-preview` / `.phone-ios-usage-bar` | 图标网格、资源卡头、预览块、容量条 |
+| 悬浮按钮预览 | `.phone-toggle-cover-preview` / `.phone-toggle-preview-shell` / `.phone-toggle-preview-button`（`.is-circle` / `.is-rounded` / `.has-cover`） | 控件与按钮页的实时预览；消费 `--yuzi-settings-toggle-preview-*` 与现有 `--yuzi-phone-toggle-preview-size`，配色跟随公共设置主题 |
 | 弹层 | `showSettingsOptionSheet()` / `showSettingsSheet()` / `showSettingsActionSheet()` | 底部单选面板、底部内容面板、底部操作菜单；均挂在手机壳临时层，支持遮罩点击、Esc 关闭与焦点归还 |
 | 确认框 | `showConfirmDialog()` / `showAlertDialog()` | 全局居中确认框；危险操作必须二次确认，默认焦点在「取消」 |
 | 裁剪框 | `openImageCropDialog()`（`pickImageFile` 调用） | 居中卡片弹窗，画布底色 `--yuzi-phone-crop-stage-background` |
 
 控件桥规则：分组控件只换外观，数据仍走隐藏的原生 `select` / `input`。选择行用 `[data-settings-select="<select id>"]`，分段控件用 `.phone-ios-seg[data-settings-seg="<select id>"]`，步进器用 `.phone-ios-stepper[data-settings-stepper="<input id>"]`；页面调用 `bindSettingsGroupedControls(container, runtime)` 后，既有服务继续按原 id 监听 `change` / `input`。
+
+选择面板保留原生 option / optgroup 的禁用状态；步进器保留原生 input 的禁用状态，并在 input / change 后同步数值与边界按钮。分组内容中的 `[hidden]` 始终隐藏，不因公共行布局重新显示；开关默认值只读取已保存配置，不照搬原型示例值。
+
+分组行 `.phone-ios-row` 不消费旧 `.phone-appearance-check-item` 的布局；行内输入 `.phone-ios-inline-input` 与分组字段 `.phone-ios-field`（含多行输入）复用设置页已有的宿主主题隔离规则，正文、占位、光标、聚焦与禁用态跟随手机主题，不复制配色声明。外壳隔离层统一保持行内输入透明、无边框和阴影，避免宿主主题给文本输入额外绘制外框。
+
+选择行的隐藏原生控件放在分组末尾，不插在可见行之间，以保留公共行分割线。需要等待事务提交后才刷新当前值的页面使用 `[data-settings-defer-sync]`；`bindSettingsGroupedControls(container, runtime, canInteract)` 的可选交互闸门沿用页面已有的忙碌与销毁状态，提交中不开新面板，取消或失败不提前显示未保存的选择。
 
 | token 组 | 覆盖内容 |
 | --- | --- |
@@ -195,6 +208,7 @@ QQ 前端只消费 `--yuzi-qq-*` 语义变量，不在组件样式中写入颜�
 | `--yuzi-qq-bubble-self` / `--yuzi-qq-bubble-other` / `--yuzi-qq-danger` | 私聊消息气泡与危险操作状态 |
 | `--yuzi-qq-header-*` / `--yuzi-qq-nav-height` / `--yuzi-qq-nav-*` / `--yuzi-qq-page-padding` / `--yuzi-qq-max-content-width` | 四栏根页、二级页和全宽单列响应式布局；`max-content-width` 为兼容别名，最终值为 `100%` |
 | `--yuzi-qq-row-*` / `--yuzi-qq-message-*` | 会话、联系人、人物资料和消息行密度 |
+| `--yuzi-qq-image-library-grid-*` / `--yuzi-qq-image-library-item-radius` / `--yuzi-qq-image-library-heading-line-height` | 图片资料六类资源的四列网格、格间距、内边距、资源格圆角与分组标题排版 |
 | `--yuzi-qq-accent` / `--yuzi-qq-on-accent` | 当前用户头像：品牌蓝底与反色文字，只用于根身份头等“当前用户”身份 |
 | `--yuzi-qq-avatar-surface` / `--yuzi-qq-avatar-ink` | 人物占位头像：浅色为 `#f2f3f5 / #cacaca`，用于会话、联系人、聊天对方和人物资料；不得与当前用户头像共用 |
 | `--yuzi-qq-composer-*` / `--yuzi-qq-tool-*` / `--yuzi-qq-emoji-*` | 输入区、五类叙事工具、加号装饰入口和底部表情面板 |

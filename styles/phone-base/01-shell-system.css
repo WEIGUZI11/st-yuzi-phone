@@ -242,6 +242,13 @@
     opacity: var(--yuzi-phone-form-disabled-opacity);
 }
 
+/* 分组行内输入与卡片融为一体，不接受宿主主题的输入框外框。 */
+#yuzi-phone-standalone .yuzi-phone-shell input.phone-ios-inline-input {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
 /* Restore the browser checkbox only for controls that intentionally use one.
    Do not apply this to custom-drawn switches such as the table replacement toggle. */
 #yuzi-phone-standalone .yuzi-phone-shell :is(

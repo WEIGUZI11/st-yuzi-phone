@@ -1024,6 +1024,11 @@
     --yuzi-qq-settings-detail-card-padding-block: 0px;
     --yuzi-qq-settings-detail-card-padding-inline: 0px;
     --yuzi-qq-settings-detail-group-radius: var(--yuzi-qq-secondary-group-radius);
+    --yuzi-qq-image-library-grid-gap: 10px;
+    --yuzi-qq-image-library-grid-padding-block: 14px;
+    --yuzi-qq-image-library-grid-padding-inline: 12px;
+    --yuzi-qq-image-library-item-radius: 10px;
+    --yuzi-qq-image-library-heading-line-height: 1.3;
 }
 
 /* Resolve typography where the phone's live scale is inherited, not only at :root. */
@@ -1085,6 +1090,7 @@
     --yuzi-settings-group-radius: 12px;
     --yuzi-settings-group-block-gap: 22px;
     --yuzi-settings-group-stack-gap: 12px;
+    --yuzi-settings-group-scroll-max-height: 320px;
     --yuzi-settings-group-header-size: 13px;
     --yuzi-settings-group-header-gap: 6px;
     --yuzi-settings-group-text-inset: 4px;
@@ -1117,6 +1123,12 @@
     --yuzi-settings-thumb-radius: 9px;
     --yuzi-settings-preview-size: 52px;
     --yuzi-settings-preview-radius: 12px;
+    --yuzi-settings-toggle-preview-min-height: 140px;
+    --yuzi-settings-toggle-preview-width-ratio: 2.1;
+    --yuzi-settings-toggle-preview-icon-size: 18px;
+    --yuzi-settings-toggle-preview-blur: 14px;
+    --yuzi-settings-toggle-preview-saturation: 1.25;
+    --yuzi-settings-slider-value-width: 44px;
     --yuzi-settings-usage-bar-height: 6px;
     --yuzi-settings-usage-ratio: 0%;
     --yuzi-settings-icon-grid-columns: 4;

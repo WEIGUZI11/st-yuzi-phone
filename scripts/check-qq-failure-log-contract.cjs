@@ -31,10 +31,10 @@ async function main() {
     assert.ok(formatFailureLog(entry).includes('技术详情'));
     for (const response of ['', '短回复', '长'.repeat(1000)]) {
         const card = buildFailureLogCard({ ...entry, response });
-        assert.equal((card.match(/<details>/g) || []).length, 4, 'all four sections are collapsible');
+        assert.equal((card.match(/<details\b/g) || []).length, 4, 'all four sections are collapsible');
         assert.ok(!/<details\b[^>]*\bopen\b/.test(card), 'all sections start collapsed');
         for (const title of ['本次 AI 原始返回', '这次是什么问题', '你可以怎么做', '技术详情']) {
-            assert.ok(card.includes(`<summary>${title}</summary>`));
+            assert.ok(card.includes(`<span class="phone-ios-row-label">${title}</span>`));
         }
     }
     assert.ok(!JSON.stringify(entry).includes('哈吉米'));

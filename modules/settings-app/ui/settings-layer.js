@@ -65,7 +65,7 @@ export function mountSettingsLayer(overlay, runtime = null) {
     requestAnimationFrame(() => {
         if (closed) return;
         overlay.classList.add('is-visible');
-        const target = overlay.querySelector('[aria-selected="true"]') || overlay.querySelector('button:not(:disabled)');
+        const target = overlay.querySelector('[aria-selected="true"]:not(:disabled)') || overlay.querySelector('button:not(:disabled)');
         target?.focus?.({ preventScroll: true });
     });
 
@@ -76,17 +76,26 @@ export function mountSettingsLayer(overlay, runtime = null) {
  * 底部面板骨架：抓手条 + 标题（可选副标题）+「完成」+ 可滚动内容。
  * bodyHtml 由调用方负责转义。
  */
-export function showSettingsSheet({ title = '', subtitle = '', bodyHtml = '', footer = '', runtime = null } = {}) {
+export function showSettingsSheet({
+    title = '',
+    subtitle = '',
+    bodyHtml = '',
+    footer = '',
+    className = '',
+    doneText = t`完成`,
+    onDone = null,
+    runtime = null,
+} = {}) {
     const titleId = nextLayerId('phone-ios-sheet-title');
     const overlay = document.createElement('div');
-    overlay.className = 'phone-ios-layer';
+    overlay.className = `phone-ios-layer${className ? ` ${className}` : ''}`;
     overlay.innerHTML = `
         <section class="phone-ios-sheet" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
             <div class="phone-ios-sheet-grabber" aria-hidden="true"></div>
             <header class="phone-ios-sheet-head">
                 <h2 class="phone-ios-sheet-title" id="${titleId}">${escapeHtml(title)}</h2>
                 ${subtitle ? `<p class="phone-ios-sheet-subtitle">${escapeHtml(subtitle)}</p>` : ''}
-                <button type="button" class="phone-ios-sheet-done">${t`完成`}</button>
+                <button type="button" class="phone-ios-sheet-done">${escapeHtml(doneText)}</button>
             </header>
             <div class="phone-ios-sheet-body">
                 ${bodyHtml}
@@ -97,7 +106,10 @@ export function showSettingsSheet({ title = '', subtitle = '', bodyHtml = '', fo
 
     const layer = mountSettingsLayer(overlay, runtime);
     if (!layer) return null;
-    layer.bind(overlay.querySelector('.phone-ios-sheet-done'), 'click', layer.close);
+    layer.bind(overlay.querySelector('.phone-ios-sheet-done'), 'click', () => {
+        if (onDone?.(overlay) === false) return;
+        layer.close();
+    });
     return { ...layer, overlay };
 }
 
@@ -110,7 +122,7 @@ function buildOptionHtml(option, index) {
         ? `<span class="phone-ios-row-sub">${escapeHtml(option.sub)}</span>`
         : '';
     return `
-        <button type="button" class="phone-ios-row phone-ios-option${thumbHtml ? ' has-thumb' : ''}" role="option" aria-selected="${option.selected ? 'true' : 'false'}" data-option-index="${index}">
+        <button type="button" class="phone-ios-row phone-ios-option${thumbHtml ? ' has-thumb' : ''}${option.disabled ? ' is-disabled' : ''}" role="option" aria-selected="${option.selected ? 'true' : 'false'}" data-option-index="${index}"${option.disabled ? ' disabled' : ''}>
             ${thumbHtml}
             <span class="phone-ios-row-label">${escapeHtml(option.label)}${badgeHtml}${subHtml}</span>
             <span class="phone-ios-option-check" aria-hidden="true">✓</span>
@@ -120,9 +132,17 @@ function buildOptionHtml(option, index) {
 
 /**
  * 单选面板：选项分组显示，当前项右侧打勾，点选后关闭并回调。
- * @param {{ title: string, subtitle?: string, groups: Array<{ header?: string, options: Array<{ value: string, label: string, sub?: string, badge?: string, thumbHtml?: string, selected?: boolean }> }>, footer?: string, onSelect: Function, runtime?: object }} config
+ * @param {{ title: string, subtitle?: string, groups: Array<{ header?: string, options: Array<{ value: string, label: string, sub?: string, badge?: string, thumbHtml?: string, selected?: boolean, disabled?: boolean }> }>, footer?: string, onSelect: Function, runtime?: object }} config
  */
-export function showSettingsOptionSheet({ title = '', subtitle = '', groups = [], footer = '', onSelect, runtime = null } = {}) {
+export function showSettingsOptionSheet({
+    title = '',
+    subtitle = '',
+    groups = [],
+    footer = '',
+    className = '',
+    onSelect,
+    runtime = null,
+} = {}) {
     const flatOptions = [];
     const bodyHtml = groups
         .filter(group => Array.isArray(group?.options) && group.options.length > 0)
@@ -137,13 +157,14 @@ export function showSettingsOptionSheet({ title = '', subtitle = '', groups = []
             `;
         }).join('');
 
-    const sheet = showSettingsSheet({ title, subtitle, bodyHtml, footer, runtime });
+    const sheet = showSettingsSheet({ title, subtitle, bodyHtml, footer, className, runtime });
     if (!sheet) return null;
     sheet.overlay.querySelectorAll('[data-option-index]').forEach((button) => {
         sheet.bind(button, 'click', () => {
             const option = flatOptions[Number(button.getAttribute('data-option-index'))];
+            if (!option || option.disabled) return;
             sheet.close();
-            if (option && !option.selected) onSelect?.(option.value, option);
+            if (!option.selected) onSelect?.(option.value, option);
         });
     });
     return sheet.close;

@@ -1,5 +1,8 @@
 import { t } from '../../i18n/index.js';
+import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { buildFullscreenOverlayPageHtml } from '../layout/page-builders/fullscreen-overlay-builders.js';
+import { bindSettingsGroupedControls } from '../ui/settings-controls.js';
+import { showSettingsSheet } from '../ui/settings-layer.js';
 import {
     createFullscreenOverlayColorControl,
     createFullscreenOverlaySingleColorControl,
@@ -88,6 +91,7 @@ export function createFullscreenOverlayPage(ctx) {
     let generation = 0;
     let eventCleanups = [];
     let colorControl = null;
+    let groupedCleanup = () => {};
 
     const notify = (message, isError = false) => {
         ctx.showToast?.(ctx.container, message, isError, ctx.pageRuntime);
@@ -98,6 +102,8 @@ export function createFullscreenOverlayPage(ctx) {
     const clearBindings = () => {
         colorControl?.dispose?.();
         colorControl = null;
+        groupedCleanup();
+        groupedCleanup = () => {};
         eventCleanups.splice(0).forEach((cleanup) => {
             if (typeof cleanup === 'function') cleanup();
         });
@@ -157,6 +163,53 @@ export function createFullscreenOverlayPage(ctx) {
         bind(input, 'change', () => {
             const patch = toPatch(Number(input.value));
             void persist(updateModel(state.config, modelId, patch));
+        });
+    };
+
+    const bindPreciseNumericInputs = () => {
+        const buttons = ctx.container?.querySelectorAll?.('[data-fullscreen-overlay-precise]') || [];
+        buttons.forEach((button) => {
+            bind(button, 'click', () => {
+                const inputId = button.getAttribute('data-fullscreen-overlay-precise');
+                const input = inputId ? ctx.container?.querySelector?.(`#${CSS.escape(inputId)}`) : null;
+                if (!input || input.disabled) return;
+                const label = button.closest('.phone-fullscreen-overlay-parameter-row')
+                    ?.querySelector('.phone-fullscreen-overlay-parameter-label')?.textContent?.trim()
+                    || t("输入数值");
+                const sheet = showSettingsSheet({
+                    title: label,
+                    bodyHtml: `
+                        <div class="phone-settings-page">
+                            <section class="phone-ios-group">
+                                <label class="phone-ios-row is-block">
+                                    <span class="phone-ios-field-label">${escapeHtml(label)}</span>
+                                    <input class="phone-ios-field" type="number"
+                                        min="${escapeHtmlAttr(input.min)}"
+                                        max="${escapeHtmlAttr(input.max)}"
+                                        step="${escapeHtmlAttr(input.step)}"
+                                        value="${escapeHtmlAttr(input.value)}"
+                                        data-fullscreen-overlay-precise-input>
+                                </label>
+                            </section>
+                        </div>
+                    `,
+                    runtime: ctx.pageRuntime,
+                });
+                if (!sheet) return;
+                const preciseInput = sheet.overlay.querySelector('[data-fullscreen-overlay-precise-input]');
+                sheet.bind(sheet.overlay.querySelector('.phone-ios-sheet-done'), 'click', (event) => {
+                    const value = Number(preciseInput?.value);
+                    const min = Number(input.min);
+                    const max = Number(input.max);
+                    if (!Number.isFinite(value) || value < min || value > max) {
+                        event.stopImmediatePropagation();
+                        preciseInput?.focus();
+                        return;
+                    }
+                    input.value = String(value);
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }, true);
+            });
         });
     };
 
@@ -265,6 +318,7 @@ export function createFullscreenOverlayPage(ctx) {
         bindNumericSetting('#phone-fullscreen-overlay-opacity', SCROLLING_BARRAGE_MODEL_ID, value => ({
             opacity: value,
         }));
+        bindPreciseNumericInputs();
 
         const popupAreaInput = ctx.container?.querySelector?.(
             '#phone-fullscreen-overlay-popup-area',
@@ -372,6 +426,12 @@ export function createFullscreenOverlayPage(ctx) {
             if (result?.ok === true) notify(t("已清空当前内容。"));
             else notify(getActionMessage(result?.code, t("清空浮层失败，请稍后重试。")), true);
         });
+
+        groupedCleanup = bindSettingsGroupedControls(
+            ctx.container,
+            ctx.pageRuntime,
+            () => state.status === 'ready',
+        );
     };
 
     function paint() {

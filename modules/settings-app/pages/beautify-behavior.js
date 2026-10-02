@@ -11,12 +11,13 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
         busy = true;
         if (button) button.disabled = true;
         try {
-            await operation();
+            const result = await operation();
             if (isDisposed()) return;
             await waitForCommittedRefresh?.();
             if (isDisposed()) return;
-            notify(successMessage);
+            notify(typeof successMessage === 'function' ? successMessage(result) : successMessage);
         } catch (error) {
+            if (button?.dataset?.contentPresetCurrentValue !== undefined) button.value = button.dataset.contentPresetCurrentValue;
             if (!isDisposed()) notify(error?.message || t("操作失败"), true);
         } finally {
             busy = false;
@@ -54,6 +55,7 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
                     },
                 );
             } else if (!isDisposed()) {
+                if (select?.isConnected) select.value = String(select.dataset?.contentPresetCurrentValue || '');
                 notify(error?.message || t("操作失败"), true);
             }
         } finally {
@@ -146,6 +148,10 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
             const result = await service.exportPreset(presetId);
             downloadTextFile(result.filename, result.text, result.mimeType);
         }, t("预设已导出"));
+        if (action === 'apply-preset') return void run(button, () => service.applyPreset(presetId), result => (
+            t`已应用：页面 ${result.pageCount}、弹窗 ${result.popupCount}、底部 ${result.bottomCount}、QQ ${result.qqCount} 项`
+            + (result.skippedCount ? t`；${result.skippedCount} 项未匹配或不可用` : '')
+        ));
         if (action === 'delete') return confirm(t("删除完整预设？"), t`将删除预设 ${presetId}，并原子清除引用它的表格及 QQ 应用绑定；已收入 QQ 图库的素材仍保留。`, t("确认删除"), () => run(button, () => service.deletePreset(presetId), t("预设已删除")));
         if (action === 'activate') return void run(button, () => service.setActive(sheetKey, presetId, itemId), t("已设为当前美化"));
         if (action === 'clear') return void run(button, () => service.clearActive(sheetKey), t("该表已恢复默认展示"));
@@ -154,7 +160,7 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
         if (action === 'clear-all-bottom') return confirm(t("全部恢复底部默认？"), t("将清除全部底部可视化美化应用，但保留页面美化、弹窗应用和已导入预设。"), t("确认清除"), () => run(button, () => service.clearAllBottomActive(), t("全部底部可视化已恢复默认")));
     };
 
-        const attachPageInteractions = () => {
+    const attachPageInteractions = () => {
         const handleClick = (event) => {
             const target = event.target;
             if (!(target instanceof Element)) return;
@@ -174,5 +180,5 @@ export function createBeautifyPageBehavior(params = {}, deps = {}) {
         };
     };
 
-    return { attachPageInteractions };
+    return { attachPageInteractions, canInteract: () => !busy && !isDisposed() };
 }

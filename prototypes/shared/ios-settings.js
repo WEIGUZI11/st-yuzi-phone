@@ -324,6 +324,14 @@
         });
         draw();
         openLayer(el, { onDismiss: onCancel, focusSelector: '[data-crop="cancel"]' });
+        // 原型手机尺寸固定：开窗时按画布的宽、高同时约束，长图也完整等比居中。
+        const wrap = el.querySelector('.crop-stage-wrap');
+        const padding = getComputedStyle(wrap);
+        const maxWidth = wrap.clientWidth - parseFloat(padding.paddingLeft) - parseFloat(padding.paddingRight);
+        const maxHeight = wrap.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom);
+        const width = Math.min(maxWidth, maxHeight * aw / ah);
+        stage.style.width = `${width}px`;
+        stage.style.height = `${width * ah / aw}px`;
     };
 
     // ===== 自动初始化（document 事件委托，动态插入的内容同样生效） =====

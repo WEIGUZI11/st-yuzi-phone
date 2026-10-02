@@ -1,9 +1,10 @@
 import { t } from '../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
 import { QQ_V2_PROMPT_PLACEHOLDER_DEFINITIONS } from '../../qq-v2/prompt/placeholders.js';
-import { buildSettingsPageFrame, buildSettingsSectionHtml } from '../layout/primitives.js';
+import { buildSettingsPageFrame } from '../layout/primitives.js';
 import { downloadTextFile } from '../services/media-upload/download.js';
 import { showAlertDialog, showConfirmDialog } from '../ui/confirm-dialog.js';
+import { bindSettingsGroupedControls } from '../ui/settings-controls.js';
 import {
     AI_INSTRUCTION_PROMPT_ROLES,
     createAiInstructionDraft,
@@ -22,6 +23,14 @@ function getErrorMessage(result, fallback) {
 
 function filenamePart(value) {
     return asText(value).replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]+/g, '-').slice(0, 80) || 'preset';
+}
+
+function snapshotDraft(draft) {
+    const normalized = createAiInstructionDraft(draft);
+    return JSON.stringify({
+        name: normalized.name,
+        messages: normalized.messages.map(({ name, role, content }) => [name, role, content]),
+    });
 }
 
 function buildPresetOptions(presets, selectedPresetId) {
@@ -44,39 +53,47 @@ function buildRoleOptions(role) {
 
 function buildPlaceholderGuide() {
     const items = QQ_V2_PROMPT_PLACEHOLDER_DEFINITIONS.map(({ token, description }) => `
-        <li><code>${escapeHtml(token)}</code><span>${escapeHtml(t(description))}</span></li>
+        <div class="phone-ios-row is-block phone-ai-preset-placeholder-row">
+            <code>${escapeHtml(token)}</code>
+            <span class="phone-ios-row-sub">${escapeHtml(t(description))}</span>
+        </div>
     `).join('');
-    return buildSettingsSectionHtml({
-        title: t("占位符说明"),
-        desc: t("把占位符写入任意消息块内容，发起请求时会替换为对应资料。"),
-        bodyHtml: `<ul class="phone-ai-preset-placeholder-list">${items}</ul>`,
-    });
+    return `
+        <h2 class="phone-ios-group-header">${t("占位符说明")}</h2>
+        <section class="phone-ios-group phone-ai-preset-placeholder-grid">${items}</section>
+        <p class="phone-ios-group-footer">${t("把占位符写入任意消息块内容，发起请求时会替换为对应资料。")}</p>
+    `;
 }
 
 function buildMessageBlocks(messages, disabled) {
-    if (messages.length === 0) return `<div class="phone-empty-msg">${t("当前预设没有消息块。")}</div>`;
+    if (messages.length === 0) {
+        return `<section class="phone-ios-group"><div class="phone-ios-row phone-ios-row-empty">${t("当前预设没有消息块。")}</div></section>`;
+    }
     return messages.map((message, index) => `
-        <article class="phone-ai-preset-segment-card" data-message-index="${index}">
+        <article class="phone-ios-group phone-ai-preset-segment-card" data-message-index="${index}">
             <div class="phone-ai-preset-segment-toolbar">
                 <span class="phone-ai-preset-segment-index">#${index + 1}</span>
                 <div class="phone-ai-preset-segment-toolbar-actions">
-                    <button type="button" class="phone-settings-btn phone-ai-message-up-btn" data-message-index="${index}" ${index === 0 || disabled ? 'disabled' : ''}>${t`上移`}</button>
-                    <button type="button" class="phone-settings-btn phone-ai-message-down-btn" data-message-index="${index}" ${index === messages.length - 1 || disabled ? 'disabled' : ''}>${t`下移`}</button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-danger phone-ai-message-delete-btn" data-message-index="${index}" ${disabled}>${t`删除`}</button>
+                    <button type="button" class="phone-ios-mini-btn phone-ai-message-up-btn" data-message-index="${index}" ${index === 0 || disabled ? 'disabled' : ''}>${t`上移`}</button>
+                    <button type="button" class="phone-ios-mini-btn phone-ai-message-down-btn" data-message-index="${index}" ${index === messages.length - 1 || disabled ? 'disabled' : ''}>${t`下移`}</button>
+                    <button type="button" class="phone-ios-mini-btn is-danger phone-ai-message-delete-btn" data-message-index="${index}" ${disabled}>${t`删除`}</button>
                 </div>
             </div>
-            <label class="phone-ai-preset-segment-field">
-                <span>${t`消息块名称`}</span>
-                <input class="phone-settings-input phone-ai-preset-segment-name-input phone-ai-message-name" maxlength="120" value="${escapeHtmlAttr(message.name)}" ${disabled}>
+            <label class="phone-ios-row">
+                <span class="phone-ios-row-field-label">${t`消息块名称`}</span>
+                <input class="phone-ios-inline-input phone-ai-message-name" maxlength="120" value="${escapeHtmlAttr(message.name)}" ${disabled}>
             </label>
-            <label class="phone-ai-preset-segment-field">
-                <span>${t`角色`}</span>
-                <select class="phone-settings-select phone-ai-message-role" ${disabled}>${buildRoleOptions(message.role)}</select>
+            <div class="phone-ios-row">
+                <span class="phone-ios-row-label">${t`角色`}</span>
+                <div class="phone-ios-seg" data-settings-seg="phone-ai-message-role-${index}" role="group" aria-label="${t`角色`}">
+                    ${AI_INSTRUCTION_PROMPT_ROLES.map(role => `<button type="button" class="phone-ios-seg-item" data-value="${role}" aria-pressed="${role === message.role}" ${disabled}>${role}</button>`).join('')}
+                </div>
+            </div>
+            <label class="phone-ios-row is-block">
+                <span class="phone-ios-field-label">${t`内容`}</span>
+                <textarea class="phone-ios-field phone-ai-message-content" rows="8" ${disabled}>${escapeHtml(message.content)}</textarea>
             </label>
-            <label class="phone-ai-preset-segment-field">
-                <span>${t`内容`}</span>
-                <textarea class="phone-settings-textarea phone-ai-message-content" rows="8" ${disabled}>${escapeHtml(message.content)}</textarea>
-            </label>
+            <select id="phone-ai-message-role-${index}" class="phone-ai-message-role" hidden ${disabled}>${buildRoleOptions(message.role)}</select>
         </article>
     `).join('');
 }
@@ -87,53 +104,62 @@ function buildAiInstructionPresetsPageHtml(pageState) {
     const canDelete = draft.presetId && !draft.isBuiltIn && !disabled;
     const canRestoreCurrent = draft.presetId && draft.isBuiltIn && !disabled;
     const suspiciousEmptyCount = findMisreadControlMessages(draft.messages).indexes.length;
+    const preset = pageState.presets.find(item => item.presetId === pageState.selectedPresetId);
+    const presetLabel = preset
+        ? `${preset.name || t("未命名预设")}${preset.isBuiltIn ? t("（内置）") : ''}`
+        : t("新建 AI 指令预设（未保存）");
+    const isDirty = snapshotDraft(draft) !== pageState.savedSnapshot;
     const status = pageState.error
-        ? `<div class="phone-settings-inline-status is-danger"><span class="phone-settings-inline-status-text">${escapeHtml(pageState.error)}</span></div>`
-        : pageState.loading
-            ? `<div class="phone-settings-note">${t("正在读取 AI 指令预设...")}</div>`
-            : '';
-    const managementSection = buildSettingsSectionHtml({
-        title: t("AI 指令预设"),
-        extraClass: 'phone-ai-instruction-presets-section',
-        bodyHtml: `
-            ${status}
-            <div class="phone-settings-action phone-settings-action-wrap phone-ai-preset-management-actions">
-                <button type="button" class="phone-settings-btn" id="phone-ai-instruction-import-btn" ${disabled}>${t`导入`}</button>
-                <button type="button" class="phone-settings-btn" id="phone-ai-instruction-export-current-btn" ${draft.presetId && !disabled ? '' : 'disabled'}>${t`导出当前`}</button>
-                <button type="button" class="phone-settings-btn" id="phone-ai-instruction-export-all-btn" ${pageState.presets.length && !disabled ? '' : 'disabled'}>${t`导出全部`}</button>
-                <button type="button" class="phone-settings-btn" id="phone-ai-instruction-restore-current-btn" ${canRestoreCurrent ? '' : 'disabled'}>${t`恢复当前`}</button>
-                <button type="button" class="phone-settings-btn" id="phone-ai-instruction-restore-all-btn" ${disabled}>${t`恢复全部`}</button>
-                <input type="file" id="phone-ai-instruction-import-file" accept="application/json,.json" hidden ${disabled}>
-            </div>
-            <label class="phone-ai-preset-segment-field">
-                <span>${t`选择预设`}</span>
-                <select id="phone-ai-instruction-preset-select" class="phone-settings-select" ${disabled}>${buildPresetOptions(pageState.presets, pageState.selectedPresetId)}</select>
+        ? `<div class="phone-ios-row phone-ios-row-empty is-danger" role="alert">${escapeHtml(pageState.error)}</div>`
+        : `<div class="phone-ios-row phone-ios-row-empty" role="status">${t("正在读取 AI 指令预设...")}</div>`;
+    const action = (id, label, disabledAttr = disabled, danger = false, hidden = false) => `
+        <button type="button" class="phone-ios-row is-action${danger ? ' is-danger' : ''}" id="${id}" ${disabledAttr} ${hidden ? 'hidden' : ''}>${label}</button>`;
+    const managementSection = `
+        ${pageState.loading || pageState.error ? `<section class="phone-ios-group">${status}</section>` : ''}
+        <h2 class="phone-ios-group-header">${t("AI 指令预设")}</h2>
+        <section class="phone-ios-group">
+            <button type="button" class="phone-ios-row is-tappable" data-settings-select="phone-ai-instruction-preset-select" aria-haspopup="dialog" ${disabled}>
+                <span class="phone-ios-row-label">${t`选择预设`}<span class="phone-ios-badge is-danger" id="phone-ai-instruction-dirty-badge"${isDirty ? '' : ' hidden'}>${t`未保存`}</span></span>
+                <span class="phone-ios-row-value"><span class="phone-ios-row-value-text">${escapeHtml(presetLabel)}</span><span class="phone-ios-row-chevron" aria-hidden="true">›</span></span>
+            </button>
+            <label class="phone-ios-row">
+                <span class="phone-ios-row-field-label">${t`预设名称`}</span>
+                <input id="phone-ai-instruction-preset-name" class="phone-ios-inline-input" maxlength="120" value="${escapeHtmlAttr(draft.name)}" ${disabled}>
             </label>
-            <div class="phone-settings-action-row">
-                <button type="button" class="phone-settings-btn" id="phone-ai-instruction-new-btn" ${disabled}>${t`新建 AI 指令预设`}</button>
-            </div>
-            <label class="phone-ai-preset-segment-field">
-                <span>${t`预设名称`}</span>
-                <input id="phone-ai-instruction-preset-name" class="phone-settings-input" maxlength="120" value="${escapeHtmlAttr(draft.name)}" ${disabled}>
-            </label>
-        `,
-    });
-    const messagesSection = buildSettingsSectionHtml({
-        title: t("消息块"),
-        actionsHtml: `<button type="button" class="phone-settings-btn" id="phone-ai-instruction-add-message-btn" ${disabled}>${t`添加消息块`}</button>`,
-        bodyHtml: `
-            <div class="phone-settings-action-row phone-ai-preset-save-actions">
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary" id="phone-ai-instruction-save-btn" ${disabled}>${t`保存预设`}</button>
-                <button type="button" class="phone-settings-btn" id="phone-ai-instruction-save-as-btn" ${disabled}>${t`另存为`}</button>
-                <button type="button" class="phone-settings-btn phone-settings-btn-danger" id="phone-ai-instruction-delete-btn" ${canDelete ? '' : 'disabled'}>${t`删除预设`}</button>
-                ${suspiciousEmptyCount >= 3 ? `<button type="button" class="phone-settings-btn" id="phone-ai-instruction-cleanup-btn" ${disabled}>${t`清理疑似异常空块（${suspiciousEmptyCount}）`}</button>` : ''}
-            </div>
+            ${action('phone-ai-instruction-new-btn', t("新建 AI 指令预设"))}
+            <select id="phone-ai-instruction-preset-select" hidden ${disabled}>${buildPresetOptions(pageState.presets, pageState.selectedPresetId)}</select>
+        </section>
+        <h2 class="phone-ios-group-header">${t("导入、导出与恢复")}</h2>
+        <section class="phone-ios-group">
+            ${action('phone-ai-instruction-import-btn', t("导入"))}
+            ${action('phone-ai-instruction-export-current-btn', t("导出当前"), draft.presetId && !disabled ? '' : 'disabled')}
+            ${action('phone-ai-instruction-export-all-btn', t("导出全部"), pageState.presets.length && !disabled ? '' : 'disabled')}
+            ${action('phone-ai-instruction-restore-current-btn', t("恢复当前"), canRestoreCurrent ? '' : 'disabled')}
+            ${action('phone-ai-instruction-restore-all-btn', t("恢复全部"))}
+            <input type="file" id="phone-ai-instruction-import-file" accept="application/json,.json" hidden ${disabled}>
+        </section>
+        <p class="phone-ios-group-footer">${t("导入 JSON 文件。「恢复当前」仅对内置预设可用；「恢复全部」恢复全部内置预设，自定义预设不会删除。")}</p>
+        <h2 class="phone-ios-group-header">${t("保存")}</h2>
+        <section class="phone-ios-group">
+            ${action('phone-ai-instruction-save-btn', t("保存预设"))}
+            ${action('phone-ai-instruction-save-as-btn', t("另存为"))}
+            ${action('phone-ai-instruction-delete-btn', t("删除预设"), canDelete ? '' : 'disabled', true)}
+            ${action('phone-ai-instruction-cleanup-btn', t`清理疑似异常空块（${suspiciousEmptyCount}）`, disabled, false, suspiciousEmptyCount < 3)}
+        </section>
+        <p class="phone-ios-group-footer">${t("名称不能与已有预设重复；内置预设不可删除。")}</p>
+    `;
+    const messagesSection = `
+        <h2 class="phone-ios-group-header">${t("消息块")}</h2>
+        <div class="phone-ai-preset-segment-stack">
+            <section class="phone-ios-group">${action('phone-ai-instruction-add-message-top-btn', `＋ ${t("添加消息块")}`)}</section>
             <div id="phone-ai-instruction-message-stack" class="phone-ai-preset-segment-stack">${buildMessageBlocks(draft.messages, disabled)}</div>
-        `,
-    });
+            <section class="phone-ios-group">${action('phone-ai-instruction-add-message-btn', `＋ ${t("添加消息块")}`)}</section>
+        </div>
+        <p class="phone-ios-group-footer">${t("消息块按顺序拼成请求，可用上移 / 下移调整顺序。")}</p>
+    `;
     return buildSettingsPageFrame({
         title: t("AI 指令预设"),
-        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open',
+        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-ios-grouped-page phone-ai-instruction-presets-page',
         bodyHtml: `${managementSection}${messagesSection}${buildPlaceholderGuide()}`,
     });
 }
@@ -146,6 +172,7 @@ function createAiInstructionPresetSession(ctx) {
         presets: [],
         selectedPresetId: '',
         draft: createNewAiInstructionDraft(),
+        savedSnapshot: '',
     };
     let active = false;
     let generation = 0;
@@ -189,16 +216,22 @@ function createAiInstructionPresetSession(ctx) {
         const selected = findPreset(selectedPresetId) || findPreset(state.selectedPresetId) || state.presets[0] || null;
         state.selectedPresetId = asText(selected?.presetId);
         state.draft = selected ? createAiInstructionDraft(selected) : createNewAiInstructionDraft();
+        state.savedSnapshot = snapshotDraft(state.draft);
         repaint();
         return true;
     };
 
-    const select = (presetId) => {
+    const isDirty = draft => snapshotDraft(draft || state.draft) !== state.savedSnapshot;
+
+    const select = (presetId, force = false) => {
         if (state.busy) return;
+        if (!force && isDirty()) return false;
         const selected = findPreset(presetId);
         state.selectedPresetId = asText(selected?.presetId);
         state.draft = selected ? createAiInstructionDraft(selected) : createNewAiInstructionDraft();
+        state.savedSnapshot = snapshotDraft(state.draft);
         repaint();
+        return true;
     };
 
     const save = async (draft, saveAs = false) => {
@@ -278,7 +311,7 @@ function createAiInstructionPresetSession(ctx) {
             repaint();
             return false;
         }
-        notify(t("四份内置预设已恢复"));
+        notify(t("五份内置预设已恢复"));
         return load(state.selectedPresetId, false);
     };
 
@@ -338,12 +371,16 @@ function createAiInstructionPresetSession(ctx) {
         deactivate() { active = false; generation += 1; },
         load,
         select,
-        newPreset() {
+        newPreset(force = false) {
             if (state.busy) return;
+            if (!force && isDirty()) return false;
             state.selectedPresetId = '';
             state.draft = createNewAiInstructionDraft();
+            state.savedSnapshot = snapshotDraft(state.draft);
             repaint();
+            return true;
         },
+        isDirty,
         save,
         saveAs(draft) { return save(draft, true); },
         remove,
@@ -352,8 +389,12 @@ function createAiInstructionPresetSession(ctx) {
         importFile,
         exportCurrent,
         exportAll,
-        addMessage(draft) {
-            state.draft = createAiInstructionDraft({ ...state.draft, ...draft, messages: [...draft.messages, { id: '', name: '新消息块', role: 'system', content: '' }] });
+        addMessage(draft, atStart = false) {
+            const message = { id: '', name: '新消息块', role: 'system', content: '' };
+            const messages = atStart
+                ? [message, ...draft.messages]
+                : [...draft.messages, message];
+            state.draft = createAiInstructionDraft({ ...state.draft, ...draft, messages });
             repaint();
         },
         moveMessage(draft, fromIndex, toIndex) {
@@ -390,16 +431,64 @@ function bindAiInstructionPresetInteractions(ctx, session) {
             content: String(block.querySelector('.phone-ai-message-content')?.value || ''),
         })),
     });
+    const confirmDiscard = (continueAction) => {
+        if (!session.isDirty(readDraft())) {
+            continueAction();
+            return;
+        }
+        showConfirmDialog(
+            container,
+            t("放弃未保存的修改？"),
+            t("当前草稿的修改尚未保存，切换后将丢失。"),
+            continueAction,
+            t("放弃"),
+            t("取消"),
+            pageRuntime,
+        );
+    };
 
     addListener(container.querySelector('.phone-nav-back'), 'click', () => { state.mode = 'home'; render(); });
-    addListener(container.querySelector('#phone-ai-instruction-preset-select'), 'change', (event) => session.select(event.currentTarget?.value));
-    addListener(container.querySelector('#phone-ai-instruction-new-btn'), 'click', () => session.newPreset());
+    addListener(container, 'input', () => {
+        session.state.draft = createAiInstructionDraft(readDraft());
+        const badge = container.querySelector('#phone-ai-instruction-dirty-badge');
+        if (badge) badge.hidden = !session.isDirty(session.state.draft);
+    });
+    container.querySelectorAll('.phone-ai-preset-segment-card .phone-ios-seg-item').forEach((button) => {
+        addListener(button, 'click', () => {
+            const badge = container.querySelector('#phone-ai-instruction-dirty-badge');
+            if (badge) badge.hidden = false;
+        });
+    });
+    addListener(container.querySelector('#phone-ai-instruction-preset-select'), 'change', (event) => {
+        const select = event.currentTarget;
+        const nextId = select?.value || '';
+        if (!session.isDirty(readDraft())) {
+            session.select(nextId);
+            return;
+        }
+        select.value = state.selectedPresetId || '';
+        const selectedOption = select.selectedOptions?.[0];
+        const valueText = container.querySelector('[data-settings-select="phone-ai-instruction-preset-select"] .phone-ios-row-value-text');
+        if (valueText && selectedOption) valueText.textContent = selectedOption.textContent.trim();
+        showConfirmDialog(
+            container,
+            t("放弃未保存的修改？"),
+            t("当前草稿的修改尚未保存，切换后将丢失。"),
+            () => { session.select(nextId, true); },
+            t("放弃"),
+            t("取消"),
+            pageRuntime,
+        );
+    });
+    addListener(container.querySelector('#phone-ai-instruction-new-btn'), 'click', () => {
+        confirmDiscard(() => session.newPreset(true));
+    });
     addListener(container.querySelector('#phone-ai-instruction-save-btn'), 'click', () => { void session.save(readDraft()); });
     addListener(container.querySelector('#phone-ai-instruction-save-as-btn'), 'click', () => { void session.saveAs(readDraft()); });
     addListener(container.querySelector('#phone-ai-instruction-add-message-btn'), 'click', () => session.addMessage(readDraft()));
-    addListener(container.querySelector('#phone-ai-instruction-restore-current-btn'), 'click', () => { void session.restoreCurrent(); });
+    addListener(container.querySelector('#phone-ai-instruction-add-message-top-btn'), 'click', () => session.addMessage(readDraft(), true));
     addListener(container.querySelector('#phone-ai-instruction-restore-all-btn'), 'click', () => {
-        showConfirmDialog(container, t("恢复全部内置预设"), t("将恢复四份内置预设，自定义预设不会删除。"), () => { void session.restoreAll(); }, t("恢复"), t("取消"), pageRuntime);
+        showConfirmDialog(container, t("恢复全部内置预设"), t("将恢复五份内置预设，自定义预设不会删除。"), () => { void session.restoreAll(); }, t("恢复"), t("取消"), pageRuntime);
     });
     addListener(container.querySelector('#phone-ai-instruction-delete-btn'), 'click', () => {
         const draft = readDraft();
@@ -437,15 +526,41 @@ function bindAiInstructionPresetInteractions(ctx, session) {
         session.moveMessage(readDraft(), index, index + 1);
     }));
     container.querySelectorAll('.phone-ai-message-delete-btn').forEach((button) => addListener(button, 'click', () => {
-        session.deleteMessage(readDraft(), Number(button.dataset.messageIndex));
+        const index = Number(button.dataset.messageIndex);
+        const draft = readDraft();
+        const message = draft.messages[index];
+        showConfirmDialog(
+            container,
+            t("删除消息块"),
+            t`确定删除「${message?.name || t("未命名消息块")}」吗？删除后需保存预设才会生效。`,
+            () => session.deleteMessage(draft, index),
+            t("删除"),
+            t("取消"),
+            pageRuntime,
+        );
     }));
+    addListener(container.querySelector('#phone-ai-instruction-restore-current-btn'), 'click', () => {
+        const draft = readDraft();
+        showConfirmDialog(
+            container,
+            t("恢复内置预设"),
+            t`将用内置内容覆盖「${draft.name}」，当前修改会丢失。`,
+            () => { void session.restoreCurrent(); },
+            t("恢复"),
+            t("取消"),
+            pageRuntime,
+        );
+    });
+    return bindSettingsGroupedControls(container, pageRuntime, () => !state.loading && !state.busy);
 }
 
 export function createAiInstructionPresetsPage(ctx) {
     const session = createAiInstructionPresetSession(ctx);
+    let unbindGrouped = () => {};
     const paint = () => {
+        unbindGrouped();
         ctx.container.innerHTML = buildAiInstructionPresetsPageHtml(session.state);
-        bindAiInstructionPresetInteractions(ctx, session);
+        unbindGrouped = bindAiInstructionPresetInteractions(ctx, session) || (() => {});
     };
     return {
         mount() {
@@ -454,7 +569,10 @@ export function createAiInstructionPresetsPage(ctx) {
             void session.load('', false);
         },
         update() { paint(); },
-        dispose() { session.deactivate(); },
+        dispose() {
+            unbindGrouped();
+            session.deactivate();
+        },
     };
 }
 

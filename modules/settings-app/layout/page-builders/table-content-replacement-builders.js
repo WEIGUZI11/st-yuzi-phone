@@ -1,9 +1,6 @@
 import { t } from '../../../i18n/index.js';
 import { escapeHtml, escapeHtmlAttr } from '../../../utils/dom-escape.js';
-import {
-    buildSettingsPageFrame,
-    buildSettingsSectionHtml,
-} from '../primitives.js';
+import { buildSettingsPageFrame } from '../primitives.js';
 import { validateReplacementRules } from '../../../table-content-replacement/rules.js';
 
 function asArray(value) {
@@ -46,10 +43,10 @@ function buildRunningRuleGroupHtml({ scope = 'global', mappingId = '', label = '
     const safeRules = asArray(rules);
     const mappingAttr = scope === 'table' ? ` data-mapping-id="${escapeHtmlAttr(mappingId)}"` : '';
     return `
-        <div class="phone-table-content-replacement-running-group" data-running-rule-scope="${escapeHtmlAttr(scope)}"${mappingAttr}>
+        <div class="phone-ios-row is-block" data-running-rule-scope="${escapeHtmlAttr(scope)}"${mappingAttr}>
             <div class="phone-table-content-replacement-running-group-head">
-                <span class="phone-table-content-replacement-running-group-title">${escapeHtml(label)}</span>
-                <span class="phone-table-content-replacement-running-group-count">${t`${safeRules.length} 条`}</span>
+                <span class="phone-ios-row-label">${escapeHtml(label)}</span>
+                <span class="phone-ios-row-sub">${t`${safeRules.length} 条`}</span>
             </div>
             <ol class="phone-table-content-replacement-running-list">
                 ${safeRules.map((rule, index) => `
@@ -98,27 +95,26 @@ function buildRunningRulesSummaryHtml({ config = {}, resolvedTableRules = [] } =
     const totalRuleCount = groups.reduce((total, group) => total + group.rules.length, 0);
     const bodyHtml = groups.length > 0
         ? groups.map(buildRunningRuleGroupHtml).join('')
-        : `<p class="phone-table-content-replacement-running-empty">${t("暂无已生效规则。")}</p>`;
+        : `<div class="phone-ios-row"><span class="phone-ios-row-sub">${t("暂无已生效规则。")}</span></div>`;
 
     return `
-        <section class="phone-table-content-replacement-running-summary">
-            <div class="phone-table-content-replacement-running-summary-head">
-                <div>
-                    <h2 class="phone-table-content-replacement-running-summary-title">${t`已生效规则`}</h2>
-                    <p class="phone-table-content-replacement-running-summary-meta">${t`${totalRuleCount}条`}</p>
-                </div>
+        <h2 class="phone-ios-group-header">${t`已生效规则`}</h2>
+        <section class="phone-ios-group">
+            <div class="phone-ios-row">
+                <span class="phone-ios-row-label">${t`合计`}</span>
+                <span class="phone-ios-row-value">${t`${totalRuleCount}条`}</span>
             </div>
-            <div class="phone-table-content-replacement-running-groups">${bodyHtml}</div>
+            ${bodyHtml}
         </section>
     `;
 }
 
-function buildRuleErrorHtml(error) {
+function buildRuleErrorHtml(error, id = '') {
     if (Array.isArray(error)) {
         return error.map(buildRuleErrorHtml).join('');
     }
     const message = asText(error?.message || error?.text).trim();
-    return message ? `<div class="phone-table-content-replacement-error">${escapeHtml(message)}</div>` : '';
+    return message ? `<div class="phone-table-content-replacement-error"${id ? ` id="${escapeHtmlAttr(id)}"` : ''}>${escapeHtml(message)}</div>` : '';
 }
 
 function buildRuleHtml({ rule = {}, index = 0, scope = 'global', mappingId = '', disabled = false, error = null } = {}) {
@@ -129,28 +125,34 @@ function buildRuleHtml({ rule = {}, index = 0, scope = 'global', mappingId = '',
         : '';
     const moveUpDisabled = disabled || index <= 0;
     const moveDownDisabled = disabled;
+    const errorId = `replacement-error-${safeScope}-${mappingId}-${ruleId}`;
+    const errorHtml = buildRuleErrorHtml(error, errorId);
+    const errorAttrs = errorHtml ? ` aria-invalid="true" aria-describedby="${escapeHtmlAttr(errorId)}"` : '';
 
     return `
-        <article class="phone-table-content-replacement-rule" data-rule-id="${escapeHtmlAttr(ruleId)}" data-rule-index="${index}" data-rule-scope="${safeScope}">
+        <article class="phone-ios-row is-block phone-table-content-replacement-rule" data-rule-id="${escapeHtmlAttr(ruleId)}" data-rule-index="${index}" data-rule-scope="${safeScope}">
             <div class="phone-table-content-replacement-rule-head">
-                <span class="phone-table-content-replacement-rule-index">${t`规则 ${index + 1}`}</span>
-                <div class="phone-table-content-replacement-rule-actions">
-                    <button type="button" class="phone-settings-btn phone-settings-btn-ghost phone-table-content-replacement-rule-move" data-action="move-rule-up" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(moveUpDisabled)} aria-label="${t`上移规则`}">↑</button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-ghost phone-table-content-replacement-rule-move" data-action="move-rule-down" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(moveDownDisabled)} aria-label="${t`下移规则`}">↓</button>
-                    <button type="button" class="phone-settings-btn phone-settings-btn-danger phone-table-content-replacement-rule-delete" data-action="delete-rule" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}>${t`删除`}</button>
+                <span class="phone-ios-row-label">${t`规则 ${index + 1}`}</span>
+                <div class="phone-ios-row-actions">
+                    <button type="button" class="phone-ios-mini-btn" data-action="move-rule-up" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(moveUpDisabled)} aria-label="${t`上移规则`}">↑</button>
+                    <button type="button" class="phone-ios-mini-btn" data-action="move-rule-down" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(moveDownDisabled)} aria-label="${t`下移规则`}">↓</button>
+                    <button type="button" class="phone-ios-mini-btn is-danger" data-action="delete-rule" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}>${t`删除`}</button>
                 </div>
             </div>
             <div class="phone-table-content-replacement-rule-fields">
                 <label class="phone-table-content-replacement-field">
-                    <span>${t`原词`}</span>
-                    <textarea class="phone-settings-textarea phone-table-content-replacement-textarea" rows="2" data-action="update-rule" data-field="source" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}>${escapeHtml(asText(rule.source))}</textarea>
+                    <span class="phone-ios-field-label">${t`原词`}</span>
+                    <textarea class="phone-ios-field" rows="1" data-action="update-rule" data-field="source" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}${errorAttrs}>
+${escapeHtml(asText(rule.source))}</textarea>
                 </label>
+                <span class="phone-table-content-replacement-running-arrow" aria-hidden="true">→</span>
                 <label class="phone-table-content-replacement-field">
-                    <span>${t`替换为`}</span>
-                    <textarea class="phone-settings-textarea phone-table-content-replacement-textarea" rows="2" data-action="update-rule" data-field="target" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}>${escapeHtml(asText(rule.target))}</textarea>
+                    <span class="phone-ios-field-label">${t`替换为`}</span>
+                    <textarea class="phone-ios-field" rows="1" data-action="update-rule" data-field="target" data-rule-id="${escapeHtmlAttr(ruleId)}"${actionScope}${isDisabled(disabled)}${errorAttrs}>
+${escapeHtml(asText(rule.target))}</textarea>
                 </label>
             </div>
-            ${buildRuleErrorHtml(error)}
+            ${errorHtml}
         </article>
     `;
 }
@@ -168,23 +170,19 @@ function buildRulesEditorHtml({ rules = [], scope = 'global', mappingId = '', er
             disabled,
             error: errorByIndex.get(index),
         })).join('')
-        : `<div class="phone-settings-note phone-table-content-replacement-empty-rules">${t("暂无规则。")}</div>`;
+        : `<div class="phone-ios-row"><span class="phone-ios-row-sub">${t("暂无规则。")}</span></div>`;
     const addAction = scope === 'table' ? 'add-table-rule' : 'add-global-rule';
     const scopeAttr = scope === 'table'
         ? ` data-area-scope="table" data-mapping-id="${escapeHtmlAttr(mappingId)}"`
         : '';
 
     return `
-        <div class="phone-table-content-replacement-rules" data-rules-scope="${scope}">
-            ${rulesHtml}
-            <div class="phone-settings-action phone-table-content-replacement-add-rule-action">
-                <button type="button" class="phone-settings-btn phone-settings-btn-ghost" data-action="${addAction}"${scopeAttr}${isDisabled(disabled)}>${t`添加规则`}</button>
-            </div>
-        </div>
+        ${rulesHtml}
+        <button type="button" class="phone-ios-row is-action" data-action="${addAction}"${scopeAttr}${isDisabled(disabled)}>${t`添加规则`}</button>
     `;
 }
 
-function buildAreaSwitchHtml({ id, enabled, scope, mappingId = '', disabled = false } = {}) {
+function buildAreaSwitchHtml({ id, enabled, scope, mappingId = '', disabled = false, sub = '' } = {}) {
     const safeScope = scope === 'table' ? 'table' : 'global';
     const action = safeScope === 'table' ? 'toggle-table' : 'toggle-global';
     const label = safeScope === 'table' ? t("启用此表替换") : t("启用全局替换");
@@ -192,10 +190,12 @@ function buildAreaSwitchHtml({ id, enabled, scope, mappingId = '', disabled = fa
         ? ` data-area-scope="table" data-mapping-id="${escapeHtmlAttr(mappingId)}"`
         : '';
     return `
-        <label class="phone-table-content-replacement-switch"${id ? ` for="${escapeHtmlAttr(id)}"` : ''}>
-            <input type="checkbox" id="${escapeHtmlAttr(id || `${safeScope}-enabled`)}" class="${safeScope === 'table' ? 'phone-table-content-replacement-mapping-enabled' : 'phone-table-content-replacement-global-enabled'}" data-action="${action}"${scopeAttr}${isChecked(enabled)}${isDisabled(disabled)}>
-            <span class="phone-table-content-replacement-switch-track" aria-hidden="true"></span>
-            <span>${escapeHtml(label)}</span>
+        <label class="phone-ios-row"${id ? ` for="${escapeHtmlAttr(id)}"` : ''}>
+            <span class="phone-ios-row-label">${escapeHtml(label)}${sub ? `<span class="phone-ios-row-sub">${escapeHtml(sub)}</span>` : ''}</span>
+            <span class="phone-ios-switch">
+                <input type="checkbox" role="switch" id="${escapeHtmlAttr(id || `${safeScope}-enabled`)}" class="${safeScope === 'table' ? 'phone-table-content-replacement-mapping-enabled' : 'phone-table-content-replacement-global-enabled'}" data-action="${action}"${scopeAttr}${isChecked(enabled)}${isDisabled(disabled)}>
+                <span class="phone-ios-switch-track" aria-hidden="true"></span>
+            </span>
         </label>
     `;
 }
@@ -222,34 +222,21 @@ function buildTableAreaHtml({ area = {}, table = null, errors = {}, busy = false
     const unavailable = status !== 'available';
     const title = asText(table?.tableName).trim() || tableNameSnapshot || tableName || t("未命名表格");
     const errorList = asArray(errors?.rules);
-    const areaClass = unavailable ? ' is-unavailable' : '';
-    const disabled = busy;
-
     return `
-        <article class="phone-table-content-replacement-area phone-table-content-replacement-table-area${areaClass}" data-mapping-id="${escapeHtmlAttr(mappingId)}">
-            <div class="phone-table-content-replacement-area-head">
-                <div class="phone-table-content-replacement-area-heading">
-                    <div class="phone-table-content-replacement-area-title-row">
-                        <h3 class="phone-table-content-replacement-area-title">${escapeHtml(title)}</h3>
-                        ${unavailable ? `<span class="phone-settings-badge is-warning">${t("当前不可用")}</span>` : ''}
-                    </div>
-                </div>
-                <div class="phone-table-content-replacement-area-actions">
-                    ${buildAreaSwitchHtml({
-                        id: `phone-table-content-replacement-mapping-enabled-${mappingId}`,
-                        enabled: area.enabled === true,
-                        scope: 'table',
-                        mappingId,
-                    })}
-                    <button type="button" class="phone-settings-btn phone-settings-btn-danger" data-action="delete-table" data-mapping-id="${escapeHtmlAttr(mappingId)}"${isDisabled(busy)}>${t`移除配置`}</button>
-                </div>
-            </div>
-            ${unavailable ? `<div class="phone-settings-note phone-table-content-replacement-unavailable-note">${t("表格暂不可用，规则保留，恢复后继续生效。")}</div>` : ''}
-            ${buildRulesEditorHtml({ rules: area.rules, scope: 'table', mappingId, errors: errorList, disabled })}
-            <div class="phone-settings-action phone-table-content-replacement-save-action">
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="save-table" data-mapping-id="${escapeHtmlAttr(mappingId)}"${isDisabled(busy)}>${t`保存并应用`}</button>
-            </div>
-        </article>
+        <h2 class="phone-ios-group-header">${escapeHtml(title)}${unavailable ? `<span class="phone-ios-badge is-danger">${t("当前不可用")}</span>` : ''}</h2>
+        <section class="phone-ios-group" data-mapping-id="${escapeHtmlAttr(mappingId)}">
+            ${buildAreaSwitchHtml({
+                id: `phone-table-content-replacement-mapping-enabled-${mappingId}`,
+                enabled: area.enabled === true,
+                scope: 'table',
+                mappingId,
+                disabled: busy,
+            })}
+            ${buildRulesEditorHtml({ rules: area.rules, scope: 'table', mappingId, errors: errorList, disabled: busy })}
+            <button type="button" class="phone-ios-row is-action" data-action="save-table" data-mapping-id="${escapeHtmlAttr(mappingId)}"${isDisabled(busy)}>${t`保存并应用`}</button>
+            <button type="button" class="phone-ios-row is-action is-danger" data-action="delete-table" data-mapping-id="${escapeHtmlAttr(mappingId)}"${isDisabled(busy)}>${t`移除配置`}</button>
+        </section>
+        ${unavailable ? `<p class="phone-ios-group-footer">${t("表格暂不可用，规则保留，恢复后继续生效。")}</p>` : ''}
     `;
 }
 
@@ -286,11 +273,11 @@ export function buildTableContentReplacementPageHtml(viewModel = {}) {
             errors: errors.mappings?.[area.mappingId] || {},
             busy,
         })).join('')
-        : `<div class="phone-settings-note">${t("暂无单表配置。")}</div>`;
+        : `<section class="phone-ios-group"><div class="phone-ios-row"><span class="phone-ios-row-sub">${t("暂无单表配置。")}</span></div></section>`;
     const statusHtml = status === 'loading'
-        ? `<div class="phone-settings-note">${t("正在读取表格目录…")}</div>`
+        ? `<p class="phone-ios-group-footer" role="status">${t("正在读取表格目录…")}</p>`
         : status === 'error'
-            ? `<div class="phone-settings-note">${t("当前无法读取表格目录；已保存的规则仍会保留。")}</div>`
+            ? `<p class="phone-ios-group-footer phone-table-content-replacement-error" role="alert">${t("当前无法读取表格目录；已保存的规则仍会保留。")}</p>`
             : '';
     const selectDisabled = availableTables.length === 0;
     const globalErrors = Array.isArray(errors.global) ? errors.global : [];
@@ -298,29 +285,35 @@ export function buildTableContentReplacementPageHtml(viewModel = {}) {
         globalErrors.filter(error => !Number.isInteger(Number(error?.index))),
     );
     const globalBodyHtml = `
-        <article class="phone-table-content-replacement-area phone-table-content-replacement-global-area">
-            <div class="phone-table-content-replacement-area-head">
-                ${buildAreaSwitchHtml({ id: 'phone-table-content-replacement-global-enabled', enabled: global.enabled === true, scope: 'global', disabled: busy })}
-            </div>
-            <p class="phone-table-content-replacement-helper">${t`按普通文字匹配；修改后需点击「保存并应用」。`}</p>
+        <h2 class="phone-ios-group-header">${t("全局替换")}</h2>
+        <section class="phone-ios-group" id="phone-table-content-replacement-global-section">
+            ${buildAreaSwitchHtml({
+                id: 'phone-table-content-replacement-global-enabled',
+                enabled: global.enabled === true,
+                scope: 'global',
+                disabled: busy,
+                sub: t("适用于当前及后续可用的普通数据表，先于单表规则执行。"),
+            })}
             ${globalErrorHtml}
             ${buildRulesEditorHtml({ rules: global.rules, scope: 'global', errors: globalErrors, disabled: busy })}
-            <div class="phone-settings-action phone-table-content-replacement-save-action">
-                <button type="button" class="phone-settings-btn phone-settings-btn-primary" data-action="save-global"${isDisabled(busy)}>${t`保存并应用`}</button>
-            </div>
-        </article>
+            <button type="button" class="phone-ios-row is-action" data-action="save-global"${isDisabled(busy)}>${t`保存并应用`}</button>
+        </section>
+        <p class="phone-ios-group-footer">${t`按普通文字匹配；修改后需点击「保存并应用」。`}</p>
     `;
     const addTableHtml = `
-        <div class="phone-table-content-replacement-add-table">
-            <label for="phone-table-content-replacement-table-select">${t`选择表格`}</label>
-            <div class="phone-table-content-replacement-add-table-controls">
-                <select id="phone-table-content-replacement-table-select" class="phone-settings-select phone-table-content-replacement-table-select"${isDisabled(selectDisabled)}>
-                    <option value="">${selectDisabled ? t("没有可添加的表格") : t("请选择一张表")}</option>
-                    ${buildTableOptionsHtml(availableTables)}
-                </select>
-                <button type="button" class="phone-settings-btn" data-action="add-table"${isDisabled(selectDisabled || busy)}>${t`添加表格`}</button>
-            </div>
-        </div>
+        <h2 class="phone-ios-group-header">${t("单表替换")}</h2>
+        <section class="phone-ios-group" id="phone-table-content-replacement-table-section">
+            <button type="button" class="phone-ios-row is-tappable" data-settings-select="phone-table-content-replacement-table-select" aria-haspopup="dialog"${isDisabled(selectDisabled || busy)}>
+                <span class="phone-ios-row-label">${t`选择表格`}</span>
+                <span class="phone-ios-row-value"><span class="phone-ios-row-value-text">${selectDisabled ? t("没有可添加的表格") : t("请选择一张表")}</span><span class="phone-ios-row-chevron" aria-hidden="true">›</span></span>
+            </button>
+            <button type="button" class="phone-ios-row is-action" data-action="add-table" disabled>${t`添加表格`}</button>
+            <select id="phone-table-content-replacement-table-select" class="phone-settings-select"${isDisabled(selectDisabled || busy)} hidden>
+                <option value="">${selectDisabled ? t("没有可添加的表格") : t("请选择一张表")}</option>
+                ${buildTableOptionsHtml(availableTables)}
+            </select>
+        </section>
+        <p class="phone-ios-group-footer">${t("仅作用于指定表格。")}</p>
     `;
     const runningRulesSummaryHtml = buildRunningRulesSummaryHtml({
         config: activeConfig,
@@ -328,23 +321,13 @@ export function buildTableContentReplacementPageHtml(viewModel = {}) {
     });
     const bodyHtml = `${statusHtml}
         ${runningRulesSummaryHtml}
-        ${buildSettingsSectionHtml({
-            id: 'phone-table-content-replacement-global-section',
-            title: t("全局替换"),
-            desc: t("适用于当前及后续可用的普通数据表，先于单表规则执行。"),
-            bodyHtml: globalBodyHtml,
-        })}
-        ${buildSettingsSectionHtml({
-            id: 'phone-table-content-replacement-table-section',
-            title: t("单表替换"),
-            desc: t("仅作用于指定表格。"),
-            actionsHtml: addTableHtml,
-            bodyHtml: `<div class="phone-table-content-replacement-table-areas">${tableAreasHtml}</div>`,
-        })}`;
+        ${globalBodyHtml}
+        ${addTableHtml}
+        ${tableAreasHtml}`;
 
     return buildSettingsPageFrame({
         title: t("表格内容词汇替换"),
-        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-table-content-replacement-page',
+        bodyClass: 'phone-app-body phone-settings-scroll phone-settings-open phone-ios-grouped-page phone-table-content-replacement-page',
         bodyHtml,
     });
 }

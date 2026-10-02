@@ -849,9 +849,12 @@ Beautify 现在包含两套职责严格隔离的系统：
 
 - `import`：读取 JSON 文件文本，调用 `prepareImport()`，由 Bundle 的 `format`、`formatVersion`、`apiVersion` 与结构合同判定是否接受，不按文件名或扩展名识别格式；同 ID 覆盖必须二次确认，再由 `importPrepared()` 原子替换并清除旧绑定。
 - `export`：调用 `exportPreset()` 下载完整 Bundle。
+- `apply-preset`：调用 `applyPreset()`，复用真实表与完整组合展示的匹配结果，在一个仓库事务中保存页面、弹窗来源、底部美化及预设提供的 QQ 主题／通知绑定；事务提交后一次发布索引并刷新页面。未涉及的绑定保留，同一预设已有的页面／底部款式优先保留，否则使用首个可用项；未匹配或不可用项单独计数，不清空个人装饰、不打开功能总开关，也不改变 Bundle 或作者 Runtime API 合同。
 - `delete`：二次确认后调用 `deletePreset()`，在同一事务删除预设和所有引用绑定。
 - `activate` / `clear`：设置或清除单张真实表的当前预设项。
 - `clear-all`：清除全部新工坊表级绑定，但保留已导入预设。
+
+页面采用公共 iOS 分组行与选择面板，完整预设位于最上方，QQ 作为独立 App 卡片紧接最后一个真实表，三个全局恢复操作仍分别作用于页面、弹窗和底部美化。隐藏原生选择控件保留既有 change 入口；选择行等待提交后重渲染，取消或失败保留已提交的显示值，不包含原型演示或模拟文件选择。
 
 执行期间使用页面级 busy 锁阻止重复提交；失败后必须释放按钮以允许重试；页面销毁后不得继续 toast、刷新或提交旧回调。页面不得出现旧 `phone-beautify-restore-defaults-btn`，也不得导入 `phone-beautify-templates/`。
 

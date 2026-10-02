@@ -2370,7 +2370,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--yuzi-qq-settings-root-stack-gap);
-    margin: var(--yuzi-qq-settings-root-scroll-padding-inline);
+    margin-inline: var(--yuzi-qq-settings-root-scroll-padding-inline);
+    padding-block-start: var(--yuzi-settings-group-block-gap);
 }
 
 .yuzi-qq-settings-root-view .yuzi-qq-settings-sheet,
@@ -2378,10 +2379,10 @@
     inline-size: 100%;
     max-inline-size: var(--yuzi-qq-settings-root-group-width);
     margin-inline: 0;
-    padding: var(--yuzi-qq-settings-root-group-padding-block-start) var(--yuzi-qq-settings-root-group-padding-inline-end) var(--yuzi-qq-settings-root-group-padding-block-end) var(--yuzi-qq-settings-root-group-padding-inline-start);
+    padding: 0;
     overflow: hidden;
     border: var(--yuzi-qq-line-width) solid var(--yuzi-qq-settings-outline);
-    border-radius: var(--yuzi-qq-settings-root-group-radius);
+    border-radius: var(--yuzi-settings-group-radius);
     background: var(--yuzi-qq-settings-group);
 }
 
@@ -2395,8 +2396,8 @@
 
 .yuzi-qq-settings-root-view .yuzi-qq-setting-row,
 .yuzi-qq-settings-root-row {
-    min-block-size: var(--yuzi-qq-settings-row-min-height);
-    padding: 0;
+    min-block-size: var(--yuzi-settings-row-min-height);
+    padding: var(--yuzi-settings-row-padding-block) var(--yuzi-settings-row-padding-inline);
     overflow: visible;
     border: 0;
     border-radius: 0;
@@ -2407,8 +2408,8 @@
 }
 
 .yuzi-qq-settings-root-row + .yuzi-qq-settings-root-row {
-    margin-block-start: var(--yuzi-qq-settings-root-group-gap);
-    padding-block-start: var(--yuzi-qq-settings-root-group-gap);
+    margin-block-start: 0;
+    padding-block-start: var(--yuzi-settings-row-padding-block);
     border-block-start: var(--yuzi-qq-line-width) solid var(--yuzi-qq-settings-outline);
 }
 
@@ -2618,8 +2619,9 @@
 
 .yuzi-qq-image-library-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--yuzi-qq-avatar-size), 1fr));
-    gap: var(--yuzi-qq-row-gap);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--yuzi-qq-image-library-grid-gap);
+    padding: var(--yuzi-qq-image-library-grid-padding-block) var(--yuzi-qq-image-library-grid-padding-inline);
 }
 
 .yuzi-qq-image-library-item {
@@ -2628,8 +2630,8 @@
     overflow: hidden;
     aspect-ratio: 1;
     place-items: center;
-    border: var(--yuzi-qq-line-width) solid var(--yuzi-qq-line);
-    border-radius: var(--yuzi-qq-editor-group-radius);
+    border: 0;
+    border-radius: var(--yuzi-qq-image-library-item-radius);
     background: var(--yuzi-qq-control);
 }
 
@@ -2640,8 +2642,62 @@
 }
 
 .yuzi-qq-image-library-item.is-selected {
-    outline: var(--yuzi-qq-focus-ring-width) solid var(--yuzi-qq-accent);
-    outline-offset: calc(var(--yuzi-qq-focus-ring-width) * -1);
+    box-shadow: inset 0 0 0 var(--yuzi-qq-focus-ring-width) var(--yuzi-qq-accent);
+}
+
+.yuzi-qq-image-library-tick {
+    position: absolute;
+    inset-block-start: var(--yuzi-qq-inline-gap);
+    inset-inline-end: var(--yuzi-qq-inline-gap);
+    display: grid;
+    inline-size: var(--yuzi-qq-checkbox-size);
+    block-size: var(--yuzi-qq-checkbox-size);
+    place-items: center;
+    border: var(--yuzi-qq-line-width) solid var(--yuzi-qq-on-accent);
+    border-radius: var(--yuzi-qq-radius-full);
+    color: transparent;
+    background: var(--yuzi-qq-control);
+    font-size: var(--yuzi-qq-caption-size);
+    font-weight: 700;
+    line-height: 1;
+    visibility: hidden;
+}
+
+.yuzi-qq-image-library-tick[aria-hidden="false"] {
+    visibility: visible;
+}
+
+.yuzi-qq-image-library-view.is-selection-mode .yuzi-qq-image-library-tick {
+    visibility: visible;
+}
+
+.yuzi-qq-image-library-item.is-selected .yuzi-qq-image-library-tick {
+    color: var(--yuzi-qq-on-accent);
+    background: var(--yuzi-qq-accent);
+}
+
+.yuzi-qq-image-library-upload-action {
+    border: var(--yuzi-qq-line-width) dashed var(--yuzi-qq-weak);
+    color: var(--yuzi-qq-accent);
+    background: transparent;
+}
+
+.yuzi-qq-image-library-upload-content {
+    display: grid;
+    place-items: center;
+    gap: 2px;
+    text-align: center;
+}
+
+.yuzi-qq-image-library-upload-mark {
+    font-size: var(--yuzi-qq-editor-title-size);
+    font-weight: 400;
+    line-height: 1.1;
+}
+
+.yuzi-qq-image-library-upload-label {
+    font-size: var(--yuzi-qq-caption-size);
+    line-height: var(--yuzi-qq-image-library-heading-line-height);
 }
 
 .yuzi-qq-profile-library-picker {
@@ -2723,9 +2779,365 @@
     margin-inline: 0;
 }
 
+/* QQ 设置二级页：复用设置分组列表的结构，但保留 QQ 自己的白色 / 深色主题色。 */
+.yuzi-qq-settings-detail-view [hidden] {
+    display: none !important;
+}
+
+.yuzi-qq-settings-detail-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-block-end: var(--yuzi-qq-page-padding);
+}
+
+.yuzi-qq-settings-group-header {
+    margin: var(--yuzi-settings-group-block-gap) var(--yuzi-settings-group-text-inset) var(--yuzi-settings-group-header-gap);
+    color: var(--yuzi-qq-muted);
+    font-size: var(--yuzi-settings-group-header-size);
+    font-weight: var(--yuzi-qq-body-weight);
+    line-height: 1.3;
+}
+
+.yuzi-qq-settings-group {
+    margin-inline: var(--yuzi-qq-page-padding);
+    overflow: hidden;
+    border: var(--yuzi-qq-line-width) solid var(--yuzi-qq-settings-outline);
+    border-radius: var(--yuzi-settings-group-radius);
+    background: var(--yuzi-qq-settings-group);
+}
+
+.yuzi-qq-settings-group > .phone-ios-row {
+    min-block-size: var(--yuzi-settings-row-min-height);
+    padding: var(--yuzi-settings-row-padding-block) var(--yuzi-settings-row-padding-inline);
+    color: var(--yuzi-qq-text);
+    background: transparent;
+    font-size: var(--yuzi-qq-editor-field-size);
+    line-height: var(--yuzi-qq-editor-field-line-height);
+}
+
+.yuzi-qq-settings-group > .phone-ios-row + .phone-ios-row::before {
+    left: var(--yuzi-settings-row-padding-inline);
+    right: 0;
+    height: var(--yuzi-qq-line-width);
+    background: var(--yuzi-qq-settings-outline);
+}
+
+.yuzi-qq-settings-group > .phone-ios-row.is-tappable:active,
+.yuzi-qq-settings-group > .phone-ios-row.is-tappable:focus-visible {
+    background: var(--yuzi-qq-control);
+}
+
+.yuzi-qq-settings-group .phone-ios-row-label,
+.yuzi-qq-settings-group .phone-ios-field-label {
+    color: var(--yuzi-qq-text);
+}
+
+.yuzi-qq-settings-group .phone-ios-row-value,
+.yuzi-qq-settings-group .phone-ios-row-chevron,
+.yuzi-qq-settings-group .phone-ios-row-sub,
+.yuzi-qq-settings-field-description {
+    color: var(--yuzi-qq-muted);
+}
+
+.yuzi-qq-settings-group .phone-ios-row-value {
+    max-inline-size: 58%;
+}
+
+.yuzi-qq-settings-group .phone-ios-row-chevron {
+    font-size: var(--yuzi-qq-editor-title-size);
+}
+
+.yuzi-qq-settings-group .phone-ios-field-label {
+    margin-block-end: var(--yuzi-settings-row-gap);
+    font-size: var(--yuzi-settings-row-label-size);
+    line-height: 1.3;
+}
+
+.yuzi-qq-settings-text-row {
+    align-items: stretch;
+}
+
+.yuzi-qq-settings-text-input,
+.yuzi-qq-number-editor-form input {
+    box-sizing: border-box;
+    min-block-size: var(--yuzi-qq-dialog-input-height);
+    padding: var(--yuzi-qq-inline-gap) var(--yuzi-qq-list-row-padding);
+    border: var(--yuzi-qq-line-width) solid var(--yuzi-qq-line);
+    border-radius: var(--yuzi-qq-radius);
+    color: var(--yuzi-qq-text);
+    background: var(--yuzi-qq-input);
+    caret-color: var(--yuzi-qq-text);
+}
+
+.yuzi-qq-settings-text-input::placeholder,
+.yuzi-qq-number-editor-form input::placeholder {
+    color: var(--yuzi-qq-muted);
+}
+
+.yuzi-qq-settings-field-description {
+    margin: 0;
+    font-size: var(--yuzi-qq-caption-size);
+    line-height: var(--yuzi-qq-caption-line-height);
+}
+
+.yuzi-qq-settings-select-row > .yuzi-qq-settings-native-control,
+.yuzi-qq-settings-segment-row > .yuzi-qq-settings-native-control,
+.yuzi-qq-settings-number-row > .yuzi-qq-settings-native-control {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    pointer-events: none;
+}
+
+.yuzi-qq-settings-stepper {
+    gap: var(--yuzi-qq-inline-gap);
+}
+
+.yuzi-qq-settings-stepper .phone-ios-stepper-btn {
+    border-radius: var(--yuzi-qq-radius);
+    background: var(--yuzi-qq-control);
+    color: var(--yuzi-qq-text);
+}
+
+.yuzi-qq-settings-stepper .phone-ios-stepper-btn:active {
+    background: var(--yuzi-qq-subtle);
+}
+
+.yuzi-qq-settings-stepper .phone-ios-stepper-value {
+    min-inline-size: var(--yuzi-qq-secondary-control-max-width);
+    color: var(--yuzi-qq-muted);
+}
+
+.yuzi-qq-settings-stepper .phone-ios-stepper-value:focus-visible,
+.yuzi-qq-settings-stepper .phone-ios-stepper-btn:focus-visible,
+.yuzi-qq-settings-segment-row .phone-ios-seg-item:focus-visible,
+.yuzi-qq-settings-text-input:focus-visible,
+.yuzi-qq-number-editor-form input:focus-visible {
+    outline: var(--yuzi-qq-focus-ring-width) solid var(--yuzi-qq-accent);
+    outline-offset: 2px;
+}
+
+.yuzi-qq-settings-segment-row {
+    align-items: stretch;
+}
+
+.yuzi-qq-settings-segment-row .phone-ios-seg {
+    align-self: stretch;
+    justify-content: stretch;
+    padding: 2px;
+    border-radius: var(--yuzi-qq-radius);
+    background: var(--yuzi-qq-control);
+}
+
+.yuzi-qq-settings-segment-row .phone-ios-seg-item {
+    flex: 1 1 0;
+    color: var(--yuzi-qq-muted);
+}
+
+.yuzi-qq-settings-segment-row .phone-ios-seg-item[aria-pressed="true"] {
+    color: var(--yuzi-qq-text);
+    background: var(--yuzi-qq-elevated);
+    box-shadow: var(--yuzi-qq-shadow);
+}
+
+.yuzi-qq-settings-switch-row {
+    justify-content: space-between;
+}
+
+.yuzi-qq-settings-switch > input[type="checkbox"] {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    inline-size: 100%;
+    block-size: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.yuzi-qq-settings-switch .phone-ios-switch-track {
+    background: var(--yuzi-qq-control);
+}
+
+.yuzi-qq-settings-switch > input[type="checkbox"]:checked + .phone-ios-switch-track {
+    background: var(--yuzi-qq-accent);
+}
+
+.yuzi-qq-settings-switch > input[type="checkbox"]:focus-visible + .phone-ios-switch-track {
+    outline: var(--yuzi-qq-focus-ring-width) solid var(--yuzi-qq-accent);
+    outline-offset: 2px;
+}
+
+.yuzi-qq-settings-range-row .phone-ios-slider-row {
+    gap: var(--yuzi-qq-inline-gap);
+}
+
+.yuzi-qq-settings-range-row input[type="range"] {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    accent-color: var(--yuzi-qq-accent);
+}
+
+.yuzi-qq-settings-range-row .phone-ios-slider-glyph {
+    color: var(--yuzi-qq-muted);
+    font-size: var(--yuzi-qq-caption-size);
+}
+
+.yuzi-qq-settings-time-window {
+    display: contents;
+}
+
+.yuzi-qq-settings-time-window > .phone-ios-row + .phone-ios-row::before {
+    left: var(--yuzi-qq-secondary-row-padding-inline);
+}
+
+.yuzi-qq-settings-time-window .phone-ios-row.is-disabled {
+    color: var(--yuzi-qq-muted);
+    opacity: var(--yuzi-qq-disabled-opacity);
+}
+
+.yuzi-qq-settings-status {
+    margin: var(--yuzi-qq-inline-gap) var(--yuzi-qq-page-padding) 0;
+    color: var(--yuzi-qq-danger);
+}
+
+/* QQ 的选择面板只复用公共弹层几何，不继承设置页的颜色变量。 */
+.phone-ios-layer.yuzi-qq-settings-layer {
+    background: var(--yuzi-qq-overlay);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-sheet {
+    background: var(--yuzi-qq-dialog-surface);
+    color: var(--yuzi-qq-text);
+    box-shadow: var(--yuzi-qq-shadow-dialog);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-sheet-grabber {
+    background: var(--yuzi-qq-line);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-sheet-title {
+    color: var(--yuzi-qq-text);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-sheet-subtitle,
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-group-header,
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-row-sub {
+    color: var(--yuzi-qq-muted);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-sheet-done,
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-option-check {
+    color: var(--yuzi-qq-accent);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-group {
+    background: var(--yuzi-qq-settings-group);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-row {
+    color: var(--yuzi-qq-text);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-row + .phone-ios-row::before {
+    background: var(--yuzi-qq-settings-outline);
+}
+
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-option:active,
+.phone-ios-layer.yuzi-qq-settings-layer .phone-ios-option:focus-visible {
+    background: var(--yuzi-qq-control);
+}
+
+/* QQ 的头像框校准沿用公共居中裁剪弹窗，但不借用设置页的中性色。 */
+.phone-avatar-frame-calibration-overlay {
+    background: var(--yuzi-qq-overlay);
+}
+
+.phone-avatar-frame-calibration-overlay .phone-image-crop-dialog {
+    border-color: var(--yuzi-qq-line);
+    background: var(--yuzi-qq-dialog-surface);
+    color: var(--yuzi-qq-text);
+    box-shadow: var(--yuzi-qq-shadow-dialog);
+}
+
+.phone-avatar-frame-calibration-overlay .phone-image-crop-title {
+    color: var(--yuzi-qq-text);
+}
+
+.phone-avatar-frame-calibration-overlay .phone-image-crop-desc {
+    color: var(--yuzi-qq-muted);
+}
+
 .yuzi-qq-settings-detail-view {
     padding-block-start: var(--yuzi-qq-safe-top);
     padding-inline: 0;
+}
+
+.yuzi-qq-settings-detail-view .yuzi-qq-secondary-scroll,
+.yuzi-qq-image-library-view .yuzi-qq-secondary-scroll {
+    padding-block-start: 0;
+    padding-inline: 0;
+}
+
+.yuzi-qq-image-library-view .yuzi-qq-secondary-content {
+    gap: 0;
+    padding-block-end: var(--yuzi-qq-page-padding);
+}
+
+.yuzi-qq-image-library-selection-bar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-block-size: var(--yuzi-settings-row-min-height);
+    padding: var(--yuzi-settings-row-padding-block) var(--yuzi-settings-row-padding-inline);
+    color: var(--yuzi-qq-muted);
+    background: var(--yuzi-qq-content-surface);
+    border-block-end: var(--yuzi-qq-line-width) solid var(--yuzi-qq-settings-outline);
+}
+
+.yuzi-qq-image-library-selection-bar[hidden] {
+    display: none;
+}
+
+.yuzi-qq-image-library-selection-count {
+    font-size: var(--yuzi-settings-row-value-size);
+    font-variant-numeric: tabular-nums;
+}
+
+.yuzi-qq-image-library-selection-done {
+    padding: var(--yuzi-settings-seg-item-padding-block) var(--yuzi-settings-row-padding-block);
+    border: 0;
+    border-radius: var(--yuzi-settings-seg-item-radius);
+    color: var(--yuzi-qq-accent);
+    background: transparent;
+    font: inherit;
+    font-size: var(--yuzi-settings-row-value-size);
+    font-weight: 600;
+}
+
+.yuzi-qq-image-library-selection-done:active,
+.yuzi-qq-image-library-selection-done:focus-visible {
+    background: var(--yuzi-qq-control);
+}
+
+.yuzi-qq-number-editor-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--yuzi-qq-inline-gap);
+    padding-block-end: var(--yuzi-qq-page-padding);
+}
+
+.yuzi-qq-number-editor-form input {
+    inline-size: 100%;
+    text-align: center;
 }
 
 .yuzi-qq-settings-detail-sheet {
@@ -3128,27 +3540,26 @@
 .yuzi-qq-image-library-card {
     display: flex;
     flex-direction: column;
-    inline-size: 100%;
-    margin: 0;
-    padding: var(--yuzi-qq-secondary-row-padding-inline);
-    gap: var(--yuzi-qq-secondary-content-gap);
-    border-radius: var(--yuzi-qq-secondary-group-radius);
+    inline-size: auto;
+    margin-inline: var(--yuzi-qq-page-padding);
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--yuzi-settings-group-radius);
     background: var(--yuzi-qq-secondary-row-surface);
 }
 
 .yuzi-qq-image-library-heading {
     display: flex;
     flex-direction: column;
-    margin: 0;
-    color: var(--yuzi-qq-text);
-    font-size: var(--yuzi-qq-editor-field-size);
-    font-weight: var(--yuzi-qq-editor-field-weight);
-    line-height: var(--yuzi-qq-editor-field-line-height);
+    margin: var(--yuzi-settings-group-block-gap) var(--yuzi-settings-group-text-inset) var(--yuzi-settings-group-header-gap);
+    color: var(--yuzi-qq-muted);
+    font-size: var(--yuzi-settings-group-header-size);
+    font-weight: var(--yuzi-qq-body-weight);
+    line-height: var(--yuzi-qq-image-library-heading-line-height);
 }
 
 .yuzi-qq-image-library-heading::after {
-    color: var(--yuzi-qq-muted);
-    content: '仓库';
+    content: none;
 }
 
 .yuzi-qq-profile-page:not(.yuzi-qq-profile-editor-view) {
@@ -4374,7 +4785,7 @@
 }
 
 #yuzi-phone-standalone[lang="en"] .yuzi-qq-image-library-heading::after {
-    content: 'Library';
+    content: none;
 }
 
 /* Personal library material decorates native controls; it never becomes a hit target. */

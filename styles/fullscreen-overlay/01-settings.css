@@ -17,12 +17,16 @@
     cursor: pointer;
 }
 
-.phone-fullscreen-overlay-master-switch > span {
+.phone-fullscreen-overlay-master-switch > span:first-child {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+}
+
+.phone-fullscreen-overlay-master-switch > .phone-ios-switch {
+    flex: 0 0 auto;
 }
 
 .phone-fullscreen-overlay-master-switch strong {
@@ -42,7 +46,7 @@
 .phone-fullscreen-overlay-color-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
 }
 
 .phone-fullscreen-overlay-source-row {
@@ -51,8 +55,7 @@
     justify-content: space-between;
     gap: 12px;
     min-width: 0;
-    padding: 11px 0;
-    border-bottom: 1px solid var(--yuzi-phone-fullscreen-overlay-border);
+    padding-block: 11px;
 }
 
 .phone-fullscreen-overlay-source-row:last-child {
@@ -83,6 +86,11 @@
     min-width: 0;
 }
 
+.phone-fullscreen-overlay-source-copy .phone-fullscreen-overlay-source-meta {
+    display: block;
+    min-width: 0;
+}
+
 .phone-fullscreen-overlay-source-name {
     overflow: hidden;
     color: var(--yuzi-phone-fullscreen-overlay-text);
@@ -109,12 +117,26 @@
     gap: 8px;
 }
 
-.phone-fullscreen-overlay-source-model-select {
-    width: 122px;
-    min-width: 122px;
-    height: 30px;
-    padding: 4px 8px;
+.phone-fullscreen-overlay-source-model {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--phone-fullscreen-overlay-accent, var(--yuzi-phone-fullscreen-overlay-accent));
+    font: inherit;
     font-size: 10px;
+    line-height: 1.35;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.phone-fullscreen-overlay-source-model:disabled {
+    color: var(--phone-fullscreen-overlay-text-secondary, var(--yuzi-phone-fullscreen-overlay-text-secondary));
+    cursor: default;
 }
 
 .phone-fullscreen-overlay-source-status {
@@ -165,15 +187,37 @@
     margin-top: 8px;
 }
 
+.phone-fullscreen-overlay-inline-segment-row {
+    gap: 12px;
+}
+
+.phone-fullscreen-overlay-inline-segment-row .phone-ios-seg {
+    flex-shrink: 0;
+}
+
+.phone-fullscreen-overlay-segment-row {
+    gap: 8px;
+}
+
+.phone-fullscreen-overlay-segment-row .phone-ios-seg {
+    display: flex;
+    width: 100%;
+    max-width: none;
+}
+
+.phone-fullscreen-overlay-segment-row .phone-ios-seg-item {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: nowrap;
+}
+
 .phone-fullscreen-overlay-parameter-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
     align-items: center;
     gap: 12px;
     min-width: 0;
     min-height: 38px;
-    padding: 4px 0;
-    border-bottom: 1px solid var(--yuzi-phone-fullscreen-overlay-border);
+    padding-block: 4px;
     cursor: pointer;
 }
 
@@ -182,6 +226,7 @@
 }
 
 .phone-fullscreen-overlay-parameter-label {
+    flex: 1 1 auto;
     min-width: 0;
     color: var(--yuzi-phone-fullscreen-overlay-text);
     font-size: 12px;
@@ -197,13 +242,7 @@
 }
 
 .phone-fullscreen-overlay-settings-page .phone-fullscreen-overlay-parameter-row .phone-fullscreen-overlay-parameter-input {
-    box-sizing: border-box;
-    width: 68px;
-    min-width: 68px;
-    height: 30px;
-    padding: 4px 8px;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
+    display: none;
 }
 
 .phone-fullscreen-overlay-parameter-select {
@@ -231,6 +270,17 @@
     min-width: 0;
     padding: 8px 0;
     border-bottom: 1px solid var(--yuzi-phone-fullscreen-overlay-border);
+}
+
+.phone-fullscreen-overlay-palette-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 8px;
+}
+
+.phone-fullscreen-overlay-palette-actions .phone-ios-row {
+    width: 100%;
 }
 
 .phone-fullscreen-overlay-color-row:last-child {
@@ -342,8 +392,8 @@
     }
 
     .phone-fullscreen-overlay-source-side {
-        flex-direction: column;
-        align-items: flex-end;
+        flex-direction: row;
+        align-items: center;
     }
 
     .phone-fullscreen-overlay-action-grid {
