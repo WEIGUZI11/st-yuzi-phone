@@ -1,30 +1,14 @@
 import { t } from '../../i18n/index.js';
-import { pickImageFiles } from '../../settings-app/services/media-upload.js';
 
 // 只拥有人物选择与人设编辑；会话列表、消息、媒体和请求仍由 QQ App 拥有。
 export function createAssistantUI({ facade, createElement: el, createButton: button, avatar,
-    showDialog, clearOverlay, openChat, render, makeSecondaryPage, settingField,
-    pickBackground, clearBackground, pickLibraryAsset, isCurrent, report }) {
+    showDialog, clearOverlay, openChat, render, makeSecondaryPage, profileEditor, isCurrent, report }) {
     const drafts = new Map();
     const check = result => {
         if (!result?.ok) throw new Error(result?.error?.message || t("操作失败，请重试"));
         return result;
     };
     const save = async (characterId, patch) => check(await facade.intent.saveAssistantCharacter({ characterId, patch }));
-    const saveAppearanceAsset = async (characterId, character, field, library) => {
-        if (typeof pickLibraryAsset !== 'function') {
-            throw new Error(t("图片资料选择器不可用"));
-        }
-        await pickLibraryAsset({
-            library,
-            selectedAssetId: character[field],
-            onSelect: assetId => save(characterId, { [field]: assetId }),
-        });
-    };
-    const clearAppearanceAsset = async (characterId, field) => {
-        await save(characterId, { [field]: '' });
-        await render();
-    };
     const open = async input => {
         const result = check(await facade.intent.openAssistant(input));
         if (!isCurrent()) return;
@@ -91,10 +75,12 @@ export function createAssistantUI({ facade, createElement: el, createButton: but
             showDialog({ title: t("选择陪聊人物"), content, actions: [close, add] });
         } catch (error) { report(error); }
     };
-    const settings = async conversation => {
-        const { main, content } = makeSecondaryPage(t("陪聊设置"), { className: 'yuzi-qq-conversation-settings-view yuzi-qq-assistant-settings-view' });
+    const settings = async (conversation, token) => {
+        const { main, content } = makeSecondaryPage(t("陪聊设置"), {
+            className: 'phone-ios-grouped-page yuzi-qq-profile-editor-view yuzi-qq-conversation-settings-view yuzi-qq-assistant-settings-view',
+        });
         const { characters } = check(await facade.query.assistantCharacters());
-        if (!isCurrent()) return main;
+        if (!isCurrent(token)) return main;
         const character = characters.find(item => item.characterId === conversation.assistantCharacterId);
         if (!character) return main;
         const id = character.characterId;
@@ -102,100 +88,64 @@ export function createAssistantUI({ facade, createElement: el, createButton: but
         if (!draft || draft.value === draft.saved) {
             draft = { saved: character.persona, value: character.persona }; drafts.set(id, draft);
         }
-        const card = el('div', 'yuzi-qq-conversation-settings-fields');
-        const status = el('p', 'yuzi-qq-settings-status'); status.setAttribute('role', 'status');
-        const name = settingField(t("姓名"), 'assistantName', character.formalName);
-        name.querySelector('input').addEventListener('change', async event => {
-            try { await save(id, { formalName: event.target.value }); status.textContent = ''; }
-            catch (error) { status.textContent = error.message; }
+        const groups = el('div', 'yuzi-qq-profile-editor-list');
+        const status = el('p', 'yuzi-qq-settings-status yuzi-qq-profile-editor-status');
+        status.dataset.qqProfileEditorStatus = 'assistant';
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        const owner = { owner: 'assistant', characterId: id, token };
+        const assetRow = field => profileEditor.assetRow({
+            ...owner, field, value: character[field] || '', avatarUrl: character.avatarUrl,
         });
-        const avatarRow = el('div', 'yuzi-qq-assistant-profile-row');
-        const avatarLabel = el('span'); avatarLabel.textContent = t("头像");
-        const upload = button(t("更换头像"), 'yuzi-qq-secondary-button');
-        upload.addEventListener('click', () => pickImageFiles(async ([selected]) => {
-            if (!isCurrent()) return;
-            const result = check(await facade.intent.saveImageLibraryAsset({ library: 'avatar', blob: selected.file, mimeType: selected.file.type }));
-            if (!isCurrent()) return;
-            await save(id, { avatarAssetId: result.asset.assetId }); if (isCurrent()) await render();
-        }, { multiple: false, maxSizeMB: 8, onError: message => report(new Error(message)) }));
-        avatarRow.append(avatarLabel, avatar(character), upload);
-        const background = el('div', 'yuzi-qq-assistant-profile-row');
-        const backgroundLabel = el('span'); backgroundLabel.textContent = t("聊天背景");
-        const change = button(t("更换背景"), 'yuzi-qq-secondary-button'); change.addEventListener('click', () => pickBackground(conversation.conversationId));
-        background.append(backgroundLabel, change);
-        if (conversation.backgroundAssetId) {
-            const remove = button(t("清除背景"), 'yuzi-qq-secondary-button');
-            remove.addEventListener('click', () => { void clearBackground(conversation.conversationId).catch(report); }); background.append(remove);
-        }
-        const appearanceRow = (label, field, library) => {
-            const row = el('div', 'yuzi-qq-assistant-profile-row yuzi-qq-assistant-appearance-row');
-            const labelNode = el('span', 'yuzi-qq-field-label');
-            labelNode.textContent = label;
-            const choose = button(t("选择"), 'yuzi-qq-secondary-button');
-            choose.addEventListener('click', () => {
-                choose.disabled = true;
-                void saveAppearanceAsset(id, character, field, library)
-                    .catch(report)
-                    .finally(() => { choose.disabled = false; });
-            });
-            row.append(labelNode, choose);
-            if (character[field]) {
-                const remove = button(t("清除"), 'yuzi-qq-secondary-button');
-                remove.addEventListener('click', () => {
-                    remove.disabled = true;
-                    void clearAppearanceAsset(id, field).catch(report);
-                });
-                row.append(remove);
-            }
-            return row;
-        };
-        const messageTextColor = el('label', 'yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group is-control-stacked is-select');
-        const messageTextColorLabel = el('span', 'yuzi-qq-field-label');
-        messageTextColorLabel.textContent = t("消息字色");
-        const messageTextColorSelect = el('select', 'yuzi-qq-field-control yuzi-qq-field-select');
-        messageTextColorSelect.name = 'messageTextColor';
-        [['white', t("白字")], ['black', t("黑字")]].forEach(([value, label]) => {
-            const option = el('option');
-            option.value = value;
-            option.textContent = label;
-            option.selected = value === (character.messageTextColor || 'black');
-            messageTextColorSelect.append(option);
-        });
-        messageTextColorSelect.addEventListener('change', async () => {
-            messageTextColorSelect.disabled = true;
-            try {
-                await save(id, { messageTextColor: messageTextColorSelect.value });
-                status.textContent = '';
-            } catch (error) {
-                status.textContent = error.message;
-            } finally {
-                messageTextColorSelect.disabled = false;
-            }
-        });
-        messageTextColor.append(messageTextColorLabel, messageTextColorSelect);
-        const avatarFrame = appearanceRow(t("头像框"), 'avatarFrameAssetId', 'avatar-frame');
-        const bubble = appearanceRow(t("气泡"), 'bubbleAssetId', 'bubble');
-        const persona = el('label', 'yuzi-qq-field yuzi-qq-assistant-persona');
-        const label = el('span', 'yuzi-qq-field-label'); label.textContent = t("人物人设");
-        const textarea = el('textarea'); textarea.value = draft.value; textarea.rows = 12;
+        profileEditor.addGroup(groups, t("人物"), [
+            profileEditor.fieldRow({ ...owner, field: 'formalName', label: t("姓名"), value: character.formalName }),
+            assetRow('avatarAssetId'),
+        ]);
+        profileEditor.addGroup(groups, t("形象"), [
+            profileEditor.assetRow({
+                field: 'backgroundAssetId', value: conversation.backgroundAssetId || '',
+                owner: 'private', conversationId: conversation.conversationId, token,
+            }),
+            assetRow('avatarFrameAssetId'),
+            assetRow('bubbleAssetId'),
+            profileEditor.messageColorRow({ ...owner, value: character.messageTextColor || 'black' }),
+        ]);
+        const footer = el('p', 'phone-ios-group-footer');
+        footer.textContent = t("背景、头像框、气泡选好后立即生效；头像框与气泡素材来自图片资料。");
+        groups.append(footer);
+        const persona = el('div', 'phone-ios-row is-block yuzi-qq-assistant-persona');
+        const head = el('div', 'yuzi-qq-assistant-persona-head');
+        const label = el('label', 'phone-ios-field-label'); label.textContent = t("人物人设");
+        const dirty = el('span', 'phone-ios-badge is-danger'); dirty.textContent = t("未保存");
+        const textarea = el('textarea', 'phone-ios-field');
+        textarea.id = 'yuzi-qq-assistant-persona'; label.htmlFor = textarea.id;
+        textarea.value = draft.value; textarea.rows = 12;
         textarea.placeholder = t("在这里自由填写人物身份、性格、说话方式与语料");
-        textarea.addEventListener('input', () => { draft.value = textarea.value; });
-        persona.append(label, textarea);
-        const actions = el('div', 'yuzi-qq-assistant-profile-row');
-        const submit = button(t("保存人设"), 'yuzi-qq-primary-button');
+        const syncDirty = () => { dirty.hidden = draft.value === draft.saved; };
+        textarea.addEventListener('input', () => { draft.value = textarea.value; syncDirty(); });
+        head.append(label, dirty); persona.append(head, textarea);
+        profileEditor.addGroup(groups, t("人设"), [persona]);
+        const submit = button(t("保存人设"), 'phone-ios-row is-action');
         submit.addEventListener('click', async () => {
             const value = textarea.value; submit.disabled = true;
-            try { await save(id, { persona: value }); draft.saved = value; status.textContent = t("人设已保存"); }
+            try { await save(id, { persona: value }); draft.saved = value; syncDirty(); status.textContent = t("人设已保存"); }
             catch (error) { status.textContent = error.message; }
             finally { submit.disabled = false; }
         });
-        actions.append(submit);
+        const actions = [submit];
         if (character.isBuiltIn) {
-            const reset = button(t("恢复默认人设"), 'yuzi-qq-secondary-button');
-            reset.addEventListener('click', () => { textarea.value = character.defaultPersona; draft.value = textarea.value; status.textContent = t("已填回默认人设，点击保存后生效"); }); actions.append(reset);
+            const reset = button(t("恢复默认人设"), 'phone-ios-row is-action');
+            reset.addEventListener('click', () => {
+                textarea.value = character.defaultPersona; draft.value = textarea.value; syncDirty();
+                status.textContent = t("已填回默认人设，点击保存后生效");
+            });
+            actions.push(reset);
         }
-        card.append(name, avatarRow, background, avatarFrame, bubble, messageTextColor, persona, actions, status);
-        content.append(card); return main;
+        profileEditor.addGroup(groups, '', actions).classList.add('yuzi-qq-assistant-actions');
+        syncDirty();
+        content.append(groups, status);
+        profileEditor.bindControls(groups, token);
+        return main;
     };
     return {
         choose, settings,

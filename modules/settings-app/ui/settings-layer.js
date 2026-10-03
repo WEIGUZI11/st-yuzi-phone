@@ -20,7 +20,7 @@ function nextLayerId(prefix) {
  * 把弹层挂到手机壳临时层宿主，统一处理遮罩点击、Esc、焦点进入与归还。
  * @returns {{ bind: Function, close: Function } | null} 宿主不存在时返回 null
  */
-export function mountSettingsLayer(overlay, runtime = null) {
+export function mountSettingsLayer(overlay, runtime = null, onClose = null) {
     if (!getPhoneTemporaryLayerHost()) return null;
     clearPhoneTemporaryLayers();
 
@@ -36,6 +36,7 @@ export function mountSettingsLayer(overlay, runtime = null) {
     };
     const finish = () => {
         cleanups.splice(0).reverse().forEach(task => task());
+        onClose?.();
         if (opener && typeof opener.focus === 'function' && opener.isConnected) {
             opener.focus({ preventScroll: true });
         }
@@ -54,6 +55,19 @@ export function mountSettingsLayer(overlay, runtime = null) {
     });
     bind(overlay, 'click', (event) => {
         if (event.target === overlay) close();
+    });
+    bind(overlay, 'keydown', (event) => {
+        if (event.key !== 'Tab') return;
+        const controls = [...overlay.querySelectorAll('button:not(:disabled), input:not(:disabled):not([type="hidden"]), textarea:not(:disabled), select:not(:disabled), [tabindex="0"]')];
+        const first = controls[0];
+        const last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first?.focus();
+        }
     });
     bind(document, 'keydown', (event) => {
         if (event.key !== 'Escape') return;
@@ -84,6 +98,7 @@ export function showSettingsSheet({
     className = '',
     doneText = t`完成`,
     onDone = null,
+    onClose = null,
     runtime = null,
 } = {}) {
     const titleId = nextLayerId('phone-ios-sheet-title');
@@ -104,7 +119,7 @@ export function showSettingsSheet({
         </section>
     `;
 
-    const layer = mountSettingsLayer(overlay, runtime);
+    const layer = mountSettingsLayer(overlay, runtime, onClose);
     if (!layer) return null;
     layer.bind(overlay.querySelector('.phone-ios-sheet-done'), 'click', () => {
         if (onDone?.(overlay) === false) return;
@@ -175,11 +190,11 @@ export function showSettingsOptionSheet({
  * captionHtml 由调用方负责转义。
  * @param {{ title: string, captionHtml?: string, actions: Array<{ label: string, danger?: boolean, onSelect: Function }>, runtime?: object }} config
  */
-export function showSettingsActionSheet({ title = '', captionHtml = '', actions = [], runtime = null } = {}) {
+export function showSettingsActionSheet({ title = '', captionHtml = '', actions = [], className = '', runtime = null } = {}) {
     const titleId = nextLayerId('phone-settings-action-title');
     const items = actions.filter(action => action && action.label);
     const overlay = document.createElement('div');
-    overlay.className = 'phone-ios-layer';
+    overlay.className = `phone-ios-layer${className ? ` ${className}` : ''}`;
     overlay.innerHTML = `
         <section class="phone-ios-action-sheet" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
             <div class="phone-ios-action-group">

@@ -174,6 +174,14 @@ Dock 仍消费现有四个运行时入口；隐藏可视标签不等于删除名
 
 控件桥规则：分组控件只换外观，数据仍走隐藏的原生 `select` / `input`。选择行用 `[data-settings-select="<select id>"]`，分段控件用 `.phone-ios-seg[data-settings-seg="<select id>"]`，步进器用 `.phone-ios-stepper[data-settings-stepper="<input id>"]`；页面调用 `bindSettingsGroupedControls(container, runtime)` 后，既有服务继续按原 id 监听 `change` / `input`。
 
+QQ 当前用户与 NPC 编辑资料页共用 `.yuzi-qq-profile-editor-list`，按「形象 / 资料 / 背景」组织 `.phone-ios-group`；文字字段使用 `.phone-ios-inline-input`，字色使用绑定隐藏 `select` 的 `.phone-ios-seg`。资产行使用 `.yuzi-qq-profile-asset-thumb`（`.is-round` 为头像、`.is-tall` 为背景），颜色在编辑页作用域内映射到 QQ token，不改公共控件或资料展示页。头像、资料背景的整行菜单同时提供图片资料选择和原图上传；头像框、气泡复用同一选图面板，有值只显示缩略图，空值保留「未设置」，不新增素材名称字段。分组标题与卡片外边缘对齐，分隔线统一使用公共细线的半高度绘制。
+
+陪聊设置页 `.yuzi-qq-assistant-settings-view` 复用同一分组、字段、字色与资产行，按「人物 / 形象 / 人设」排列，底部操作使用 `.phone-ios-row.is-action`；头像与聊天背景沿用上述图片菜单，人设多行输入使用 `.phone-ios-field`，未保存提示使用 `.phone-ios-badge.is-danger`。页面仅映射公共表单表面、正文与占位 token，继续由外壳隔离层阻断酒馆主题；陪聊人物的头像、头像框、气泡、姓名和字色接全局人物保存接口，聊天背景接当前会话保存接口，人设草稿不自动保存。
+
+私聊／群聊设置页 `.yuzi-qq-conversation-settings-view` 复用上述分组骨架，按「资料 / 世界书」排列；私聊仅提供备注，群聊仅提供群名称，不新增群备注。行内文字使用 `.phone-ios-inline-input`，世界书开关、灯色、深度分别使用公共 switch、seg、stepper，禁用态同步隐藏原生控件与可见按钮，关键词仅在本会话绿灯开启时显示。聊天背景复用同一图片菜单和缩略图，图片资料选择／上传／删除分别接当前私聊或群聊的保存接口。群资料卡与成员管理编辑页复用 `.phone-ios-group`；成员网格使用四列 `.phone-ios-icon-grid`，身份角标使用 `.phone-ios-badge`，管理与退出／解散操作使用 `.phone-ios-row.is-action`（危险动作加 `.is-danger`）。添加成员复用 `showSettingsOptionSheet()`，只列出尚未入群的现有 QQ 好友；成员点击后的资料展示页及所有权限规则不变。
+
+`showSettingsActionSheet()` 与 `showSettingsSheet()` 均支持 `className` 以复用 `.yuzi-qq-settings-layer` 配色；`showSettingsSheet()` 的可选 `onClose` 在完成、遮罩、Esc、替换或销毁时统一执行，用于释放选图资源租约。「完成」只关闭选图面板，实际点选成功后才保存；QQ 图片仍按原图保存，不接裁剪流程。
+
 选择面板保留原生 option / optgroup 的禁用状态；步进器保留原生 input 的禁用状态，并在 input / change 后同步数值与边界按钮。分组内容中的 `[hidden]` 始终隐藏，不因公共行布局重新显示；开关默认值只读取已保存配置，不照搬原型示例值。
 
 分组行 `.phone-ios-row` 不消费旧 `.phone-appearance-check-item` 的布局；行内输入 `.phone-ios-inline-input` 与分组字段 `.phone-ios-field`（含多行输入）复用设置页已有的宿主主题隔离规则，正文、占位、光标、聚焦与禁用态跟随手机主题，不复制配色声明。外壳隔离层统一保持行内输入透明、无边框和阴影，避免宿主主题给文本输入额外绘制外框。
@@ -284,7 +292,7 @@ Figma 原始底栏顺序不直接复用。生产 QQ 固定为 消息、联系人
 | 表情覆盖层 | --yuzi-qq-private-emoji-panel-height / --yuzi-qq-private-emoji-panel-padding-block / --yuzi-qq-private-emoji-column-min | 基准高度 320px；覆盖消息区，不改变输入区与消息流的布局高度；列数由最小轨道自动从五列收缩到四列、三列 |
 | 消息多选栏 | --yuzi-qq-message-selection-action-size / --yuzi-qq-message-selection-icon-size / --yuzi-qq-message-selection-injection-padding-inline | 36px / 18px / 12px |
 | 跳转气泡 | --yuzi-qq-jump-width / --yuzi-qq-jump-height / --yuzi-qq-jump-icon-size / --yuzi-qq-jump-radius | 114px / 34px / 18px / 左侧胶囊 |
-| 人物资料 | --yuzi-qq-profile-sheet-start / --yuzi-qq-profile-row-height / --yuzi-qq-profile-avatar-size | 226px / 102px / 68px |
+| 人物资料 | --yuzi-qq-profile-sheet-start / --yuzi-qq-profile-sheet-overlap / --yuzi-qq-profile-row-height / --yuzi-qq-profile-avatar-size / --yuzi-qq-profile-hero-avatar-size / --yuzi-qq-profile-avatar-overlap / --yuzi-qq-profile-avatar-initial-size | 226px / 36px / 102px / 68px / 84px / 36px / 30px |
 | 人物操作栏 | --yuzi-qq-profile-action-bar-height / --yuzi-qq-profile-action-padding-top / --yuzi-qq-profile-action-padding-inline / --yuzi-qq-profile-action-gap / --yuzi-qq-profile-action-radius | 83px / 4px / 16px / 8px / 8px |
 | 编辑资料 | --yuzi-qq-editor-group-radius / --yuzi-qq-editor-group-padding-block / --yuzi-qq-editor-group-padding-inline / --yuzi-qq-form-group-gap | 14px / 13px / 16px / 10px |
 | 添加菜单 | --yuzi-qq-dialog-menu-width / --yuzi-qq-dialog-menu-height / --yuzi-qq-dialog-menu-radius / --yuzi-qq-dialog-menu-padding | 168px / 142px / 14px / 16px |

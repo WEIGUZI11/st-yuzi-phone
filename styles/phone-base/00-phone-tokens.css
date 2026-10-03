@@ -686,11 +686,14 @@
     /* Profile, edit profile and settings groups */
     --yuzi-qq-profile-sheet-start: 226px;
     --yuzi-qq-profile-sheet-offset: calc(var(--yuzi-qq-profile-sheet-start) - var(--yuzi-qq-safe-top) - var(--yuzi-qq-detail-top-gap) - var(--yuzi-qq-chat-header-height));
+    --yuzi-qq-profile-sheet-overlap: 36px;
     --yuzi-qq-profile-sheet-radius: 20px;
     --yuzi-qq-profile-row-height: 102px;
     --yuzi-qq-profile-row-padding-inline: 16px;
     --yuzi-qq-profile-row-gap: 18px;
     --yuzi-qq-profile-avatar-size: 68px;
+    --yuzi-qq-profile-hero-avatar-size: 84px;
+    --yuzi-qq-profile-avatar-overlap: 36px;
     --yuzi-qq-avatar-large: var(--yuzi-qq-profile-avatar-size);
     --yuzi-qq-profile-action-bar-height: 83px;
     --yuzi-qq-profile-action-padding-top: 4px;
@@ -1065,6 +1068,7 @@
     --yuzi-qq-contact-secondary-line-height: calc(19px * var(--yuzi-qq-readable-text-scale));
     --yuzi-qq-profile-name-size: calc(24px * var(--yuzi-qq-readable-text-scale));
     --yuzi-qq-profile-name-line-height: calc(24px * var(--yuzi-qq-readable-text-scale));
+    --yuzi-qq-profile-avatar-initial-size: calc(30px * var(--yuzi-qq-readable-text-scale));
     --yuzi-qq-profile-copy-size: calc(14px * var(--yuzi-qq-readable-text-scale));
     --yuzi-qq-profile-copy-line-height: calc(16px * var(--yuzi-qq-readable-text-scale));
     --yuzi-qq-profile-action-size: calc(16px * var(--yuzi-qq-readable-text-scale));

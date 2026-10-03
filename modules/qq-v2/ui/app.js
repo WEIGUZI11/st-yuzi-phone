@@ -16,7 +16,7 @@ import { createPhoneViewScrollState } from '../../phone-core/view-scroll-state.j
 import { getPhoneSettings } from '../../settings.js';
 import { createLazyLoader } from '../../utils/observers.js';
 import { escapeHtml, escapeHtmlAttr } from '../../utils/dom-escape.js';
-import { showSettingsSheet } from '../../settings-app/ui/settings-layer.js';
+import { showSettingsActionSheet, showSettingsOptionSheet, showSettingsSheet } from '../../settings-app/ui/settings-layer.js';
 import { createEmojiPanelTemporaryLayerController } from './emoji-panel.js';
 import { createStickerUploadDialog } from './sticker-upload-dialog.js';
 import {
@@ -1015,6 +1015,7 @@ export function createQQApp({
     const jumpCounts = new Map();
     const renderLeaseSessions = new Map();
     let profileLibraryPickerSession = null;
+    let profileLibraryPickerRequest = 0;
     const selectedImageAssetIds = new Set();
     const selectedStickerIds = new Set();
     const imageGenerationTasks = new Map();
@@ -1120,6 +1121,7 @@ export function createQQApp({
     };
 
     const clearOverlay = () => {
+        profileLibraryPickerRequest += 1;
         abortProfileLibraryPickerSession();
         try {
             overlayCleanup?.();
@@ -2046,11 +2048,11 @@ export function createQQApp({
         const person = asArray(conversation?.group?.members)
             .find((member) => member?.personId === page.personId);
         const { main, content } = makeSecondaryPage(t("编辑资料"), {
-            className: 'yuzi-qq-group-member-editor-view',
+            className: 'phone-ios-grouped-page yuzi-qq-profile-editor-view yuzi-qq-group-member-editor-view',
         });
         if (!conversation || conversation.kind !== 'group' || !person || !isActive(token)) return main;
         const actions = groupMemberManagementActions(conversation.group, person.personId);
-        const card = createElement('section', 'yuzi-qq-group-member-editor-card');
+        const groups = createElement('div', 'yuzi-qq-profile-editor-list');
         const identity = createElement('div', 'yuzi-qq-group-member-editor-identity');
         identity.append(avatar(person, 'yuzi-qq-avatar yuzi-qq-avatar-large'));
         const copy = createElement('div', 'yuzi-qq-group-member-editor-copy');
@@ -2060,7 +2062,8 @@ export function createQQApp({
         role.textContent = groupRoleLabel(conversation.group, person.personId) || t("普通成员");
         copy.append(name, role);
         identity.append(copy);
-        const list = createElement('div', 'yuzi-qq-group-member-editor-actions');
+        const identityCard = appendProfileEditorGroup(groups, '', [identity]);
+        identityCard.classList.add('yuzi-qq-group-member-editor-card');
         const labels = {
             'appoint-admin': t("任命管理员"),
             'revoke-admin': t("取消管理员"),
@@ -2069,19 +2072,18 @@ export function createQQApp({
             kick: t("移出群聊"),
             'transfer-owner': t("转让群主"),
         };
-        actions.forEach((action) => {
-            const button = createButton(labels[action] || action, [
-                'yuzi-qq-group-member-editor-action',
-                action === 'kick' || action === 'transfer-owner' ? 'yuzi-qq-danger-button' : 'yuzi-qq-secondary-button',
-            ].join(' '), {
+        if (actions.length > 0) {
+            const buttons = actions.map((action) => createButton(labels[action] || action, [
+                'phone-ios-row is-action yuzi-qq-group-member-editor-action',
+                action === 'kick' || action === 'transfer-owner' ? 'is-danger' : '',
+            ].filter(Boolean).join(' '), {
                 'data-qq-group-member-action': action,
                 'data-qq-group-conversation': conversation.conversationId,
                 'data-qq-group-person': person.personId,
-            });
-            list.append(button);
-        });
-        card.append(identity, list);
-        content.append(card);
+            }));
+            appendProfileEditorGroup(groups, '', buttons).classList.add('yuzi-qq-group-member-editor-actions');
+        }
+        content.append(groups);
         return main;
     };
 
@@ -2132,18 +2134,26 @@ export function createQQApp({
         birthday: Object.freeze({ label: t("生日"), maxLength: 120 }),
     });
 
-    const profileEditRow = ({ field, value, owner, conversationId = '', readonly = false, className = '' }) => {
+    const PROFILE_ASSET_META = Object.freeze({
+        avatarAssetId: { label: t("头像"), library: 'avatar' },
+        avatarFrameAssetId: { label: t("头像框"), library: 'avatar-frame' },
+        bubbleAssetId: { label: t("气泡"), library: 'bubble' },
+        profileBackgroundAssetId: { label: t("资料背景"), library: 'profile-background' },
+        backgroundAssetId: { label: t("聊天背景"), library: 'chat-background' },
+    });
+
+    const profileEditRow = ({ field, value, owner, conversationId = '', characterId = '', label, readonly = false }) => {
         const meta = PROFILE_FIELD_META[field];
-        const row = createElement('label', `yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-profile-edit-row yuzi-qq-profile-editor-group yuzi-qq-profile-editor-row${readonly ? ' is-readonly' : ' is-control-stacked'}${className ? ` ${className}` : ''}`);
-        const labelNode = createElement('span', 'yuzi-qq-field-label');
-        labelNode.textContent = meta.label;
+        const row = createElement('label', `phone-ios-row yuzi-qq-profile-edit-row yuzi-qq-profile-editor-row${readonly ? ' is-readonly' : ''}`);
+        const labelNode = createElement('span', 'phone-ios-row-label yuzi-qq-field-label');
+        labelNode.textContent = label || meta.label;
         if (readonly) {
-            const control = createElement('span', 'yuzi-qq-field-control yuzi-qq-profile-edit-value yuzi-qq-profile-editor-row-value');
+            const control = createElement('span', 'phone-ios-row-value yuzi-qq-profile-edit-value yuzi-qq-profile-editor-row-value');
             control.textContent = asText(value);
             row.append(labelNode, control);
             return row;
         }
-        const input = createElement('input', 'yuzi-qq-field-control yuzi-qq-field-input yuzi-qq-profile-editor-input');
+        const input = createElement('input', 'phone-ios-inline-input yuzi-qq-profile-editor-input');
         input.type = 'text';
         input.name = field;
         input.value = asText(value);
@@ -2152,141 +2162,130 @@ export function createQQApp({
         input.dataset.qqProfileFieldInput = field;
         input.dataset.qqProfileFieldOwner = owner;
         if (conversationId) input.dataset.qqProfileFieldConversation = conversationId;
+        if (characterId) input.dataset.qqProfileFieldCharacter = characterId;
         row.append(labelNode, input);
         return row;
     };
 
-    const profileAssetRow = ({ label, value, pickAttributes, clearAttributes, className = '' }) => {
-        const row = createElement('div', `yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-profile-asset-row ${className}`);
-        const labelNode = createElement('span', 'yuzi-qq-field-label');
-        labelNode.textContent = label;
-        const control = createElement('span', 'yuzi-qq-field-control yuzi-qq-profile-asset-control');
-        const pick = createButton('', 'yuzi-qq-icon-button yuzi-qq-profile-asset-upload', {
-            'aria-label': t`${label}\u4e0a\u4f20`, title: t`${label}\u4e0a\u4f20`, ...pickAttributes,
+    const profileAssetRow = ({ field, value, owner, conversationId = '', characterId = '', avatarUrl = '', token }) => {
+        const { label, library } = PROFILE_ASSET_META[field];
+        const row = createButton('', 'phone-ios-row is-tappable yuzi-qq-profile-asset-row yuzi-qq-profile-editor-row', {
+            'data-qq-profile-asset-menu': field,
+            'data-qq-profile-field-owner': owner,
+            'data-qq-profile-field-conversation': conversationId,
+            'data-qq-profile-field-character': characterId,
+            'data-qq-profile-asset-id': asText(value),
+            'aria-label': label,
         });
-        pick.append(createIcon('arrow-up-from-bracket'));
-        control.append(pick);
-        if (value) {
-            const clear = createButton('', 'yuzi-qq-icon-button yuzi-qq-profile-asset-delete', {
-                'aria-label': t`${label}\u5220\u9664`, title: t`${label}\u5220\u9664`, ...clearAttributes,
-            });
-            clear.append(createIcon('trash'));
-            control.append(clear);
+        const labelNode = createElement('span', 'phone-ios-row-label yuzi-qq-field-label');
+        labelNode.textContent = label;
+        const control = createElement('span', 'phone-ios-row-value yuzi-qq-profile-editor-row-value');
+        const decoration = library === 'avatar-frame' || library === 'bubble';
+        const background = library === 'profile-background' || library === 'chat-background';
+        if (value || !decoration) {
+            const thumb = createElement('span', `phone-ios-thumb yuzi-qq-profile-asset-thumb${library === 'avatar' ? ' is-round' : background ? ' is-tall' : ''}`);
+            thumb.setAttribute('aria-hidden', 'true');
+            thumb.textContent = t("无");
+            control.append(thumb);
+            const apply = (media) => {
+                if (!media?.url || !isActive(token)) return;
+                const image = createElement('img');
+                image.alt = '';
+                image.src = media.url;
+                thumb.replaceChildren(image);
+            };
+            if (value) {
+                const session = leaseSessionFor(token)?.[background ? 'background' : library === 'bubble' ? 'bubbles' : 'avatars'];
+                const cached = session?.peek(value);
+                if (cached) apply(cached);
+                else void session?.load(value).then(apply).catch(() => {});
+            } else if (library === 'avatar' && avatarUrl) apply({ url: avatarUrl });
         }
+        if (decoration && !value) control.append(document.createTextNode(t("未设置")));
+        control.append(createIcon('chevron-right', 'phone-ios-row-chevron'));
         row.append(labelNode, control);
         return row;
     };
 
-    const profileLibraryAssetRow = ({ label, value, pickAttributes, clearAttributes, className = '' }) => {
-        const row = createElement('div', `yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-profile-asset-row ${className}`);
-        const labelNode = createElement('span', 'yuzi-qq-field-label');
-        labelNode.textContent = label;
-        const control = createElement('span', 'yuzi-qq-field-control yuzi-qq-profile-asset-control');
-        const pick = createButton('', 'yuzi-qq-icon-button yuzi-qq-profile-library-pick', {
-            'aria-label': t`${label}选择`, title: t`${label}选择`, ...pickAttributes,
-        });
-        pick.append(createIcon('image'));
-        control.append(pick);
-        if (value) {
-            const clear = createButton('', 'yuzi-qq-icon-button yuzi-qq-profile-asset-delete', {
-                'aria-label': t`${label}清除`, title: t`${label}清除`, ...clearAttributes,
-            });
-            clear.append(createIcon('trash'));
-            control.append(clear);
-        }
-        row.append(labelNode, control);
-        return row;
-    };
-
-    const profileMessageTextColorRow = ({ value, owner, conversationId = '', className = '' }) => {
-        const row = createElement('label', `yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-profile-editor-row is-control-stacked${className ? ` ${className}` : ''}`);
-        const labelNode = createElement('span', 'yuzi-qq-field-label');
+    const profileMessageTextColorRow = ({ value, owner, conversationId = '', characterId = '' }) => {
+        const row = createElement('div', 'phone-ios-row yuzi-qq-profile-editor-row');
+        const labelNode = createElement('span', 'phone-ios-row-label yuzi-qq-field-label');
         labelNode.textContent = t("消息字色");
-        const select = createElement('select', 'yuzi-qq-field-control yuzi-qq-field-select yuzi-qq-profile-message-text-color');
+        const select = createElement('select', 'yuzi-qq-profile-message-text-color');
+        select.id = `qq-profile-message-color-${owner}`;
         select.name = 'messageTextColor';
+        select.hidden = true;
         select.dataset.qqProfileMessageTextColor = '1';
         select.dataset.qqProfileFieldOwner = owner;
+        select.dataset.qqProfileSavedValue = value;
         if (conversationId) select.dataset.qqProfileFieldConversation = conversationId;
+        if (characterId) select.dataset.qqProfileFieldCharacter = characterId;
+        const segment = createElement('div', 'phone-ios-seg');
+        segment.dataset.settingsSeg = select.id;
+        segment.setAttribute('role', 'group');
+        segment.setAttribute('aria-label', t("消息字色"));
         [['white', t("白字")], ['black', t("黑字")]].forEach(([optionValue, optionLabel]) => {
             const option = createElement('option');
             option.value = optionValue;
             option.textContent = optionLabel;
             option.selected = optionValue === value;
             select.append(option);
+            segment.append(createButton(optionLabel, 'phone-ios-seg-item', {
+                'data-value': optionValue,
+                'aria-pressed': String(optionValue === value),
+            }));
         });
-        row.append(labelNode, select);
+        row.append(labelNode, select, segment);
         return row;
+    };
+
+    const appendProfileEditorGroup = (container, title, rows) => {
+        if (title) {
+            const heading = createElement('h2', 'phone-ios-group-header yuzi-qq-profile-editor-group-header');
+            heading.textContent = title;
+            container.append(heading);
+        }
+        const group = createElement('section', 'phone-ios-group yuzi-qq-profile-editor-group');
+        if (title) group.setAttribute('aria-label', title);
+        group.append(...rows);
+        container.append(group);
+        return group;
     };
 
     const renderProfileEditorSurface = ({ token, profile, displayName, conversationId = '', current = false }) => {
         const { main, content } = makeSecondaryPage(t("编辑资料"), {
-            className: `yuzi-qq-profile-view yuzi-qq-profile-page yuzi-qq-profile-editor-view yuzi-qq-profile-edit-view${current ? ' yuzi-qq-current-profile-editor-view' : ''}`,
+            className: `phone-ios-grouped-page yuzi-qq-profile-view yuzi-qq-profile-page yuzi-qq-profile-editor-view yuzi-qq-profile-edit-view${current ? ' yuzi-qq-current-profile-editor-view' : ''}`,
             headerClassName: `yuzi-qq-profile-editor-header${current ? ' yuzi-qq-current-profile-editor-header' : ''}`,
             titleClassName: 'yuzi-qq-profile-editor-title',
         });
         if (!isActive(token)) return main;
         const owner = current ? 'current' : 'private';
-        const rowClass = 'yuzi-qq-profile-editor-group yuzi-qq-profile-editor-row';
         const groups = createElement('div', 'yuzi-qq-profile-editor-groups yuzi-qq-profile-editor-list');
-        groups.append(
-            profileAssetRow({
-                label: t("头像"),
-                value: asText(profile.avatarAssetId),
-                pickAttributes: current
-                    ? { 'data-qq-current-profile-pick-avatar': '1' }
-                    : { 'data-qq-profile-pick-avatar': conversationId },
-                clearAttributes: current
-                    ? { 'data-qq-current-profile-clear-avatar': '1' }
-                    : { 'data-qq-profile-clear-avatar': conversationId },
-                className: rowClass,
-            }),
-            profileLibraryAssetRow({
-                label: t("头像框"),
-                value: asText(profile.avatarFrameAssetId),
-                pickAttributes: current
-                    ? { 'data-qq-current-profile-pick-avatar-frame': '1' }
-                    : { 'data-qq-profile-pick-avatar-frame': conversationId },
-                clearAttributes: current
-                    ? { 'data-qq-current-profile-clear-avatar-frame': '1' }
-                    : { 'data-qq-profile-clear-avatar-frame': conversationId },
-                className: rowClass,
-            }),
-            profileLibraryAssetRow({
-                label: t("气泡"),
-                value: asText(profile.bubbleAssetId),
-                pickAttributes: current
-                    ? { 'data-qq-current-profile-pick-bubble': '1' }
-                    : { 'data-qq-profile-pick-bubble': conversationId },
-                clearAttributes: current
-                    ? { 'data-qq-current-profile-clear-bubble': '1' }
-                    : { 'data-qq-profile-clear-bubble': conversationId },
-                className: rowClass,
-            }),
+        const addGroup = (title, rows) => appendProfileEditorGroup(groups, title, rows);
+        const assetRow = (field) => profileAssetRow({ field, value: asText(profile[field]), owner, conversationId, token });
+        addGroup(t("形象"), [
+            assetRow('avatarAssetId'),
+            assetRow('avatarFrameAssetId'),
+            assetRow('bubbleAssetId'),
             profileMessageTextColorRow({
                 value: asText(profile.messageTextColor) || (current ? 'white' : 'black'),
                 owner,
                 conversationId,
-                className: rowClass,
             }),
+        ]);
+        addGroup(t("资料"), [
             profileEditRow({ field: 'formalName', value: displayName, owner, conversationId, readonly: current }),
             profileEditRow({ field: 'signature', value: profile.signature, owner, conversationId }),
             profileEditRow({ field: 'gender', value: profile.gender, owner, conversationId }),
             profileEditRow({ field: 'birthday', value: profile.birthday, owner, conversationId }),
-            profileAssetRow({
-                label: t("资料背景"),
-                value: asText(profile.profileBackgroundAssetId),
-                pickAttributes: current
-                    ? { 'data-qq-current-profile-pick-background': '1' }
-                    : { 'data-qq-profile-pick-background': conversationId },
-                clearAttributes: current
-                    ? { 'data-qq-current-profile-clear-background': '1' }
-                    : { 'data-qq-profile-clear-background': conversationId },
-                className: rowClass,
-            }),
-        );
+        ]);
+        addGroup(t("背景"), [assetRow('profileBackgroundAssetId')]);
         const status = createElement('p', 'yuzi-qq-form-error yuzi-qq-profile-editor-status');
         status.dataset.qqProfileEditorStatus = owner;
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
         content.append(groups, status);
+        bindSettingsGroupedControls(groups, null, () => isActive(token));
         return main;
     };
 
@@ -3017,17 +3016,23 @@ export function createQQApp({
         });
     };
 
+    const saveProfilePatch = ({ owner, conversationId = '', characterId = '' }, profile) => {
+        if (owner === 'assistant') return facade.intent.saveAssistantCharacter({ characterId, patch: profile });
+        if (owner === 'group') return facade.intent.updateGroupProfile({ conversationId, profile });
+        if (owner === 'current') return facade.intent.updateCurrentProfile({ profile });
+        return facade.intent.updatePrivateProfile({ conversationId, profile });
+    };
+
     const persistProfileEditorField = async (input) => {
         const field = input.dataset.qqProfileFieldInput;
         if (!PROFILE_FIELD_META[field]) return;
         const owner = input.dataset.qqProfileFieldOwner;
         const value = field === 'formalName' ? normalizeName(input.value) : asText(input.value);
-        const result = owner === 'current'
-            ? await facade.intent.updateCurrentProfile({ profile: { [field]: value } })
-            : await facade.intent.updatePrivateProfile({
-                conversationId: input.dataset.qqProfileFieldConversation,
-                profile: { [field]: value },
-            });
+        const result = await saveProfilePatch({
+            owner,
+            conversationId: input.dataset.qqProfileFieldConversation,
+            characterId: input.dataset.qqProfileFieldCharacter,
+        }, { [field]: value });
         const status = input.closest('.yuzi-qq-profile-editor-view')?.querySelector('[data-qq-profile-editor-status]');
         if (!result?.ok) {
             if (status) status.textContent = result?.error?.message || t("保存失败");
@@ -3040,19 +3045,28 @@ export function createQQApp({
     const persistProfileMessageTextColor = async (input) => {
         const owner = input.dataset.qqProfileFieldOwner;
         const value = input.value === 'white' ? 'white' : 'black';
-        const result = owner === 'current'
-            ? await facade.intent.updateCurrentProfile({ profile: { messageTextColor: value } })
-            : await facade.intent.updatePrivateProfile({
-                conversationId: input.dataset.qqProfileFieldConversation,
-                profile: { messageTextColor: value },
-            });
+        const previous = input.dataset.qqProfileSavedValue;
+        const buttons = [...input.parentElement.querySelectorAll('.phone-ios-seg-item')];
         const status = input.closest('.yuzi-qq-profile-editor-view')?.querySelector('[data-qq-profile-editor-status]');
-        if (!result?.ok) {
-            if (status) status.textContent = result?.error?.message || t("保存失败");
-            return;
+        buttons.forEach((button) => { button.disabled = true; });
+        try {
+            const result = await saveProfilePatch({
+                owner,
+                conversationId: input.dataset.qqProfileFieldConversation,
+                characterId: input.dataset.qqProfileFieldCharacter,
+            }, { messageTextColor: value });
+            if (!result?.ok) throw new Error(result?.error?.message || t("保存失败"));
+            input.dataset.qqProfileSavedValue = value;
+            if (status) status.textContent = '';
+        } catch (error) {
+            input.value = previous;
+            if (status) status.textContent = error.message || t("保存失败");
+        } finally {
+            buttons.forEach((button) => {
+                button.disabled = false;
+                button.setAttribute('aria-pressed', String(button.dataset.value === input.value));
+            });
         }
-        input.value = value;
-        if (status) status.textContent = '';
     };
 
     const renderConversationSettings = async (token) => {
@@ -3060,19 +3074,24 @@ export function createQQApp({
             getConversation(page.conversationId),
             facade.query.globalSettings(),
         ]);
-        if (conversation?.assistantCharacterId) return assistantUI.settings(conversation);
+        if (conversation?.assistantCharacterId) return assistantUI.settings(conversation, token);
         const isGroup = conversation?.kind === 'group';
         const { main, content } = makeSecondaryPage(isGroup ? t("群聊设置") : t("聊天设置"), {
-            className: 'yuzi-qq-conversation-settings-view',
+            className: 'phone-ios-grouped-page yuzi-qq-profile-editor-view yuzi-qq-conversation-settings-view',
             headerClassName: 'yuzi-qq-conversation-settings-header',
             titleClassName: 'yuzi-qq-conversation-settings-title',
         });
         if (!conversation || !isActive(token)) return main;
-        if (!isActive(token)) return main;
+        content.classList.add('yuzi-qq-profile-editor-list');
         const globalWorldbook = asObject(globalSettingsResult?.settings?.worldbook);
         const injection = asObject(conversation.injection);
-        const form = createElement('form', 'yuzi-qq-form yuzi-qq-conversation-settings-form');
+        const form = createElement('form', 'yuzi-qq-form yuzi-qq-conversation-settings-form yuzi-qq-profile-editor-list');
         form.dataset.qqConversationSettingsForm = conversation.conversationId;
+        const setDisabled = (row, disabled) => {
+            row.classList.toggle('is-disabled', disabled);
+            row.setAttribute('aria-disabled', String(disabled));
+            row.querySelectorAll('input, select, button').forEach((control) => { control.disabled = disabled; });
+        };
         if (isGroup) {
             const group = asObject(conversation.group);
             const [profileResult, context] = await Promise.all([
@@ -3080,7 +3099,8 @@ export function createQQApp({
                 getCurrentContext(),
             ]);
             if (!isActive(token)) return main;
-            const membersCard = createElement('section', 'yuzi-qq-group-details');
+            const membersCard = createElement('section', 'phone-ios-group yuzi-qq-profile-editor-group yuzi-qq-group-details');
+            membersCard.setAttribute('aria-label', t("群资料"));
             const identity = createElement('div', 'yuzi-qq-group-details-identity');
             identity.append(groupAvatar(conversation, 'yuzi-qq-avatar yuzi-qq-avatar-large yuzi-qq-group-details-avatar'));
             const identityCopy = createElement('div', 'yuzi-qq-group-details-copy');
@@ -3090,7 +3110,7 @@ export function createQQApp({
             groupStatus.textContent = chatStatusText(conversation);
             identityCopy.append(groupName, groupStatus);
             identity.append(identityCopy);
-            const members = createElement('div', 'yuzi-qq-group-members');
+            const members = createElement('div', 'phone-ios-icon-grid yuzi-qq-group-members');
             members.setAttribute('data-qq-group-members', conversation.conversationId);
             if (group.selfExited !== true) {
                 const self = {
@@ -3098,25 +3118,25 @@ export function createQQApp({
                     avatarAssetId: profileResult?.profile?.avatarAssetId,
                     avatarUrl: context?.user?.avatar,
                 };
-                const item = createElement('div', 'yuzi-qq-group-member-tile is-self');
+                const item = createElement('div', 'phone-ios-icon-cell yuzi-qq-group-member-tile is-self');
                 item.append(identityAvatar(context, self, t("当前用户资料"), token));
-                const name = createElement('span', 'yuzi-qq-group-member-name');
+                const name = createElement('span', 'phone-ios-icon-cell-label yuzi-qq-group-member-name');
                 name.textContent = self.formalName;
-                const role = createElement('small', 'yuzi-qq-group-member-role');
+                const role = createElement('small', `phone-ios-badge yuzi-qq-group-member-role${group.selfRole === 'owner' ? ' is-owner' : ''}`);
                 role.textContent = group.selfRole === 'owner' ? t("群主") : group.selfRole === 'admin' ? t("管理员") : '';
                 item.append(name);
                 if (role.textContent) item.append(role);
                 members.append(item);
             }
             asArray(group.members).forEach((person) => {
-                const item = createButton('', 'yuzi-qq-group-member-tile', {
+                const item = createButton('', 'phone-ios-icon-cell yuzi-qq-group-member-tile', {
                     'data-qq-group-member-profile': person.personId,
                     'data-qq-group-conversation': conversation.conversationId,
                 });
                 item.append(avatar(person, 'yuzi-qq-avatar yuzi-qq-group-member-avatar'));
-                const name = createElement('span', 'yuzi-qq-group-member-name');
+                const name = createElement('span', 'phone-ios-icon-cell-label yuzi-qq-group-member-name');
                 name.textContent = asText(person.formalName) || t("未命名");
-                const role = createElement('small', 'yuzi-qq-group-member-role');
+                const role = createElement('small', `phone-ios-badge yuzi-qq-group-member-role${group.ownerId === person.personId ? ' is-owner' : ''}`);
                 role.textContent = groupRoleLabel(group, person.personId);
                 item.append(name);
                 if (role.textContent) item.append(role);
@@ -3127,11 +3147,13 @@ export function createQQApp({
                 && group.selfExited !== true
                 && (group.selfRole === 'owner' || group.selfRole === 'admin')
             ) {
-                const add = createButton('', 'yuzi-qq-group-member-tile yuzi-qq-group-member-add', {
+                const add = createButton('', 'phone-ios-icon-cell yuzi-qq-group-member-tile yuzi-qq-group-member-add', {
                     'data-qq-add-group-member': conversation.conversationId,
                 });
-                add.append(createIcon('plus'));
-                const label = createElement('span', 'yuzi-qq-group-member-name');
+                const art = createElement('span', 'phone-ios-icon-cell-art');
+                art.append(createIcon('plus'));
+                add.append(art);
+                const label = createElement('span', 'phone-ios-icon-cell-label yuzi-qq-group-member-name');
                 label.textContent = t("添加成员");
                 add.append(label);
                 members.append(add);
@@ -3139,8 +3161,7 @@ export function createQQApp({
             membersCard.append(identity, members);
             content.append(membersCard);
         }
-        const profileCard = createElement('div', 'yuzi-qq-conversation-settings-fields yuzi-qq-conversation-settings-profile-group');
-        const identityField = settingField(
+        const identityField = qqSettingsInlineText(
             isGroup ? t("群名称") : t("备注"),
             isGroup ? 'groupName' : 'remark',
             isGroup ? conversation.group?.name : conversation.remark || '',
@@ -3153,49 +3174,37 @@ export function createQQApp({
                 || !['owner', 'admin'].includes(conversation.group?.selfRole)
             )
         ) {
-            identityField.querySelector('input').disabled = true;
+            setDisabled(identityField, true);
         }
-        const backgroundRow = createElement('div', 'yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group yuzi-qq-conversation-background-preview');
-        const backgroundLabel = createElement('span', 'yuzi-qq-field-label yuzi-qq-conversation-background-label');
-        backgroundLabel.textContent = t("聊天背景");
-        const backgroundActions = createElement('div', 'yuzi-qq-field-control yuzi-qq-conversation-background-actions');
-        const uploadBackground = createButton('', 'yuzi-qq-icon-button yuzi-qq-conversation-background-upload', {
-            'aria-label': t("上传聊天背景"), title: t("上传聊天背景"), 'data-qq-pick-background': conversation.conversationId,
+        const backgroundRow = profileAssetRow({
+            field: 'backgroundAssetId', value: asText(conversation.backgroundAssetId),
+            owner: isGroup ? 'group' : 'private', conversationId: conversation.conversationId, token,
         });
-        uploadBackground.append(createIcon('upload'));
-        backgroundActions.append(uploadBackground);
-        if (conversation.backgroundAssetId) {
-            const clearBackground = createButton('', 'yuzi-qq-icon-button yuzi-qq-conversation-background-delete', {
-                'aria-label': t("删除聊天背景"), title: t("删除聊天背景"), 'data-qq-clear-chat-background': conversation.conversationId,
-            });
-            clearBackground.append(createIcon('trash'));
-            backgroundActions.append(clearBackground);
-        }
-        backgroundRow.append(backgroundLabel, backgroundActions);
-        const injectionEnabled = settingField(t("启用会话世界书注入"), 'enabled', injection.enabled, 'checkbox');
+        appendProfileEditorGroup(form, t("资料"), [identityField, backgroundRow]);
+        const injectionEnabled = qqSettingsSwitch(t("启用会话世界书注入"), 'enabled', injection.enabled);
         const enabledInput = injectionEnabled.querySelector('input');
-        enabledInput.disabled = globalWorldbook.enabled !== true;
-        profileCard.append(identityField, backgroundRow, injectionEnabled);
+        setDisabled(injectionEnabled, globalWorldbook.enabled !== true);
 
-        const injectionCard = createElement('div', 'yuzi-qq-conversation-settings-fields yuzi-qq-conversation-settings-injection-group');
-        const useConversationLight = settingField(t("使用本会话设置（灯色）"), 'useConversationLight', injection.useConversationLight === true, 'checkbox');
-        const light = settingSelect(t("灯色"), 'light', injection.light === 'green' ? 'green' : 'blue', [
+        const useConversationLight = qqSettingsSwitch(t("使用本会话设置（灯色）"), 'useConversationLight', injection.useConversationLight === true);
+        const light = qqSettingsSegment(t("灯色"), 'light', injection.light === 'green' ? 'green' : 'blue', [
             ['blue', t("蓝灯")],
             ['green', t("绿灯")],
-        ]);
-        const useConversationDepth = settingField(t("使用本会话设置（深度）"), 'useConversationDepth', injection.useConversationDepth === true, 'checkbox');
-        const depth = settingField(t("深度"), 'depth', injection.depth, 'number');
-        depth.querySelector('input')?.setAttribute('min', '0');
-        const keywords = settingField(t("关键词"), 'keywords', asArray(injection.keywords).join('\u3001'));
+        ], { inline: true });
+        const useConversationDepth = qqSettingsSwitch(t("使用本会话设置（深度）"), 'useConversationDepth', injection.useConversationDepth === true);
+        const depth = qqSettingsNumber(t("深度"), 'depth', injection.depth);
+        const keywords = qqSettingsInlineText(t("关键词"), 'keywords', asArray(injection.keywords).join('\u3001'));
         keywords.setAttribute('data-qq-conversation-worldbook-keywords', '1');
         const status = createElement('p', 'yuzi-qq-settings-status');
         status.dataset.qqConversationSettingsStatus = conversation.conversationId;
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
         const syncInjectionFields = () => {
             const localLight = useConversationLight.querySelector('input')?.checked === true;
             const localDepth = useConversationDepth.querySelector('input')?.checked === true;
             const currentLight = asText(light.querySelector('select')?.value);
-            light.querySelector('select').disabled = !localLight;
-            depth.querySelector('input').disabled = !localDepth;
+            setDisabled(light, !localLight);
+            setDisabled(depth, !localDepth);
+            depth.querySelector('input').dispatchEvent(new Event('input', { bubbles: true }));
             const keywordsVisible = localLight && currentLight === 'green';
             keywords.hidden = !keywordsVisible;
             keywords.querySelector('input').disabled = !keywordsVisible;
@@ -3247,22 +3256,34 @@ export function createQQApp({
         [useConversationLight, useConversationDepth, light].forEach((field) => {
             field.querySelector('input, select')?.addEventListener('change', syncInjectionFields);
         });
-        form.addEventListener('change', () => { void persist(); });
+        form.addEventListener('change', () => { void persist().catch(report); });
         syncInjectionFields();
-        injectionCard.append(useConversationLight, light, useConversationDepth, depth, keywords);
-        form.append(profileCard, injectionCard, status);
+        appendProfileEditorGroup(form, t("世界书"), [
+            injectionEnabled, useConversationLight, light, useConversationDepth, depth, keywords,
+        ]).classList.add('yuzi-qq-settings-group');
+        const worldbookNote = createElement('p', 'phone-ios-group-footer');
+        worldbookNote.textContent = t("全局世界书注入未开启，在 QQ 设置 › 世界书注入中开启。");
+        worldbookNote.hidden = globalWorldbook.enabled === true;
+        form.append(worldbookNote, status);
+        if (!isGroup) {
+            const deletionNote = createElement('p', 'phone-ios-group-footer');
+            deletionNote.textContent = t("删除会话：在消息列表中左滑该会话。");
+            form.append(deletionNote);
+        }
         content.append(form);
+        bindSettingsGroupedControls(form, null, () => isActive(token));
+        bindQQSettingsNumberEditors(form);
         const lifecycleAction = isGroup ? groupLifecycleAction(conversation.group) : '';
         if (lifecycleAction) {
             const lifecycle = createButton(
                 lifecycleAction === 'dissolve' ? t("解散群聊") : t("退出群聊"),
-                'yuzi-qq-danger-button yuzi-qq-group-lifecycle',
+                'phone-ios-row is-action is-danger yuzi-qq-group-lifecycle',
                 {
                     'data-qq-group-lifecycle': lifecycleAction,
                     'data-qq-group-conversation': conversation.conversationId,
                 },
             );
-            content.append(lifecycle);
+            appendProfileEditorGroup(content, '', [lifecycle]).classList.add('yuzi-qq-group-lifecycle-group');
         }
         return main;
     };
@@ -3318,43 +3339,6 @@ export function createQQApp({
         groups.append(sendSetting);
         main.append(groups);
         return main;
-    };
-
-    const settingField = (label, name, value, type = 'text') => {
-        const isCheckbox = type === 'checkbox';
-        const field = createElement('label', [
-            'yuzi-qq-field',
-            'yuzi-qq-field-row',
-            'yuzi-qq-field-group',
-            isCheckbox ? 'is-checkbox' : 'is-control-stacked',
-            `is-${type}`,
-        ].join(' '));
-        const labelText = createElement('span', 'yuzi-qq-field-label');
-        labelText.textContent = label;
-        const input = createElement('input', `yuzi-qq-field-control yuzi-qq-field-input${isCheckbox ? ' yuzi-qq-checkbox' : ''}`);
-        input.name = name;
-        input.type = type;
-        if (isCheckbox) input.checked = value === true;
-        else input.value = value ?? '';
-        field.append(labelText, input);
-        return field;
-    };
-
-    const settingSelect = (label, name, value, options) => {
-        const field = createElement('label', 'yuzi-qq-field yuzi-qq-field-row yuzi-qq-field-group is-control-stacked is-select');
-        const labelText = createElement('span', 'yuzi-qq-field-label');
-        labelText.textContent = label;
-        const select = createElement('select', 'yuzi-qq-field-control yuzi-qq-field-select');
-        select.name = name;
-        asArray(options).forEach(([optionValue, optionLabel]) => {
-            const option = createElement('option');
-            option.value = optionValue;
-            option.textContent = optionLabel;
-            option.selected = optionValue === value;
-            select.append(option);
-        });
-        field.append(labelText, select);
-        return field;
     };
 
     const qqSettingsControlId = (name) => `yuzi-qq-settings-${String(name).replace(/[^a-zA-Z0-9_-]/gu, '-')}`;
@@ -3479,6 +3463,20 @@ export function createQQApp({
         input.max = String(max);
         stepper.append(minus, output, plus);
         row.append(labelEl, stepper, input);
+        return row;
+    };
+
+    const qqSettingsInlineText = (label, name, value) => {
+        const row = createElement('label', 'phone-ios-row yuzi-qq-profile-editor-row');
+        const labelEl = createElement('span', 'phone-ios-row-label');
+        labelEl.textContent = label;
+        const input = createElement('input', 'phone-ios-inline-input yuzi-qq-profile-editor-input');
+        input.id = qqSettingsControlId(name);
+        input.name = name;
+        input.type = 'text';
+        input.value = value ?? '';
+        input.autocomplete = 'off';
+        row.append(labelEl, input);
         return row;
     };
 
@@ -3624,7 +3622,7 @@ export function createQQApp({
             const button = event.target?.closest?.('[data-qq-number-editor]');
             if (!button || !form.contains(button)) return;
             const input = form.querySelector(`#${CSS.escape(button.dataset.qqNumberEditor || '')}`);
-            if (!input) return;
+            if (!input || input.disabled) return;
             const label = button.getAttribute('aria-label') || t("编辑数值");
             const sheet = showSettingsSheet({
                 title: label,
@@ -3897,8 +3895,13 @@ export function createQQApp({
         return main;
     };
 
-    const openImageLibraryPicker = async ({ library, selectedAssetId = '', onSelect }) => {
+    const openImageLibraryPicker = async ({ library, selectedAssetId = '', onSelect, useSheet = false, focusField = '' }) => {
+        clearOverlay();
+        closeEmojiPanel();
+        const token = renderEpoch;
+        const request = profileLibraryPickerRequest;
         const result = await facade.query.imageLibrary({ library });
+        if (!isActive(token) || request !== profileLibraryPickerRequest) return;
         if (!result?.ok) {
             report(new Error(result?.error?.message || t("读取图片资料失败")));
             return;
@@ -3907,7 +3910,9 @@ export function createQQApp({
         const content = createElement('div', 'yuzi-qq-profile-library-picker');
         const grid = createElement('div', 'yuzi-qq-profile-library-picker-grid');
         const renderSession = assets.length > 0 ? profileLibraryRenderLeases.begin() : null;
-        const title = library === 'avatar-frame' ? t("选择头像框") : t("选择气泡");
+        const label = Object.values(PROFILE_ASSET_META).find((meta) => meta.library === library)?.label || t("图片");
+        const title = t`选择${label}`;
+        let sheet = null;
         if (assets.length === 0) {
             const empty = createElement('p', 'yuzi-qq-settings-status');
             empty.textContent = t("图片资料中还没有可用素材");
@@ -3917,6 +3922,7 @@ export function createQQApp({
                 const assetId = asText(asset.assetId);
                 const item = createButton('', `yuzi-qq-profile-library-picker-item${assetId === selectedAssetId ? ' is-selected' : ''}`, {
                     'aria-label': title,
+                    'aria-pressed': String(assetId === selectedAssetId),
                     title,
                 });
                 const image = createElement('img');
@@ -3925,18 +3931,20 @@ export function createQQApp({
                 item.append(image);
                 const cached = renderSession?.peek(assetId);
                 const apply = (render) => {
-                    if (render?.url) image.src = render.url;
+                    if (render?.url && isActive(token) && renderSession?.state === 'open') image.src = render.url;
                 };
                 if (cached) apply(cached);
                 else if (renderSession) void renderSession.load(assetId).then(apply).catch(() => {});
                 item.addEventListener('click', async () => {
-                    item.disabled = true;
+                    grid.querySelectorAll('button').forEach((button) => { button.disabled = true; });
                     try {
                         await onSelect(assetId);
+                        if (!isActive(token) || !content.isConnected) return;
                         clearOverlay();
                         await render();
+                        if (focusField) viewport?.querySelector(`[data-qq-profile-asset-menu="${focusField}"]`)?.focus({ preventScroll: true });
                     } catch (error) {
-                        item.disabled = false;
+                        grid.querySelectorAll('button').forEach((button) => { button.disabled = false; });
                         report(error);
                     }
                 });
@@ -3944,14 +3952,30 @@ export function createQQApp({
             });
             content.append(grid);
         }
-        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
-        cancel.addEventListener('click', clearOverlay);
-        showDialog({
-            title,
-            content,
-            actions: [cancel],
-            className: 'yuzi-qq-profile-library-picker-dialog',
-        });
+        if (useSheet) {
+            sheet = showSettingsSheet({
+                title,
+                className: 'yuzi-qq-settings-layer yuzi-qq-profile-library-picker-sheet',
+                runtime: { registerCleanup: (close) => { overlayCleanup = close; } },
+                onClose: () => {
+                    if (profileLibraryPickerSession === renderSession) abortProfileLibraryPickerSession();
+                },
+            });
+            if (!sheet) {
+                void renderSession?.abort();
+                return;
+            }
+            sheet.overlay.querySelector('.phone-ios-sheet-body').append(content);
+        } else {
+            const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
+            cancel.addEventListener('click', clearOverlay);
+            showDialog({
+                title,
+                content,
+                actions: [cancel],
+                className: 'yuzi-qq-profile-library-picker-dialog',
+            });
+        }
         profileLibraryPickerSession = renderSession;
     };
 
@@ -4411,52 +4435,50 @@ export function createQQApp({
     };
 
     const openAddGroupMemberDialog = async (conversationId) => {
+        const token = renderEpoch;
         const [conversation, result] = await Promise.all([
             getConversation(conversationId),
             facade.query.conversations(),
         ]);
-        if (!conversation || conversation.kind !== 'group') return;
+        if (!conversation || conversation.kind !== 'group' || !isActive(token)) return;
+        if (!result?.ok) throw new Error(result?.error?.message || t("读取联系人失败"));
         const candidates = groupFriendCandidates(
             result?.ok ? result.conversations : [],
             conversation.group?.memberIds,
         );
-        const content = createElement('div', 'yuzi-qq-dialog-form yuzi-qq-add-group-member-form');
-        const select = createElement('select', 'yuzi-qq-add-group-member-select');
-        select.setAttribute('aria-label', t("选择群成员"));
-        const placeholder = createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = t("选择已有 QQ 好友");
-        select.append(placeholder, ...candidates.map((candidate) => {
-            const option = createElement('option');
-            option.value = candidate.personId;
-            option.textContent = contactFormalName(candidate);
-            return option;
-        }));
-        const error = createElement('p', 'yuzi-qq-form-error');
-        const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
-        cancel.addEventListener('click', clearOverlay);
-        const confirm = createButton(t("添加成员"), 'yuzi-qq-primary-button');
-        confirm.disabled = true;
-        select.addEventListener('change', () => { confirm.disabled = !asText(select.value); });
-        confirm.addEventListener('click', async () => {
-            confirm.disabled = true;
-            const added = await facade.intent.manageGroup({
-                groupId: conversation.group.groupId,
-                action: 'add',
-                targetPersonId: select.value,
-            });
-            if (!added?.ok) {
-                error.textContent = added?.error?.message || t("添加成员失败");
-                confirm.disabled = !asText(select.value);
-                return;
-            }
-            clearOverlay();
-            await render();
+        if (candidates.length === 0) {
+            const content = createElement('p');
+            content.textContent = t("没有可添加的现有 QQ 好友");
+            const close = createButton(t("取消"), 'yuzi-qq-secondary-button');
+            close.addEventListener('click', clearOverlay);
+            showDialog({ title: t("添加成员"), content, actions: [close] });
+            return;
+        }
+        clearOverlay();
+        closeEmojiPanel();
+        showSettingsOptionSheet({
+            title: t("添加成员"),
+            className: 'yuzi-qq-settings-layer',
+            groups: [{
+                options: candidates.map((candidate) => ({
+                    value: candidate.personId, label: contactFormalName(candidate),
+                })),
+            }],
+            footer: t("只能添加已有的 QQ 好友，添加后对方立即出现在成员列表。"),
+            runtime: { registerCleanup: (close) => { overlayCleanup = close; } },
+            onSelect: async (personId) => {
+                if (!isActive(token)) return;
+                try {
+                    const added = await facade.intent.manageGroup({
+                        groupId: conversation.group.groupId,
+                        action: 'add',
+                        targetPersonId: personId,
+                    });
+                    if (!added?.ok) throw new Error(added?.error?.message || t("添加成员失败"));
+                    if (isActive(token)) await render();
+                } catch (error) { report(error); }
+            },
         });
-        if (candidates.length === 0) error.textContent = t("没有可添加的现有 QQ 好友");
-        content.append(select, error);
-        showDialog({ title: t("添加成员"), content, actions: [cancel, confirm], className: 'yuzi-qq-add-group-member-dialog' });
-        select.focus();
     };
 
     const confirmGroupLifecycle = async (conversationId, action) => {
@@ -4492,10 +4514,29 @@ export function createQQApp({
         showDialog({ title: label, content, actions: [cancel, confirm] });
     };
 
-    const openGroupMemberActionDialog = async (conversationId, personId, action) => {
+    const openGroupMemberActionDialog = async (conversationId, personId, action, duration = '') => {
+        const token = renderEpoch;
         const conversation = await getConversation(conversationId);
         const person = asArray(conversation?.group?.members).find((member) => member.personId === personId);
         if (!conversation || conversation.kind !== 'group' || !person) return;
+        if (action === 'mute' && !isActive(token)) return;
+        if (action === 'mute' && !duration) {
+            clearOverlay();
+            closeEmojiPanel();
+            showSettingsOptionSheet({
+                title: t("禁言时长"),
+                className: 'yuzi-qq-settings-layer',
+                groups: [{
+                    options: ['10 分钟', '1 小时', '1 天', '7 天', '永久'].map((value) => ({ value, label: t(value) })),
+                }],
+                runtime: { registerCleanup: (close) => { overlayCleanup = close; } },
+                onSelect: (value) => {
+                    if (!isActive(token)) return;
+                    void openGroupMemberActionDialog(conversationId, personId, action, value).catch(report);
+                },
+            });
+            return;
+        }
         const labels = {
             'appoint-admin': t("任命管理员"),
             'revoke-admin': t("取消管理员"),
@@ -4507,21 +4548,9 @@ export function createQQApp({
         const label = labels[action] || action;
         const content = createElement('div', 'yuzi-qq-dialog-form');
         const text = createElement('p');
-        text.textContent = `${label}：${asText(person.formalName) || t("未命名")}`;
-        let duration = null;
-        if (action === 'mute') {
-            duration = createElement('select', 'yuzi-qq-group-mute-duration');
-            duration.setAttribute('aria-label', t("禁言时长"));
-            ['10 分钟', '1 小时', '1 天', '7 天', '永久'].forEach((value) => {
-                const option = createElement('option');
-                option.value = value;
-                option.textContent = t(value);
-                duration.append(option);
-            });
-        }
+        text.textContent = `${label}：${asText(person.formalName) || t("未命名")}${action === 'mute' ? `（${t(duration)}）` : ''}`;
         const error = createElement('p', 'yuzi-qq-form-error');
         content.append(text);
-        if (duration) content.append(duration);
         content.append(error);
         const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
         cancel.addEventListener('click', clearOverlay);
@@ -4534,7 +4563,7 @@ export function createQQApp({
                 groupId: conversation.group.groupId,
                 action,
                 targetPersonId: personId,
-                ...(duration ? { duration: duration.value } : {}),
+                ...(action === 'mute' ? { duration } : {}),
             });
             if (!result?.ok) {
                 error.textContent = result?.error?.message || t`${label}失败`;
@@ -4990,6 +5019,26 @@ export function createQQApp({
     };
     void openTransferActionLegacy;
 
+    const updateAssistantAvatarAsset = (characterId) => {
+        const token = renderEpoch;
+        pickImageFiles(async ([selected]) => {
+            if (!isActive(token)) return;
+            // 陪聊头像属于全局人物，上传后仍须引用全局图片资料。
+            const saved = await facade.intent.saveImageLibraryAsset({
+                library: 'avatar', blob: selected.file, mimeType: selected.file.type,
+            });
+            if (!saved?.ok) throw new Error(saved?.error?.message || t("图片保存失败"));
+            if (!isActive(token)) return;
+            const updated = await saveProfilePatch({ owner: 'assistant', characterId }, { avatarAssetId: saved.asset.assetId });
+            if (!updated?.ok) throw new Error(updated?.error?.message || t("资料更新失败"));
+            if (isActive(token)) await render();
+        }, {
+            multiple: false,
+            maxSizeMB: 8,
+            onError: (message) => report(new Error(message)),
+        });
+    };
+
     const updatePrivateProfileAsset = (conversationId, fieldName, kind) => {
         pickImageFiles(async ([selected]) => {
             const blob = selected.file;
@@ -5013,12 +5062,6 @@ export function createQQApp({
             maxSizeMB: 8,
             onError: (message) => report(new Error(message)),
         });
-    };
-
-    const clearPrivateProfileAsset = async (conversationId, fieldName) => {
-        const result = await facade.intent.updatePrivateProfile({ conversationId, profile: { [fieldName]: '' } });
-        if (!result?.ok) throw new Error(result?.error?.message || t("资料更新失败"));
-        await render();
     };
 
     const updateConversationBackgroundAsset = (conversationId) => {
@@ -5083,34 +5126,76 @@ export function createQQApp({
         });
     };
 
-    const clearCurrentProfileAsset = async (fieldName) => {
-        const result = await facade.intent.updateCurrentProfile({ profile: { [fieldName]: '' } });
-        if (!result?.ok) throw new Error(result?.error?.message || t("资料更新失败"));
-        await render();
-    };
-
-    const updateProfileLibraryAsset = async ({ owner, conversationId = '', fieldName, library }) => {
+    const updateProfileLibraryAsset = async ({ owner, conversationId = '', characterId = '', fieldName, library, useSheet = false }) => {
+        const token = renderEpoch;
         const profile = owner === 'current'
             ? (await facade.query.currentProfile())?.profile
-            : await getConversation(conversationId);
+            : owner === 'assistant'
+                ? asArray((await facade.query.assistantCharacters())?.characters).find((character) => character.characterId === characterId)
+                : await getConversation(conversationId);
+        if (!isActive(token)) return;
         await openImageLibraryPicker({
             library,
             selectedAssetId: asText(profile?.[fieldName]),
+            useSheet,
+            focusField: useSheet ? fieldName : '',
             onSelect: async (assetId) => {
-                const result = owner === 'current'
-                    ? await facade.intent.updateCurrentProfile({ profile: { [fieldName]: assetId } })
-                    : await facade.intent.updatePrivateProfile({ conversationId, profile: { [fieldName]: assetId } });
+                const result = await saveProfilePatch({ owner, conversationId, characterId }, { [fieldName]: assetId });
                 if (!result?.ok) throw new Error(result?.error?.message || t("资料更新失败"));
             },
         });
     };
 
-    const clearProfileLibraryAsset = async ({ owner, conversationId = '', fieldName }) => {
-        const result = owner === 'current'
-            ? await facade.intent.updateCurrentProfile({ profile: { [fieldName]: '' } })
-            : await facade.intent.updatePrivateProfile({ conversationId, profile: { [fieldName]: '' } });
+    const clearProfileLibraryAsset = async ({ owner, conversationId = '', characterId = '', fieldName }) => {
+        const result = await saveProfilePatch({ owner, conversationId, characterId }, { [fieldName]: '' });
         if (!result?.ok) throw new Error(result?.error?.message || t("资料更新失败"));
         await render();
+        viewport?.querySelector(`[data-qq-profile-asset-menu="${fieldName}"]`)?.focus({ preventScroll: true });
+    };
+
+    const openProfileAssetMenu = (row) => {
+        const fieldName = row.dataset.qqProfileAssetMenu;
+        const meta = PROFILE_ASSET_META[fieldName];
+        if (!meta) return;
+        const { label, library } = meta;
+        const owner = row.dataset.qqProfileFieldOwner;
+        const conversationId = row.dataset.qqProfileFieldConversation;
+        const characterId = row.dataset.qqProfileFieldCharacter;
+        const value = row.dataset.qqProfileAssetId;
+        const decoration = library === 'avatar-frame' || library === 'bubble';
+        const choose = () => void updateProfileLibraryAsset({ owner, conversationId, characterId, fieldName, library, useSheet: true }).catch(report);
+        if (decoration && !value) return choose();
+        const clear = () => void clearProfileLibraryAsset({ owner, conversationId, characterId, fieldName }).catch(report);
+        const remove = () => {
+            if (library !== 'avatar') return clear();
+            const message = createElement('p');
+            message.textContent = t("删除后恢复默认头像。");
+            const cancel = createButton(t("取消"), 'yuzi-qq-secondary-button');
+            cancel.addEventListener('click', clearOverlay);
+            const confirm = createButton(t("删除头像"), 'yuzi-qq-danger-button');
+            confirm.addEventListener('click', () => { clearOverlay(); clear(); });
+            showDialog({ title: t("删除头像"), content: message, actions: [cancel, confirm] });
+        };
+        clearOverlay();
+        closeEmojiPanel();
+        showSettingsActionSheet({
+            title: label,
+            className: 'yuzi-qq-settings-layer',
+            runtime: { registerCleanup: (close) => { overlayCleanup = close; } },
+            actions: [
+                { label: decoration ? t`选择${label}` : t("从图片资料选"), onSelect: choose },
+                !decoration && {
+                    label: t("从本地上传"),
+                    onSelect: () => {
+                        if (library === 'chat-background') updateConversationBackgroundAsset(conversationId);
+                        else if (owner === 'assistant') updateAssistantAvatarAsset(characterId);
+                        else if (owner === 'current') updateCurrentProfileAsset(fieldName, library);
+                        else updatePrivateProfileAsset(conversationId, fieldName, library);
+                    },
+                },
+                value && { label: decoration ? t`清除${label}` : t`删除${label}`, danger: true, onSelect: remove },
+            ],
+        });
     };
 
     const uploadImageLibraryAsset = (library) => {
@@ -5527,9 +5612,13 @@ export function createQQApp({
     };
 
     const assistantUI = createAssistantUI({ facade, createElement, createButton, avatar, showDialog, clearOverlay,
-        openChat, render, makeSecondaryPage, settingField, pickBackground: updateConversationBackgroundAsset,
-        clearBackground: clearConversationBackgroundAsset, pickLibraryAsset: openImageLibraryPicker,
-        isCurrent: () => !disposed, report });
+        openChat, render, makeSecondaryPage,
+        profileEditor: {
+            fieldRow: profileEditRow, assetRow: profileAssetRow, messageColorRow: profileMessageTextColorRow,
+            addGroup: appendProfileEditorGroup,
+            bindControls: (root, token) => bindSettingsGroupedControls(root, null, () => isActive(token)),
+        },
+        isCurrent: (token) => token === undefined ? !disposed : isActive(token), report });
 
     const handleClick = async (event) => {
         const target = event.target.closest('button');
@@ -5584,56 +5673,7 @@ export function createQQApp({
         if (target.dataset.qqAddContact) return openAddContact(target);
         if (target.dataset.qqCurrentProfile) return go({ type: 'current-profile' });
         if (target.dataset.qqCurrentProfileEdit) return go({ type: 'current-profile-edit' });
-        if (target.dataset.qqCurrentProfilePickAvatar) return updateCurrentProfileAsset('avatarAssetId', 'avatar');
-        if (target.dataset.qqCurrentProfilePickAvatarFrame) {
-            return updateProfileLibraryAsset({ owner: 'current', fieldName: 'avatarFrameAssetId', library: 'avatar-frame' });
-        }
-        if (target.dataset.qqCurrentProfilePickBubble) {
-            return updateProfileLibraryAsset({ owner: 'current', fieldName: 'bubbleAssetId', library: 'bubble' });
-        }
-        if (target.dataset.qqCurrentProfilePickBackground) return updateCurrentProfileAsset('profileBackgroundAssetId', 'profile-background');
-        if (target.dataset.qqCurrentProfileClearAvatar) return clearCurrentProfileAsset('avatarAssetId').catch(report);
-        if (target.dataset.qqCurrentProfileClearAvatarFrame) {
-            return clearProfileLibraryAsset({ owner: 'current', fieldName: 'avatarFrameAssetId' }).catch(report);
-        }
-        if (target.dataset.qqCurrentProfileClearBubble) {
-            return clearProfileLibraryAsset({ owner: 'current', fieldName: 'bubbleAssetId' }).catch(report);
-        }
-        if (target.dataset.qqCurrentProfileClearBackground) return clearCurrentProfileAsset('profileBackgroundAssetId').catch(report);
-        if (target.dataset.qqProfilePickAvatar) return updatePrivateProfileAsset(target.dataset.qqProfilePickAvatar, 'avatarAssetId', 'avatar');
-        if (target.dataset.qqProfilePickAvatarFrame) {
-            return updateProfileLibraryAsset({
-                owner: 'private',
-                conversationId: target.dataset.qqProfilePickAvatarFrame,
-                fieldName: 'avatarFrameAssetId',
-                library: 'avatar-frame',
-            });
-        }
-        if (target.dataset.qqProfilePickBubble) {
-            return updateProfileLibraryAsset({
-                owner: 'private',
-                conversationId: target.dataset.qqProfilePickBubble,
-                fieldName: 'bubbleAssetId',
-                library: 'bubble',
-            });
-        }
-        if (target.dataset.qqProfilePickBackground) return updatePrivateProfileAsset(target.dataset.qqProfilePickBackground, 'profileBackgroundAssetId', 'profile-background');
-        if (target.dataset.qqProfileClearAvatar) return clearPrivateProfileAsset(target.dataset.qqProfileClearAvatar, 'avatarAssetId').catch(report);
-        if (target.dataset.qqProfileClearAvatarFrame) {
-            return clearProfileLibraryAsset({
-                owner: 'private',
-                conversationId: target.dataset.qqProfileClearAvatarFrame,
-                fieldName: 'avatarFrameAssetId',
-            }).catch(report);
-        }
-        if (target.dataset.qqProfileClearBubble) {
-            return clearProfileLibraryAsset({
-                owner: 'private',
-                conversationId: target.dataset.qqProfileClearBubble,
-                fieldName: 'bubbleAssetId',
-            }).catch(report);
-        }
-        if (target.dataset.qqProfileClearBackground) return clearPrivateProfileAsset(target.dataset.qqProfileClearBackground, 'profileBackgroundAssetId').catch(report);
+        if (target.dataset.qqProfileAssetMenu) return openProfileAssetMenu(target);
         if (target.dataset.qqContactPackMenu) return openContactPackMenu(target);
         if (target.dataset.qqImageLibraryPackMenu) return openImageLibraryPackMenu(target);
         if (target.dataset.qqImageLibraryUpload) return uploadImageLibraryAsset(target.dataset.qqImageLibraryUpload);
